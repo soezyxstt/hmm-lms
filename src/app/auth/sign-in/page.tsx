@@ -20,7 +20,7 @@ import { useForm } from 'react-hook-form';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { type z } from 'zod';
 import { toast } from 'sonner';
-import { signInSchema } from '~/schema/auth';
+import { signInSchema } from '~/lib/schema/auth';
 import { useRouter } from 'next/navigation';
 
 export default function SignIn() {

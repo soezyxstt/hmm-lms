@@ -1,5 +1,4 @@
 import { IoMdNotificationsOutline } from 'react-icons/io';
-import { IoSettingsOutline } from 'react-icons/io5';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -14,6 +13,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { auth } from '~/server/auth';
+import ThemeSwitch from '../theme-switch';
 
 export default async function ProfileMenu() {
   const session = await auth();
@@ -26,21 +26,14 @@ export default async function ProfileMenu() {
   return (
     <div className='flex gap-3 items-center'>
       <Tooltip>
-        <TooltipTrigger className='bg-white p-2 rounded-full text-lg hidden md:block'>
+        <TooltipTrigger className='bg-card p-1 rounded-full text-lg hidden md:block border'>
           <IoMdNotificationsOutline />
         </TooltipTrigger>
         <TooltipContent className='hidden md:block'>
           <p>Notifications</p>
         </TooltipContent>
       </Tooltip>
-      <Tooltip>
-        <TooltipTrigger className='bg-white p-2 rounded-full text-lg hidden md:block'>
-          <IoSettingsOutline />
-        </TooltipTrigger>
-        <TooltipContent className='hidden md:block'>
-          <p>Settings</p>
-        </TooltipContent>
-      </Tooltip>
+      <ThemeSwitch />
       <DropdownMenu>
         <DropdownMenuTrigger className='flex items-center gap-2 ml-2 max-sm:hidden cursor-pointer'>
           <div className='*:text-[0.625rem]'>

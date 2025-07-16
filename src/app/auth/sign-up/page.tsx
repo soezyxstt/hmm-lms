@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '~/components/ui/form';
 import { toast } from 'sonner';
-import { signUpSchema } from '~/schema/auth';
+import { signUpSchema } from '~/lib/schema/auth';
 import { api } from '~/trpc/react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';

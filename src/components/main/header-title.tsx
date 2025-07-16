@@ -10,6 +10,11 @@ export default function HeaderTitle() {
     courses: 'Courses',
     profile: 'Profile',
     settings: 'Settings',
+    announcements: 'Announcements',
+    events: 'Events',
+    scholarship: 'Scholarship',
+    schedule: 'Schedule',
+    "try-outs": 'Try Outs',
   };
 
   return (

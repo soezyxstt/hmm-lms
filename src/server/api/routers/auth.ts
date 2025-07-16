@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { hashPassword } from "~/lib/utils";
-import { signUpSchema } from "~/schema/auth";
+import { signUpSchema } from "~/lib/schema/auth";
 
 import {
   createTRPCRouter,

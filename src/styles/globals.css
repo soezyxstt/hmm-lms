@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans: var(--default-font), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -50,9 +50,11 @@
   --color-warning: var(--warning);
   --color-info: var(--info);
   --color-error: var(--error);
+
+  --default-font: var(--font-geist)
 }
 
-:root, .dark {
+:root {
   --radius: 0.625rem;
   --background: oklch(0.964 0 0); /* white */
   --foreground: oklch(0.18 0.01 260); /* dark blue-gray text */
@@ -90,11 +92,66 @@
 
   /* custom props */
   --navy: oklch(32% 0.1 275);
-  --success: oklch(72.15% 0.113 170);
+  --success: oklch(70.71% 0.17998 143.689);
   --warning: oklch(0.6 0.2 60);
   --info: oklch(0.6 0.2 210);
   --error: oklch(0.577 0.245 27.325);
 }
+
+.dark {
+  --background: oklch(0.22 0.02 260);
+  --foreground: oklch(0.96 0.01 260);
+  
+  --card: oklch(0.28 0.025 260);
+  --card-foreground: oklch(0.96 0.01 260);
+  
+  --popover: oklch(0.25 0.02 260);
+  --popover-foreground: oklch(0.96 0.01 260);
+  
+  --primary: oklch(0.65 0.18 260);
+  --primary-foreground: oklch(0.22 0.05 260);
+  
+  --secondary: oklch(0.32 0.02 260); /* Lighter secondary background */
+  --secondary-foreground: oklch(0.85 0.01 260); /* Softer text for secondary info */
+  
+  --muted: oklch(0.32 0.02 260); /* Same as secondary for muted elements */
+  --muted-foreground: oklch(0.65 0.05 260); /* A dimmer, less prominent text color */
+  
+  --accent: oklch(0.55 0.12 260); /* A more vibrant accent blue */
+  --accent-foreground: oklch(0.98 0.01 260); /* Bright text on the accent color */
+  
+  --destructive: oklch(0.65 0.25 27.325); /* Lighter red for visibility */
+  
+  --border: oklch(0.35 0.02 260); /* A visible but subtle border */
+  --input: oklch(0.35 0.02 260); /* Same as border for input fields */
+  --ring: oklch(0.75 0.12 260); /* A bright, vibrant ring for focus states */
+
+  /* Chart colors are often designed to work on both light/dark backgrounds.
+     They are kept the same but can be adjusted if needed. */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* The sidebar is lifted to be more distinct from the main background. */
+  --sidebar: oklch(0.25 0.06 275); /* A lighter, but still deep, purple-navy */
+  --sidebar-foreground: oklch(0.96 0.01 260); /* Bright text */
+  --sidebar-primary: oklch(0.65 0.18 260); /* Same as main primary */
+  --sidebar-primary-foreground: oklch(0.22 0.05 260); /* Dark text on primary */
+  --sidebar-accent: oklch(0.55 0.15 260); /* A mid-tone accent */
+  --sidebar-accent-foreground: oklch(0.98 0.01 260); /* Bright text */
+  --sidebar-border: oklch(0.35 0.02 260); /* Same as main border */
+  --sidebar-ring: oklch(0.75 0.12 260); /* Same as main ring */
+
+  /* Adjusted custom props for dark theme */
+  --navy: oklch(0.25 0.06 275); /* Same as dark sidebar */
+  --success: oklch(72.15% 0.113 170); /* Kept the same, usually visible on dark */
+  --warning: oklch(0.7 0.2 60); /* Slightly lighter for better visibility */
+  --info: oklch(0.7 0.2 210); /* Slightly lighter for better visibility */
+  --error: oklch(0.65 0.25 27.325); /* Same as dark destructive */
+}
+
 
 @layer base {
   * {
@@ -104,14 +161,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* :root, .dark {
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
-} */

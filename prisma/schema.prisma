@@ -14,15 +14,16 @@ enum Role {
 }
 
 model User {
-    id           String  @id @default(cuid())
-    email        String  @unique
-    name         String?
-    password     String
+    id       String @id @default(cuid())
+    email    String @unique
+    name     String
+    password String
 
-    nim          String? @unique
-    faculty      String?
-    program      String?
-    role         Role    @default(STUDENT)
+    nim      String? @unique
+    faculty  String?
+    program  String?
+    position String?
+    role     Role    @default(STUDENT)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -30,10 +31,14 @@ model User {
     // NextAuth.js specific fields if you also use a database adapter for sessions/accounts
     // For CredentialsProvider alone, these aren't strictly needed for auth,
     // but good to have if you expand authentication methods.
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
+    emailVerified   DateTime?
+    image           String?
+    accounts        Account[]
+    sessions        Session[]
+    course          Course?           @relation(fields: [courseId], references: [id])
+    courseId        String?
+    learningSession LearningSession[]
+    userAttempt     UserAttempt[]
 }
 
 // These models are required by NextAuth.js if you use a database adapter
@@ -63,4 +68,131 @@ model Session {
     expires      DateTime
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+    id          String   @id @default(cuid())
+    title       String
+    description String?
+    classCode   String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    lessons         Lesson[]
+    members         User[]
+    LearningSession LearningSession[]
+}
+
+model Lesson {
+    id          String   @id @default(cuid())
+    title       String
+    description String?
+    courseId    String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model LearningSession {
+    id       String @id @default(cuid())
+    userId   String
+    courseId String
+
+    // The date this session occurred on (for easy daily grouping)
+    date DateTime @db.Date
+
+    // Duration of this specific session chunk in seconds
+    duration Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+    @@index([userId, courseId, date])
+}
+
+model Tryout {
+    id          String   @id @default(cuid())
+    title       String
+    description String?
+    duration    Int? // Duration in minutes
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    questions Question[]
+    attempts  UserAttempt[]
+
+    @@map("tryouts")
+}
+
+model Question {
+    id       String       @id @default(cuid())
+    tryoutId String
+    type     QuestionType
+    question String
+    points   Int          @default(1)
+    order    Int
+    required Boolean      @default(true)
+
+    tryout  Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+    options QuestionOption[]
+    answers UserAnswer[]
+
+    @@map("questions")
+}
+
+model QuestionOption {
+    id         String  @id @default(cuid())
+    questionId String
+    text       String
+    isCorrect  Boolean @default(false)
+    order      Int
+
+    question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+    @@map("question_options")
+}
+
+model UserAttempt {
+    id          String    @id @default(cuid())
+    userId      String // Your user ID field
+    tryoutId    String
+    score       Float     @default(0)
+    maxScore    Float     @default(0)
+    startedAt   DateTime  @default(now())
+    endedAt     DateTime?
+    isCompleted Boolean   @default(false)
+
+    user    User         @relation(fields: [userId], references: [id])
+    tryout  Tryout       @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+    answers UserAnswer[]
+
+    @@map("user_attempts")
+}
+
+model UserAnswer {
+    id         String   @id @default(cuid())
+    attemptId  String
+    questionId String
+    answer     String // JSON string for multiple answers or plain text
+    points     Float    @default(0)
+    createdAt  DateTime @default(now())
+
+    attempt  UserAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+    question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+    @@unique([attemptId, questionId])
+    @@map("user_answers")
+}
+
+enum QuestionType {
+    MULTIPLE_CHOICE_SINGLE
+    MULTIPLE_CHOICE_MULTIPLE
+    SHORT_ANSWER
+    LONG_ANSWER
 }
