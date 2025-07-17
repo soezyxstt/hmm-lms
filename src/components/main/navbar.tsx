@@ -7,11 +7,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import SearchCMDK from './cmdk-search';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
+import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 
-export const sidebarTabs = [
+const sidebarTabs: {
+  group: string,
+  items: {
+    label: string,
+    href: string,
+    icon: typeof Banknote,
+    tooltip: string,
+    dev?: boolean
+  }[]
+}[] = [
   {
     group: 'Academics',
     items: [
@@ -32,7 +41,6 @@ export const sidebarTabs = [
   {
     group: 'Preferences',
     items: [
-      { label: 'Profile', href: '/profile', icon: User, tooltip: 'Profile' },
       { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
     ],
   },

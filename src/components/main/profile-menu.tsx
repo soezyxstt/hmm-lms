@@ -5,7 +5,6 @@ import {
   Bell,
   ChevronsUpDown,
   LogOut,
-  Settings,
   User,
 } from "lucide-react"
 import Link from 'next/link'
@@ -101,10 +100,6 @@ export default function ProfileMenu({
               <DropdownMenuItem>
                 <Bell className='mr-1 w-4 h-4' />
                 <span>Notifications</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className='mr-1 w-4 h-4' />
-                <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

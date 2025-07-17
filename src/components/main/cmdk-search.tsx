@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import Link from 'next/link';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
+import { Banknote, Bell, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
-const sidebarTabs = [
+const tabs = [
   {
     group: 'Academics',
     items: [
@@ -27,13 +27,19 @@ const sidebarTabs = [
   {
     group: 'Preferences',
     items: [
-      { label: 'Profile', href: '/profile', icon: User, tooltip: 'Profile' },
       { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
     ],
   },
+  {
+    group: 'Others',
+    items: [
+      { label: 'Profile', href: '/profile', icon: User },
+      {label: 'Notifications', href: '/notifications', icon: Bell}
+    ]
+  }
 ]
 
-const tabs = {
+const specificTabs = {
   courses: {
     icon: GraduationCap,
     items: [
@@ -74,8 +80,8 @@ const tabs = {
 export default function SearchCMDK() {
   const [open, setOpen] = useState(false)
   const pathName = usePathname();
-  const firstPath = pathName.split("/")[1] as keyof typeof tabs
-  const primaryData = tabs[firstPath]
+  const firstPath = pathName.split("/")[1] as keyof typeof specificTabs
+  const primaryData = specificTabs[firstPath]
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -91,8 +97,8 @@ export default function SearchCMDK() {
   return (
     <>
       <div className='flex bg-card px-3 py-1.5 rounded-md text-sm items-center text-muted-foreground cursor-pointer' onClick={() => setOpen(true)}>
-        Search...
-        <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none ml-8">
+        <span className="mr-8">Seacrh...</span>
+        <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none max-sm:hidden">
           <span className="text-xs">Ctrl K</span>
         </kbd>
       </div>
@@ -112,7 +118,7 @@ export default function SearchCMDK() {
               ))}
             </CommandGroup>
           )}
-          {sidebarTabs.map(group => (
+          {tabs.map(group => (
             <CommandGroup heading={group.group} key={group.group + group.items[0]?.label}>
               {group.items.map(item => (
                 <CommandItem key={item.label + '-cmd-item-' + group.group} asChild>

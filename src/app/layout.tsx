@@ -108,12 +108,12 @@ export default function RootLayout({
         ${lobsterTwo.variable} 
         ${caveat.variable} 
         ${shadowsIntoLight.variable} 
-        bg-background text-navy`} suppressHydrationWarning>
+        bg-background text-primary`} suppressHydrationWarning>
       <body>
         <SessionProvider>
           <TRPCReactProvider>
             <DisplaySettingProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <ThemeProvider attribute="class" defaultTheme="light">
                 {children}
               </ThemeProvider>
             </DisplaySettingProvider>

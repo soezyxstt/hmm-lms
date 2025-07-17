@@ -5,14 +5,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Button } from "~/components/ui/button"
 import { Label } from "~/components/ui/label"
 import { useTheme } from "next-themes"
-import { Monitor, Moon, Sun, Type, Palette, Layout } from "lucide-react"
+import { Type, Palette, Layout } from "lucide-react"
 import { useDisplaySetting } from '~/components/providers/display-provider'
 import { FONT_FAMILIES, FONT_SIZES, SPACING_SIZES } from '~/components/providers/constants'
 import { Separator } from '~/components/ui/separator'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const { spacing, fontFamily, fontSize, setFontFamily, setFontSize, setSpacing, reset } = useDisplaySetting()
+  const { spacing, fontFamily, fontSize, setFontFamily, setFontSize, setSpacing, reset } = useDisplaySetting();
+  const isDark = theme?.startsWith('dark');
+  const themes = {
+    default: {
+      label: "Default",
+      light: 'light',
+      dark: 'dark'
+    },
+    orange: {
+      label: "Orange",
+      light: 'orange',
+      dark: 'dark-orange'
+    },
+    violet: {
+      label: "Violet",
+      light: 'violet',
+      dark: 'dark-violet'
+    },
+    teal: {
+      label: "Teal",
+      light: 'teal',
+      dark: 'dark-teal'
+    },
+    emerald: {
+      label: "Emerald",
+      light: 'emerald',
+      dark: 'dark-emerald'
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -33,30 +61,11 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
-              <Button
-                variant={theme === "light" ? "default" : "outline"}
-                className="justify-start"
-                onClick={() => setTheme("light")}
-              >
-                <Sun className="mr-2 h-4 w-4" />
-                Light
-              </Button>
-              <Button
-                variant={theme === "dark" ? "default" : "outline"}
-                className="justify-start"
-                onClick={() => setTheme("dark")}
-              >
-                <Moon className="mr-2 h-4 w-4" />
-                Dark
-              </Button>
-              <Button
-                variant={theme === "system" ? "default" : "outline"}
-                className="justify-start"
-                onClick={() => setTheme("system")}
-              >
-                <Monitor className="mr-2 h-4 w-4" />
-                System
-              </Button>
+              {Object.values(themes).map(value => (
+                <Button key={value.label + '-theme-button'} className={value.label === "Default" ? isDark ? 'light' : '.dark' : isDark ? '.' + value.dark : '.' + value.light} variant={(theme === value.light || theme === value.dark) ? 'default' : 'outline'} onClick={() => isDark ? setTheme(value.dark) : setTheme(value.light)}>
+                  {value.label}
+                </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +206,10 @@ export default function SettingsPage() {
       <Separator />
 
       <div className="flex justify-end">
-        <Button className='cursor-pointer' onClick={reset}>
+        <Button className='cursor-pointer' onClick={() => {
+          reset();
+          setTheme(isDark ? 'dark' : 'light')
+        }}>
           Reset
         </Button>
       </div>
