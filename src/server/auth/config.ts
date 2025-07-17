@@ -30,10 +30,10 @@ declare module "next-auth" {
 
   interface User {
     id?: string;
-    nim: string;
+    nim?: string;
     faculty?: string;
     program?: string;
-    role: Role;
+    role?: Role;
     name?: string | null;
     image?: string | null;
   }
