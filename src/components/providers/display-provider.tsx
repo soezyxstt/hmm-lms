@@ -20,6 +20,7 @@ type ThemeProviderState = {
   setFontSize: (fontSize: FontSize) => void;
   fontFamily: FontFamily;
   setFontFamily: (fontFamily: FontFamily) => void;
+  reset: () => void;
 };
 
 // --- INITIAL STATE ---
@@ -31,6 +32,7 @@ const initialState: ThemeProviderState = {
   setFontSize: () => null,
   fontFamily: 'geist',
   setFontFamily: () => null,
+  reset: () => null
 };
 
 // --- CONTEXT ---
@@ -87,6 +89,12 @@ export function DisplaySettingProvider({ children }: { children: React.ReactNode
 
   }, [spacing, fontSize, fontFamily]);
 
+  function reset() {
+    setFontFamily('geist');
+    setFontSize('medium');
+    setSpacing('normal');
+  }
+
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     spacing,
@@ -95,6 +103,7 @@ export function DisplaySettingProvider({ children }: { children: React.ReactNode
     setFontSize,
     fontFamily,
     setFontFamily,
+    reset
   }), [spacing, fontSize, fontFamily]);
 
   return (

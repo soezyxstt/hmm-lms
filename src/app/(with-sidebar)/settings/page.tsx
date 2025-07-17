@@ -8,10 +8,11 @@ import { useTheme } from "next-themes"
 import { Monitor, Moon, Sun, Type, Palette, Layout } from "lucide-react"
 import { useDisplaySetting } from '~/components/providers/display-provider'
 import { FONT_FAMILIES, FONT_SIZES, SPACING_SIZES } from '~/components/providers/constants'
+import { Separator } from '~/components/ui/separator'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const {spacing, fontFamily, fontSize, setFontFamily, setFontSize, setSpacing} = useDisplaySetting()
+  const { spacing, fontFamily, fontSize, setFontFamily, setFontSize, setSpacing, reset } = useDisplaySetting()
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -79,7 +80,7 @@ export default function SettingsPage() {
                     <SelectValue placeholder="Select font size" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(FONT_SIZES).map(([name, {value, label}]) => (
+                    {Object.entries(FONT_SIZES).map(([name, { value, label }]) => (
                       <SelectItem key={value + '-font-size'} value={name}>
                         {label}
                       </SelectItem>
@@ -98,7 +99,7 @@ export default function SettingsPage() {
                   <SelectContent>
                     {Object.entries(FONT_FAMILIES).map(([name, font]) => (
                       <SelectItem key={font.value + '-font-family'} value={name}>
-                        <span>{font.label}</span>
+                        <span className={font.class}>{font.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -191,6 +192,14 @@ export default function SettingsPage() {
             <CardDescription>Coming soon - Customize your notification preferences</CardDescription>
           </CardHeader>
         </Card>
+      </div>
+
+      <Separator />
+
+      <div className="flex justify-end">
+        <Button className='cursor-pointer' onClick={reset}>
+          Reset
+        </Button>
       </div>
     </div>
   )

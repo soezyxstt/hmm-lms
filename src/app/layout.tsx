@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist, Inter, Montserrat, Noto_Sans, Oxygen, Poppins, Roboto, Roboto_Mono } from "next/font/google";
+import { Geist, Inter, Montserrat, Noto_Sans, Oxygen, Poppins, Roboto, Roboto_Mono, Dancing_Script, Exo_2, Lobster_Two, Caveat, Shadows_Into_Light } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from '~/components/ui/sonner';
@@ -60,6 +60,36 @@ const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
 })
 
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-dancing-script",
+});
+
+const exo2 = Exo_2({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-exo-2",
+});
+
+const lobsterTwo = Lobster_Two({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-lobster-two",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-caveat",
+});
+
+const shadowsIntoLight = Shadows_Into_Light({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-shadows-into-light",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -73,12 +103,17 @@ export default function RootLayout({
         ${oxygen.variable} 
         ${notoSans.variable} 
         ${robotoMono.variable} 
+        ${dancingScript.variable} 
+        ${exo2.variable} 
+        ${lobsterTwo.variable} 
+        ${caveat.variable} 
+        ${shadowsIntoLight.variable} 
         bg-background text-navy`} suppressHydrationWarning>
       <body>
         <SessionProvider>
           <TRPCReactProvider>
             <DisplaySettingProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 {children}
               </ThemeProvider>
             </DisplaySettingProvider>

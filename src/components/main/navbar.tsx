@@ -5,10 +5,13 @@ import HeaderTitle from './header-title';
 import ProfileMenu from './profile-menu';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import SearchCMDK from './cmdk-search';
+import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
+import { auth } from '~/server/auth';
+import ThemeSwitch from '../theme-switch';
 
-const sidebarTabs = [
+export const sidebarTabs = [
   {
     group: 'Academics',
     items: [
@@ -54,7 +57,14 @@ export default async function MainNavbar({
   )
 }
 
-function AppSidebar() {
+async function AppSidebar() {
+  const session = await auth();
+  const user = session?.user ?? {
+    name: "Guest",
+    role: 'STUDENT',
+    image: ''
+  }
+
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
@@ -103,7 +113,7 @@ function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter>
-
+        <ProfileMenu user={user} />
       </SidebarFooter>
     </Sidebar>
   )
@@ -119,8 +129,9 @@ function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <HeaderTitle />
-        <div className="ml-auto">
-          <ProfileMenu />
+        <div className="ml-auto flex gap-4 items-center">
+          <SearchCMDK />
+          <ThemeSwitch />
         </div>
       </div>
     </header>

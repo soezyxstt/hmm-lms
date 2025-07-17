@@ -19,7 +19,7 @@ model User {
     name     String
     password String
 
-    nim      String? @unique
+    nim      String @unique
     faculty  String?
     program  String?
     position String?

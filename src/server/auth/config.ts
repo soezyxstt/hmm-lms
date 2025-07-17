@@ -19,21 +19,23 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      nim?: string;
+      nim: string;
       faculty?: string;
       program?: string;
-      role?: Role;
-      name?: string;
+      role: Role;
+      name: string;
+      image?: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     id?: string;
-    nim?: string;
+    nim: string;
     faculty?: string;
     program?: string;
-    role?: Role;
+    role: Role;
     name?: string | null;
+    image?: string | null;
   }
 }
 
@@ -97,6 +99,8 @@ export const authConfig = {
           nim: user.nim ?? undefined,
           faculty: user.faculty ?? undefined,
           program: user.program ?? undefined,
+          image: user.image,
+
         };
       },
     }),
@@ -117,6 +121,7 @@ export const authConfig = {
         token.faculty = user.faculty;
         token.program = user.program;
         token.role = user.role;
+        token.image = user.image;
       }
       return token;
     },
@@ -129,6 +134,7 @@ export const authConfig = {
       session.user.faculty = token.faculty as string;
       session.user.program = token.program as string;
       session.user.role = token.role as Role;
+      session.user.image = token.image as string;
       return session;
     },
   },
