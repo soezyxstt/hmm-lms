@@ -9,6 +9,7 @@ import { Type, Palette, Layout } from "lucide-react"
 import { useDisplaySetting } from '~/components/providers/display-provider'
 import { FONT_FAMILIES, FONT_SIZES, SPACING_SIZES } from '~/components/providers/constants'
 import { Separator } from '~/components/ui/separator'
+import { cn } from '~/lib/utils'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -39,7 +40,37 @@ export default function SettingsPage() {
       label: "Emerald",
       light: 'emerald',
       dark: 'dark-emerald'
-    }
+    },
+    amber: {
+      label: "Amber",
+      light: 'amber',
+      dark: 'dark-amber'
+    },
+    rose: {
+      label: "Rose",
+      light: 'rose',
+      dark: 'dark-rose'
+    },
+    zinc: {
+      label: "Zinc",
+      light: 'zinc',
+      dark: 'dark-zinc'
+    },
+    aqua: {
+      label: "Aqua",
+      light: 'aqua',
+      dark: 'dark-aqua'
+    },
+    lime: {
+      label: "Lime",
+      light: 'lime',
+      dark: 'dark-lime'
+    },
+    stone: {
+      label: "Stone",
+      light: 'stone',
+      dark: 'dark-stone'
+    },
   }
 
   return (
@@ -60,12 +91,24 @@ export default function SettingsPage() {
             <CardDescription>Choose your preferred color scheme</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              {Object.values(themes).map(value => (
-                <Button key={value.label + '-theme-button'} className={value.label === "Default" ? isDark ? 'light' : '.dark' : isDark ? '.' + value.dark : '.' + value.light} variant={(theme === value.light || theme === value.dark) ? 'default' : 'outline'} onClick={() => isDark ? setTheme(value.dark) : setTheme(value.light)}>
-                  {value.label}
-                </Button>
-              ))}
+            <Select value={theme} onValueChange={setTheme}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(themes).map(value => (
+                  <SelectItem key={value.label} value={isDark ? value.dark : value.light} className={cn('text-primary hover:text-primary-foreground', isDark ? value.dark : value.light)}>
+                    <span>{value.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="rounded-md w-full min-h-16 h-full grid grid-cols-5 gap-1 **:h-full **:w-full **:rounded">
+              <div className="bg-background"></div>
+              <div className="bg-foreground"></div>
+              <div className="bg-primary"></div>
+              <div className="bg-accent"></div>
+              <div className="bg-secondary"></div>
             </div>
           </CardContent>
         </Card>

@@ -178,7 +178,7 @@ export default function TakeExamPage() {
                         variant={index === currentQuestionIndex ? "default" : "outline"}
                         size="sm"
                         onClick={() => goToQuestion(index)}
-                        className={`w-full ${answers[tryout.questions[index]?.id ?? ""] ? "bg-green-100 border-green-300" : ""}`}
+                        className={`w-full ${answers[tryout.questions[index]?.id ?? ""] ? "bg-success" : ""}`}
                       >
                         {index + 1}
                       </Button>
