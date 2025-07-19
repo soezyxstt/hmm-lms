@@ -164,7 +164,7 @@ export default function TakeExamPage() {
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="grid grid-cols-5 lg:grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto"
+                    className="grid grid-cols-5 lg:grid-cols-3 gap-2 md:max-h-[40vh] max-h-32 overflow-y-auto"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                   >
                     <style jsx>{`

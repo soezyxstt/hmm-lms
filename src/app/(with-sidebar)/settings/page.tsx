@@ -103,7 +103,7 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="rounded-md w-full min-h-16 h-full grid grid-cols-5 gap-1 **:h-full **:w-full **:rounded">
+            <div className="rounded-md w-full min-h-16 md:h-full grid grid-cols-5 gap-1 **:h-full **:w-full **:rounded">
               <div className="bg-background"></div>
               <div className="bg-foreground"></div>
               <div className="bg-primary"></div>

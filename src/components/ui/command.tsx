@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
-import { SearchIcon } from "lucide-react"
+import { ChevronDown, ChevronUp, SearchIcon } from "lucide-react"
 
 import { cn } from "~/lib/utils"
 import {
@@ -82,21 +82,71 @@ function CommandInput({
   )
 }
 
-function CommandList({
-  className,
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive.List>) {
+const CommandList = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.List>,
+  React.ComponentProps<typeof CommandPrimitive.List>
+>(({ className, children, ...props }, ref) => {
+  const listRef = React.useRef<HTMLDivElement | null>(null)
+  const [canScrollUp, setCanScrollUp] = React.useState(false)
+  const [canScrollDown, setCanScrollDown] = React.useState(false)
+
+  React.useEffect(() => {
+    const listElement = listRef.current
+    if (!listElement) return
+
+    const checkScrollability = () => {
+      const { scrollTop, scrollHeight, clientHeight } = listElement
+      setCanScrollUp(scrollTop > 0)
+      // Add a 1px buffer to prevent flickering
+      setCanScrollDown(scrollHeight > scrollTop + clientHeight + 1)
+    }
+
+    // Check on mount, scroll, and resize
+    checkScrollability()
+    listElement.addEventListener("scroll", checkScrollability, { passive: true })
+    const resizeObserver = new ResizeObserver(checkScrollability)
+    resizeObserver.observe(listElement)
+
+    return () => {
+      listElement.removeEventListener("scroll", checkScrollability)
+      resizeObserver.unobserve(listElement)
+    }
+  }, [children]) // Re-run effect when children change
+
   return (
-    <CommandPrimitive.List
-      data-slot="command-list"
-      className={cn(
-        "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto",
-        className
+    <div className="relative">
+      {canScrollUp && (
+        <div className="pointer-events-none absolute top-0 z-10 flex h-5 w-full items-center justify-center bg-gradient-to-b from-popover to-transparent">
+          <ChevronUp className="size-4 text-muted-foreground/80" />
+        </div>
       )}
-      {...props}
-    />
+      <CommandPrimitive.List
+        ref={(node) => {
+          listRef.current = node
+          if (typeof ref === "function") {
+            ref(node)
+          } else if (ref) {
+            ref.current = node
+          }
+        }}
+        data-slot="command-list"
+        className={cn(
+          "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </CommandPrimitive.List>
+      {canScrollDown && (
+        <div className="pointer-events-none absolute bottom-0 z-10 flex h-5 w-full items-center justify-center bg-gradient-to-t from-popover to-transparent">
+          <ChevronDown className="size-4 text-muted-foreground/80" />
+        </div>
+      )}
+    </div>
   )
-}
+})
+CommandList.displayName = CommandPrimitive.List.displayName
 
 function CommandEmpty({
   ...props

@@ -103,7 +103,7 @@ export default function SearchCMDK() {
         </kbd>
       </div>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+        <CommandInput placeholder={specificTabs[firstPath] ? `Search tabs or ${firstPath}...` : 'Search...'} />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {primaryData && (
