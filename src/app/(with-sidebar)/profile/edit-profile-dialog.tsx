@@ -91,6 +91,7 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                         {...field}
                         placeholder="Enter your full name"
                         className=""
+                        autoFocus
                       />
                     </FormControl>
                     <FormMessage />
@@ -102,14 +103,14 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
               <div className="space-y-4 opacity-60">
                 <div>
                   <Label>Email</Label>
-                  <Input value={user.email} disabled className="bg-gray-50" />
+                  <Input value={user.email} disabled className="bg-muted" />
                   <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                 </div>
 
                 {user.nim && (
                   <div>
                     <Label>NIM</Label>
-                    <Input value={user.nim} disabled className="bg-gray-50" />
+                    <Input value={user.nim} disabled className="bg-muted" />
                     <p className="text-xs text-gray-500 mt-1">NIM cannot be changed</p>
                   </div>
                 )}
@@ -117,7 +118,7 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                 {user.position && (
                   <div>
                     <Label>Position</Label>
-                    <Input value={user.position} disabled className="bg-gray-50" />
+                    <Input value={user.position} disabled className="bg-muted" />
                     <p className="text-xs text-gray-500 mt-1">Position cannot be changed</p>
                   </div>
                 )}

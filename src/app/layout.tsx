@@ -7,6 +7,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from '~/components/ui/sonner';
 import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: {
@@ -109,6 +110,23 @@ export default function RootLayout({
         ${caveat.variable} 
         ${shadowsIntoLight.variable} 
         bg-background text-primary-foreground`} suppressHydrationWarning>
+      <Script
+        async
+        strategy="afterInteractive"
+        src="https://www.googletagmanager.com/gtag/js?id=G-ETWTWVST67"
+      />
+      <Script
+        id="google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ETWTWVST67');
+          `,
+        }}
+      />
       <body>
         <SessionProvider>
           <TRPCReactProvider>

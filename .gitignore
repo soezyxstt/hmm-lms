@@ -46,3 +46,4 @@ yarn-error.log*
 .idea
 
 prisma/seed.ts
+prisma/seed.js

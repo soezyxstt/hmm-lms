@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import MainNavbar from '~/components/main/navbar';
 
 export default function Layout({
@@ -5,7 +6,9 @@ export default function Layout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <MainNavbar>
-      {children}
+      <Suspense fallback={<div className='w-full h-full grid place-items-center'>Fetching data...</div>}>
+        {children}
+      </Suspense>
     </MainNavbar>
   )
 }

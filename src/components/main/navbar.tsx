@@ -6,10 +6,11 @@ import ProfileMenu from './profile-menu';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
-import SearchCMDK from './cmdk-search';
+import SearchCMDK, { type TabsType } from './cmdk-search';
 import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
+import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
 
 const sidebarTabs: {
   group: string,
@@ -21,43 +22,80 @@ const sidebarTabs: {
     dev?: boolean
   }[]
 }[] = [
-  {
-    group: 'Academics',
-    items: [
-      { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
-      { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
-      { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
-      { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
-      { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
-    ],
-  },
-  {
-    group: 'Himpunan',
-    items: [
-      { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
-      { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
-    ],
-  },
-  {
-    group: 'Preferences',
-    items: [
-      { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
-    ],
-  },
-]
+    {
+      group: 'Academics',
+      items: [
+        { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
+        { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
+        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
+        { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
+        { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
+      ],
+    },
+    {
+      group: 'Himpunan',
+      items: [
+        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
+        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
+      ],
+    },
+    {
+      group: 'Preferences',
+      items: [
+        { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
+      ],
+    },
+  ]
 
 export default async function MainNavbar({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+  const session = await auth()
+
+  const courses = (await getCourses()).map(course => ({
+    id: course.id,
+    title: course.title,
+    totalLessons: 12,
+    totalVideos: 10
+  }));
+  const announcements = (await getAnnoucements()).map(announcement => ({
+    id: announcement.id,
+    title: announcement.title,
+    date: announcement.createdAt
+  }));
+  const events = (await getUserEvents(session?.user.id ?? "")).map(event => ({
+    id: event.id,
+    title: event.title,
+    date: event.createdAt
+  }));
+  const scholarships = (await getScholarships()).map(scholarship => ({
+    id: scholarship.id,
+    title: scholarship.title,
+    date: scholarship.createdAt
+  }));
+  const tryout = (await getTryouts()).map(tryout => ({
+    id: tryout.id,
+    title: tryout.title,
+    classCode: tryout.course.classCode
+  }))
+
+  const tabs =
+  {
+    courses,
+    announcements,
+    events,
+    scholarships,
+    "try-outs": tryout
+  }
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
       <main className='w-full overflow-y-auto h-screen'>
-        <SiteHeader />
-        <div className="p-4">
+        <SiteHeader data={tabs} />
+        <div className="h-[calc(100%-16*var(--spacing)))] p-4 md:p-6 group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100%-12*var(--spacing))]">
           {children}
         </div>
       </main>
@@ -127,7 +165,7 @@ async function AppSidebar() {
   )
 }
 
-function SiteHeader() {
+function SiteHeader({ data }: { data: TabsType }) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 py-2 sticky top-0 z-50 border-b bg-background">
       <div className="flex items-center w-full gap-1 px-4 lg:gap-2 lg:px-6">
@@ -138,7 +176,7 @@ function SiteHeader() {
         />
         <HeaderTitle />
         <div className="ml-auto flex gap-4 items-center">
-          <SearchCMDK />
+          <SearchCMDK data={data} />
           <ThemeSwitch />
         </div>
       </div>

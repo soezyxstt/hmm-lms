@@ -48,13 +48,13 @@ export default function SignIn() {
     startTransition(async () => {
       const result = await signIn('credentials', {
         ...data,
-        redirect: false, // Handle redirect manually
+        redirect: false,
       });
 
       if (result?.error) {
-        toast.error('Sign in failed. Please check your email or password.');
+        toast.error("Sign in failed.");
       } else {
-        toast.success('Sign in success');
+        toast.success('Sign in success.');
         router.push('/dashboard');
         form.reset();
       }

@@ -1,6 +1,11 @@
 import { authRouter } from "~/server/api/routers/auth";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { trackingRouter } from './routers/learning-tracker';
+import { eventRouter } from './routers/event';
+import { announcementRouter } from './routers/announcement';
+import { scholarshipRouter } from './routers/scholarship';
+import { courseRouter } from './routers/course';
+import { tryoutRouter } from './routers/tryout';
 
 /**
  * This is the primary router for your server.
@@ -10,6 +15,11 @@ import { trackingRouter } from './routers/learning-tracker';
 export const appRouter = createTRPCRouter({
   auth: authRouter,
   lessonTracker: trackingRouter,
+  event: eventRouter,
+  announcement: announcementRouter,
+  scholarship: scholarshipRouter,
+  course: courseRouter,
+  tryout: tryoutRouter,
 });
 
 // export type definition of API

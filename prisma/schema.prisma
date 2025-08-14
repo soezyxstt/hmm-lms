@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+// prisma/schema.prisma// prisma/schema.prisma
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
@@ -19,29 +19,28 @@ model User {
     name     String
     password String
 
-    nim      String @unique
+    nim      String  @unique
     faculty  String?
     program  String?
     position String?
     role     Role    @default(STUDENT)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    // NextAuth.js specific fields if you also use a database adapter for sessions/accounts
-    // For CredentialsProvider alone, these aren't strictly needed for auth,
-    // but good to have if you expand authentication methods.
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
     emailVerified   DateTime?
     image           String?
     accounts        Account[]
     sessions        Session[]
-    course          Course?           @relation(fields: [courseId], references: [id])
-    courseId        String?
-    learningSession LearningSession[]
-    userAttempt     UserAttempt[]
+    courses         Course[]
+    learningSessions LearningSession[]
+    userAttempts     UserAttempt[]
+
+    createdEvents        Event[]        @relation("CreatedBy")
+    events               Event[]        @relation("UserEvents")
+    createdAnnouncements Announcement[] @relation("CreatedAnnouncements")
+    createdScholarships  Scholarship[]  @relation("CreatedScholarships")
 }
 
-// These models are required by NextAuth.js if you use a database adapter
 model Account {
     id                String  @id @default(cuid())
     userId            String
@@ -78,20 +77,11 @@ model Course {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    lessons         Lesson[]
     members         User[]
-    LearningSession LearningSession[]
-}
-
-model Lesson {
-    id          String   @id @default(cuid())
-    title       String
-    description String?
-    courseId    String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    learningSession LearningSession[]
+    tryout          Tryout[]
+    announcements   Announcement[]
+    events          Event[]           @relation("CourseEvents")
 }
 
 model LearningSession {
@@ -99,16 +89,13 @@ model LearningSession {
     userId   String
     courseId String
 
-    // The date this session occurred on (for easy daily grouping)
     date DateTime @db.Date
 
-    // Duration of this specific session chunk in seconds
     duration Int
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // Relations
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
     course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -123,9 +110,11 @@ model Tryout {
     isActive    Boolean  @default(true)
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
+    courseId    String
 
     questions Question[]
     attempts  UserAttempt[]
+    course    Course        @relation(fields: [courseId], references: [id])
 
     @@map("tryouts")
 }
@@ -160,7 +149,7 @@ model QuestionOption {
 
 model UserAttempt {
     id          String    @id @default(cuid())
-    userId      String // Your user ID field
+    userId      String
     tryoutId    String
     score       Float     @default(0)
     maxScore    Float     @default(0)
@@ -190,9 +179,86 @@ model UserAnswer {
     @@map("user_answers")
 }
 
+model Event {
+    id          String     @id @default(cuid())
+    title       String
+    description String?
+    start       DateTime
+    end         DateTime
+    allDay      Boolean    @default(false)
+    location    String?
+    color       EventColor @default(SKY)
+    rsvp        String?
+
+    // Who created this event
+    createdById String
+    createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+    // For personal events, linked to a specific user's calendar
+    userId String?
+    user   User?   @relation("UserEvents", fields: [userId], references: [id])
+
+    // For course-wide events
+    courseId String?
+    course   Course? @relation("CourseEvents", fields: [courseId], references: [id])
+
+    // If both userId and courseId are null, it's a global event.
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("events")
+}
+
 enum QuestionType {
     MULTIPLE_CHOICE_SINGLE
     MULTIPLE_CHOICE_MULTIPLE
     SHORT_ANSWER
     LONG_ANSWER
+}
+
+enum EventColor {
+    SKY
+    AMBER
+    VIOLET
+    ROSE
+    EMERALD
+    ORANGE
+}
+
+model Announcement {
+    id        String            @id @default(cuid())
+    title     String
+    content   String            @db.Text
+    scope     AnnouncementScope @default(GLOBAL)
+    createdAt DateTime          @default(now())
+    updatedAt DateTime          @updatedAt
+
+    createdById String
+    createdBy   User   @relation("CreatedAnnouncements", fields: [createdById], references: [id])
+
+    courseId String?
+    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+    @@map("announcements")
+}
+
+enum AnnouncementScope {
+    GLOBAL
+    COURSE
+}
+
+model Scholarship {
+    id          String   @id @default(cuid())
+    title       String
+    description String   @db.Text
+    provider    String
+    deadline    DateTime
+    link        String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    createdById String
+    createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
+
+    @@map("scholarships")
 }
