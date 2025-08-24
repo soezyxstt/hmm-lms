@@ -25,20 +25,22 @@ model User {
     position String?
     role     Role    @default(STUDENT)
 
-    createdAt       DateTime          @default(now())
-    updatedAt       DateTime          @updatedAt
-    emailVerified   DateTime?
-    image           String?
-    accounts        Account[]
-    sessions        Session[]
-    courses         Course[]
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+    emailVerified    DateTime?
+    image            String?
+    accounts         Account[]
+    sessions         Session[]
+    courses          Course[]
     learningSessions LearningSession[]
     userAttempts     UserAttempt[]
 
-    createdEvents        Event[]        @relation("CreatedBy")
-    events               Event[]        @relation("UserEvents")
-    createdAnnouncements Announcement[] @relation("CreatedAnnouncements")
-    createdScholarships  Scholarship[]  @relation("CreatedScholarships")
+    createdEvents        Event[]          @relation("CreatedBy")
+    events               Event[]          @relation("UserEvents")
+    createdAnnouncements Announcement[]   @relation("CreatedAnnouncements")
+    createdScholarships  Scholarship[]    @relation("CreatedScholarships")
+    uploadedDocuments    Document[]       @relation("UploadedDocuments")
+    documentAccesses     DocumentAccess[] @relation("DocumentAccesses")
 }
 
 model Account {
@@ -73,7 +75,7 @@ model Course {
     id          String   @id @default(cuid())
     title       String
     description String?
-    classCode   String
+    classCode   String   @unique
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
@@ -82,6 +84,7 @@ model Course {
     tryout          Tryout[]
     announcements   Announcement[]
     events          Event[]           @relation("CourseEvents")
+    document        Document[]
 }
 
 model LearningSession {
@@ -136,11 +139,12 @@ model Question {
 }
 
 model QuestionOption {
-    id         String  @id @default(cuid())
-    questionId String
-    text       String
-    isCorrect  Boolean @default(false)
-    order      Int
+    id          String  @id @default(cuid())
+    questionId  String
+    text        String
+    isCorrect   Boolean @default(false)
+    order       Int
+    explanation String? @db.Text
 
     question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
@@ -190,6 +194,10 @@ model Event {
     color       EventColor @default(SKY)
     rsvp        String?
 
+    // Timeline fields (optional)
+    timeline    Json? // Store timeline data as JSON
+    hasTimeline Boolean @default(false)
+
     // Who created this event
     createdById String
     createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
@@ -202,7 +210,6 @@ model Event {
     courseId String?
     course   Course? @relation("CourseEvents", fields: [courseId], references: [id])
 
-    // If both userId and courseId are null, it's a global event.
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -261,4 +268,68 @@ model Scholarship {
     createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
 
     @@map("scholarships")
+}
+
+model Document {
+    id          String       @id @default(cuid())
+    title       String
+    description String?
+    filename    String // Original filename
+    key         String // R2 object key
+    mimeType    String
+    size        Int // Size in bytes
+    type        DocumentType
+    isActive    Boolean      @default(true)
+
+    // Course relation
+    courseId String
+    course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+    // Who uploaded this document
+    uploadedById String
+    uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+
+    // Access tracking
+    downloads Int @default(0)
+    views     Int @default(0)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Access logs
+    accessLogs DocumentAccess[]
+
+    @@map("documents")
+}
+
+model DocumentAccess {
+    id         String     @id @default(cuid())
+    documentId String
+    userId     String
+    action     AccessType // VIEW, DOWNLOAD
+    ipAddress  String?
+    userAgent  String?
+    accessedAt DateTime   @default(now())
+
+    document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+    user     User     @relation("DocumentAccesses", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("document_access")
+}
+
+enum DocumentType {
+    EBOOK // PDF books
+    PRESENTATION // PPTX, PPT
+    DOCUMENT // DOCX, DOC
+    SPREADSHEET // XLSX, XLS, CSV
+    IMAGE // JPG, PNG, JPEG
+    VIDEO // MP4
+    AUDIO // MP3, WAV
+    EXAM // Previous exam papers
+    MATERIAL // General course materials
+}
+
+enum AccessType {
+    VIEW
+    DOWNLOAD
 }

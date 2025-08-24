@@ -1,18 +1,34 @@
+// ~/components/layout/admin-navbar.tsx
 import { cookies } from "next/headers";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '../ui/sidebar';
 import { Separator } from '../ui/separator';
-import HeaderTitle from './header-title';
-import ProfileMenu from './profile-menu';
+import HeaderTitle from '../main/header-title';
+import ProfileMenu from '../main/profile-menu';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
-import SearchCMDK, { type TabsType } from './cmdk-search';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5 } from 'lucide-react';
+import SearchCMDK, { type TabsType } from '../main/cmdk-search';
+import {
+  Banknote,
+  Calendar,
+  // Footprints,
+  GraduationCap,
+  Home,
+  Megaphone,
+  Settings,
+  Tally5,
+  Users,
+  BarChart3,
+  FileText,
+  Shield,
+  Database,
+  BookOpen
+} from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
 
-const sidebarTabs: {
+const adminSidebarTabs: {
   group: string,
   items: {
     label: string,
@@ -23,85 +39,98 @@ const sidebarTabs: {
   }[]
 }[] = [
     {
-      group: 'Academics',
+      group: 'Overview',
       items: [
-        { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
-        { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
-        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
-        { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
-        { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
+        { label: 'Dashboard', href: '/admin', icon: Home, tooltip: 'Admin Dashboard' },
+        { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, tooltip: 'Analytics & Reports', dev: true },
       ],
     },
     {
-      group: 'Himpunan',
+      group: 'Content Management',
       items: [
-        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
-        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
+        { label: 'Courses', href: '/admin/courses', icon: GraduationCap, tooltip: 'Manage Courses' },
+        { label: 'Tryouts', href: '/admin/tryouts', icon: Tally5, tooltip: 'Manage Tryouts' },
+        { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, tooltip: 'Manage Announcements' },
+        { label: 'Events', href: '/admin/events', icon: Calendar, tooltip: 'Manage Events' },
+        { label: 'Scholarships', href: '/admin/scholarships', icon: Banknote, tooltip: 'Manage Scholarships' },
       ],
     },
     {
-      group: 'Preferences',
+      group: 'User Management',
       items: [
-        { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
+        { label: 'Users', href: '/admin/users', icon: Users, tooltip: 'Manage Users', dev: true },
+        { label: 'Roles & Permissions', href: '/admin/permissions', icon: Shield, tooltip: 'Manage Permissions', dev: true },
       ],
     },
     {
-      group: 'Admin',
+      group: 'System',
       items: [
-        { label: 'Admin Panel', href: '/admin', icon: Home, tooltip: 'Admin Panel' },
+        { label: 'Database', href: '/admin/database', icon: Database, tooltip: 'Database Management', dev: true },
+        { label: 'Logs', href: '/admin/logs', icon: FileText, tooltip: 'System Logs', dev: true },
+        { label: 'Settings', href: '/admin/settings', icon: Settings, tooltip: 'System Settings', dev: true },
+      ],
+    },
+    {
+      group: 'Quick Access',
+      items: [
+        { label: 'Back to App', href: '/dashboard', icon: BookOpen, tooltip: 'Back to Main App' },
       ],
     },
   ]
 
-export default async function MainNavbar({
+export default async function AdminNavbar({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const SIDEBAR_COOKIE_NAME = "sidebar_state"
+  const SIDEBAR_COOKIE_NAME = "admin_sidebar_state"
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === "true"
   const session = await auth()
 
+  // Admin-specific data fetching
   const courses = (await getCourses()).map(course => ({
     id: course.id,
     title: course.title,
     totalLessons: 12,
     totalVideos: 10
   }));
+
   const announcements = (await getAnnoucements()).map(announcement => ({
     id: announcement.id,
     title: announcement.title,
     date: announcement.createdAt
   }));
+
   const events = (await getUserEvents(session?.user.id ?? "")).map(event => ({
     id: event.id,
     title: event.title,
     date: event.createdAt
   }));
+
   const scholarships = (await getScholarships()).map(scholarship => ({
     id: scholarship.id,
     title: scholarship.title,
     date: scholarship.createdAt
   }));
-  const tryout = (await getTryouts()).map(tryout => ({
+
+  const tryouts = (await getTryouts()).map(tryout => ({
     id: tryout.id,
     title: tryout.title,
     classCode: tryout.course.classCode
   }))
 
-  const tabs =
-  {
+  const tabs = {
     courses,
     announcements,
     events,
     scholarships,
-    "try-outs": tryout
+    "try-outs": tryouts
   }
 
   return (
     <SidebarProvider defaultOpen={defaultOpen} cookieName={SIDEBAR_COOKIE_NAME}>
-      <AppSidebar />
+      <AdminSidebar />
       <main className='w-full overflow-y-auto h-screen'>
-        <SiteHeader data={tabs} />
+        <AdminSiteHeader data={tabs} />
         <div className="h-[calc(100%-16*var(--spacing)))] p-4 md:p-6 group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100%-12*var(--spacing))]">
           {children}
         </div>
@@ -110,16 +139,16 @@ export default async function MainNavbar({
   )
 }
 
-async function AppSidebar() {
+async function AdminSidebar() {
   const session = await auth();
   const user = session?.user ?? {
     name: "Guest",
-    role: 'STUDENT',
+    role: 'ADMIN',
     image: ''
   }
 
   return (
-    <Sidebar collapsible='icon'>
+    <Sidebar collapsible='icon' className="border-r-2 border-r-orange-200 dark:border-r-orange-900">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -144,31 +173,29 @@ async function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {sidebarTabs.map((group) => {
-          if (group.group === 'Admin' && user.role !== 'ADMIN') {
-            return null;
-          }
-          return (
-            <SidebarGroup key={'sidebar-group-' + group.group}>
-              <SidebarGroupLabel>
-                {group.group}
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={'sidebar-item-' + item.label}>
-                    <SidebarMenuButton tooltip={item.tooltip} asChild>
-                      <Link href={item.href} className='transition-all rounded-l-full pl-4 py-1.5 flex items-center'>
-                        <item.icon />
-                        <span>{item.label}</span>
-                        {item.dev && <Badge variant='secondary' className='ml-2'>dev</Badge>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          )
-        })}
+        {adminSidebarTabs.map((group) => (
+          <SidebarGroup key={'admin-sidebar-group-' + group.group}>
+            <SidebarGroupLabel>
+              {group.group}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {group.items.map((item) => (
+                <SidebarMenuItem key={'admin-sidebar-item-' + item.label}>
+                  <SidebarMenuButton tooltip={item.tooltip} asChild>
+                    <Link
+                      href={item.href}
+                      className='transition-all rounded-l-full pl-4 py-1.5 flex items-center hover:bg-orange-50 dark:hover:bg-orange-950/20'
+                    >
+                      <item.icon />
+                      <span>{item.label}</span>
+                      {item.dev && <Badge variant='secondary' className='ml-2'>dev</Badge>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <ProfileMenu user={user} />
@@ -177,9 +204,9 @@ async function AppSidebar() {
   )
 }
 
-function SiteHeader({ data }: { data: TabsType }) {
+function AdminSiteHeader({ data }: { data: TabsType }) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 py-2 sticky top-0 z-50 border-b bg-background">
+    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 py-2 sticky top-0 z-50 border-b bg-background border-b-orange-200 dark:border-b-orange-900">
       <div className="flex items-center w-full gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className='-ml-1 cursor-pointer' />
         <Separator
@@ -187,6 +214,9 @@ function SiteHeader({ data }: { data: TabsType }) {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <HeaderTitle />
+        <Badge variant="outline" className="ml-2 text-orange-600 border-orange-300">
+          Admin
+        </Badge>
         <div className="ml-auto flex gap-4 items-center">
           <SearchCMDK data={data} />
           <ThemeSwitch />

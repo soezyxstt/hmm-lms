@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { useEffect, useMemo, useState } from "react"
 import { RiCalendarCheckLine } from "@remixicon/react"
 import {
@@ -57,6 +58,7 @@ export function EventCalendar({
   className,
   initialView = "month",
 }: EventCalendarProps) {
+  const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<CalendarView>(initialView)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
@@ -339,21 +341,23 @@ export function EventCalendar({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              className="max-[479px]:aspect-square max-[479px]:p-0!"
-              size="sm"
-              onClick={() => {
-                setSelectedEvent(null) // Ensure we're creating a new event
-                setIsEventDialogOpen(true)
-              }}
-            >
-              <PlusIcon
-                className="opacity-60 sm:-ms-1"
-                size={16}
-                aria-hidden="true"
-              />
-              <span className="max-sm:sr-only">New event</span>
-            </Button>
+            {session?.user.role === "ADMIN" && (
+              <Button
+                className="max-[479px]:aspect-square max-[479px]:p-0!"
+                size="sm"
+                onClick={() => {
+                  setSelectedEvent(null) // Ensure we're creating a new event
+                  setIsEventDialogOpen(true)
+                }}
+              >
+                <PlusIcon
+                  className="opacity-60 sm:-ms-1"
+                  size={16}
+                  aria-hidden="true"
+                />
+                <span className="max-sm:sr-only">New event</span>
+              </Button>
+            )}
           </div>
         </div>
 

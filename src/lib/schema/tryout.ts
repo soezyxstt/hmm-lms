@@ -1,46 +1,52 @@
+// ~/lib/schema/tryout.ts
 import { z } from "zod";
 import { QuestionType } from "@prisma/client";
 
-const questionOptionSchema = z.object({
-  text: z.string().min(1, "Option text cannot be empty"),
+export const questionOptionSchema = z.object({
+  text: z.string().min(1, "Option text is required"),
   isCorrect: z.boolean().default(false),
-  order: z.number().int(),
+  explanation: z.string().optional(),
 });
 
-const questionSchema = z.object({
-  question: z.string().min(5, "Question text is too short"),
+export const questionSchema = z.object({
   type: z.nativeEnum(QuestionType),
-  points: z.number().int().min(1).default(1),
-  order: z.number().int(),
+  question: z.string().min(1, "Question is required"),
+  points: z.number().min(1).default(1),
   required: z.boolean().default(true),
   options: z.array(questionOptionSchema).optional(),
 });
 
 export const createTryoutSchema = z.object({
-  title: z.string().min(3, "Title is required"),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  duration: z.number().int().optional(), // In minutes
-  isActive: z.boolean().default(true),
+  duration: z.number().min(1).optional(),
   courseId: z.string().cuid(),
   questions: z
     .array(questionSchema)
-    .min(1, "A tryout must have at least one question"),
+    .min(1, "At least one question is required"),
+});
+
+export const updateTryoutSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  duration: z.number().min(1).optional(),
+  isActive: z.boolean().optional(),
+  questions: z
+    .array(questionSchema.extend({ id: z.string().optional() }))
+    .optional(),
 });
 
 export const tryoutIdSchema = z.object({
-  tryoutId: z.string().cuid(),
+  id: z.string().cuid(),
 });
 
-export const startAttemptSchema = z.object({
-  tryoutId: z.string().cuid(),
+export const courseIdSchema = z.object({
+  courseId: z.string().cuid(),
 });
 
-export const submitAnswerSchema = z.object({
-  attemptId: z.string().cuid(),
-  questionId: z.string().cuid(),
-  answer: z.string(), // Could be a single value or a JSON stringified array
-});
-
-export const finishAttemptSchema = z.object({
-  attemptId: z.string().cuid(),
-});
+// Export the inferred types
+export type CreateTryoutInput = z.infer<typeof createTryoutSchema>;
+export type UpdateTryoutInput = z.infer<typeof updateTryoutSchema>;
+export type QuestionInput = z.infer<typeof questionSchema>;
+export type QuestionOptionInput = z.infer<typeof questionOptionSchema>;
