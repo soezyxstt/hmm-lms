@@ -229,7 +229,7 @@ export const eventRouter = createTRPCRouter({
           color: input.color,
           rsvp: input.rsvp ?? null,
           hasTimeline: input.hasTimeline,
-          timeline: input.hasTimeline && input.timeline ? input.timeline : null,
+          timeline: input.hasTimeline && input.timeline ? input.timeline : undefined,
           createdById: ctx.session.user.id,
           userId: ctx.session.user.id,
           courseId: null,
@@ -245,7 +245,7 @@ export const eventRouter = createTRPCRouter({
           color: input.color,
           rsvp: input.rsvp ?? null,
           hasTimeline: input.hasTimeline,
-          timeline: input.hasTimeline && input.timeline ? input.timeline : null,
+          timeline: input.hasTimeline && input.timeline ? input.timeline : undefined,
           createdById: ctx.session.user.id,
           userId: null,
           courseId: input.courseId,
@@ -262,7 +262,7 @@ export const eventRouter = createTRPCRouter({
           color: input.color,
           rsvp: input.rsvp ?? null,
           hasTimeline: input.hasTimeline,
-          timeline: input.hasTimeline && input.timeline ? input.timeline : null,
+          timeline: input.hasTimeline && input.timeline ? input.timeline : undefined,
           createdById: ctx.session.user.id,
           userId: null,
           courseId: null,
@@ -292,7 +292,7 @@ export const eventRouter = createTRPCRouter({
         .merge(createEventSchema.partial()),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, scope, courseId, userId, ...updateData } = input;
+      const { id, scope, courseId, ...updateData } = input;
 
       const existingEvent = await ctx.db.event.findUnique({
         where: { id },
@@ -351,7 +351,7 @@ export const eventRouter = createTRPCRouter({
       // Handle timeline
       if (updateData.hasTimeline !== undefined) {
         if (!updateData.hasTimeline) {
-          eventUpdateData.timeline = null;
+          eventUpdateData.timeline = undefined;
         } else if (updateData.timeline) {
           eventUpdateData.timeline = updateData.timeline;
         }

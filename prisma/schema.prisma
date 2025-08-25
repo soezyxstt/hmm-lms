@@ -35,12 +35,25 @@ model User {
     learningSessions LearningSession[]
     userAttempts     UserAttempt[]
 
-    createdEvents        Event[]          @relation("CreatedBy")
-    events               Event[]          @relation("UserEvents")
-    createdAnnouncements Announcement[]   @relation("CreatedAnnouncements")
-    createdScholarships  Scholarship[]    @relation("CreatedScholarships")
-    uploadedDocuments    Document[]       @relation("UploadedDocuments")
-    documentAccesses     DocumentAccess[] @relation("DocumentAccesses")
+    createdEvents        Event[]            @relation("CreatedBy")
+    events               Event[]            @relation("UserEvents")
+    createdAnnouncements Announcement[]     @relation("CreatedAnnouncements")
+    createdScholarships  Scholarship[]      @relation("CreatedScholarships")
+    uploadedDocuments    Document[]         @relation("UploadedDocuments")
+    documentAccesses     DocumentAccess[]   @relation("DocumentAccesses")
+    pushSubscriptions    PushSubscription[]
+}
+
+model PushSubscription {
+    id        String   @id @default(cuid())
+    endpoint  String   @unique
+    p256dh    String
+    auth      String
+    createdAt DateTime @default(now())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
 }
 
 model Account {

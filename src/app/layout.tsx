@@ -8,6 +8,7 @@ import { Toaster } from '~/components/ui/sonner';
 import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
 import Script from 'next/script';
+import { RegisterSW } from '~/components/register-sw';
 
 export const metadata: Metadata = {
   title: {
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
   },
   description: "LMS for Himpunan Mahasiswa Mesin ITB",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  manifest: "/manifest.json",
 };
 
 const inter = Inter({
@@ -127,11 +129,14 @@ export default function RootLayout({
           `,
         }}
       />
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       <body>
         <SessionProvider>
           <TRPCReactProvider>
             <DisplaySettingProvider>
               <ThemeProvider attribute="class" defaultTheme="light">
+                <RegisterSW />
                 {children}
               </ThemeProvider>
             </DisplaySettingProvider>

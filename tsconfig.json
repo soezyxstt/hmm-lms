@@ -37,7 +37,7 @@
     "**/*.cjs",
     "**/*.js",
     ".next/types/**/*.ts",
-    "types/next-auth.d.ts",
+    "types/next-auth.d.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "public/sw.js", "public/workbox-*.js"]
 }
