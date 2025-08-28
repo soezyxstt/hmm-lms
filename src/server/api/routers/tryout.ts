@@ -11,7 +11,7 @@ import {
   tryoutIdSchema,
   courseIdSchema,
 } from "~/lib/schema/tryout";
-import z from 'zod';
+import z from "zod";
 
 export const tryoutRouter = createTRPCRouter({
   create: adminProcedure
@@ -55,6 +55,58 @@ export const tryoutRouter = createTRPCRouter({
         },
       });
     }),
+
+  getMyTryouts: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    // 1. Find all courses the user is enrolled in.
+    const coursesWithTryouts = await ctx.db.course.findMany({
+      where: {
+        members: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      // 2. For each course, include its tryouts with specific conditions.
+      include: {
+        tryout: {
+          // Only include tryouts that are active.
+          where: {
+            isActive: true,
+          },
+          // Sort the tryouts within each course.
+          orderBy: {
+            createdAt: "desc",
+          },
+          // Include the same details for each tryout as before.
+          include: {
+            attempts: {
+              where: {
+                userId: userId,
+              },
+              orderBy: {
+                startedAt: "desc",
+              },
+            },
+            _count: {
+              select: {
+                questions: true,
+                attempts: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        title: "asc", // Sort the courses alphabetically by title.
+      },
+    });
+
+    // 3. (Optional) Filter out courses that have no active tryouts.
+    // This provides a cleaner response for the frontend.
+    return coursesWithTryouts.filter((course) => course.tryout.length > 0);
+  }),
 
   update: adminProcedure
     .input(updateTryoutSchema)
@@ -164,6 +216,322 @@ export const tryoutRouter = createTRPCRouter({
       }
 
       return tryout;
+    }),
+
+  // New: Get tryout for student with limited info (no correct answers)
+  getForStudent: protectedProcedure
+    .input(tryoutIdSchema)
+    .query(async ({ ctx, input }) => {
+      const tryout = await ctx.db.tryout.findUnique({
+        where: { id: input.id, isActive: true },
+        include: {
+          questions: {
+            include: {
+              options: {
+                select: {
+                  id: true,
+                  text: true,
+                  order: true,
+                },
+                orderBy: { order: "asc" },
+              },
+            },
+            orderBy: { order: "asc" },
+          },
+          course: {
+            select: { title: true, classCode: true },
+          },
+        },
+      });
+
+      if (!tryout) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Tryout not found or not active",
+        });
+      }
+
+      // Check if user is enrolled in the course
+      const enrollment = await ctx.db.course.findFirst({
+        where: {
+          id: tryout.courseId,
+          members: {
+            some: { id: ctx.session.user.id },
+          },
+        },
+      });
+
+      if (!enrollment) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not enrolled in this course",
+        });
+      }
+
+      return tryout;
+    }),
+
+  // New: Start a tryout attempt
+  startAttempt: protectedProcedure
+    .input(tryoutIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const tryout = await ctx.db.tryout.findUnique({
+        where: { id: input.id, isActive: true },
+        include: {
+          questions: true,
+          course: {
+            select: {
+              members: {
+                where: { id: ctx.session.user.id },
+                select: { id: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!tryout) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Tryout not found or not active",
+        });
+      }
+
+      if (tryout.course.members.length === 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not enrolled in this course",
+        });
+      }
+
+      // Check for existing incomplete attempt
+      const existingAttempt = await ctx.db.userAttempt.findFirst({
+        where: {
+          userId: ctx.session.user.id,
+          tryoutId: input.id,
+          isCompleted: false,
+        },
+      });
+
+      if (existingAttempt) {
+        return existingAttempt;
+      }
+
+      // Calculate max score
+      const maxScore = tryout.questions.reduce((sum, q) => sum + q.points, 0);
+
+      return ctx.db.userAttempt.create({
+        data: {
+          userId: ctx.session.user.id,
+          tryoutId: input.id,
+          maxScore,
+        },
+      });
+    }),
+
+  // New: Submit answers for a question
+  submitAnswer: protectedProcedure
+    .input(
+      z.object({
+        attemptId: z.string().cuid(),
+        questionId: z.string().cuid(),
+        answer: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const attempt = await ctx.db.userAttempt.findUnique({
+        where: {
+          id: input.attemptId,
+          userId: ctx.session.user.id,
+          isCompleted: false,
+        },
+        include: {
+          tryout: {
+            include: {
+              questions: {
+                include: { options: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!attempt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attempt not found or already completed",
+        });
+      }
+
+      const question = attempt.tryout.questions.find(
+        (q) => q.id === input.questionId,
+      );
+      if (!question) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Question not found",
+        });
+      }
+
+      // Calculate points based on question type and answer
+      let points = 0;
+      if (question.type === "MULTIPLE_CHOICE_SINGLE") {
+        const selectedOption = question.options.find(
+          (opt) => opt.id === input.answer,
+        );
+        if (selectedOption?.isCorrect) {
+          points = question.points;
+        }
+      } else if (question.type === "MULTIPLE_CHOICE_MULTIPLE") {
+        const selectedOptions = JSON.parse(input.answer) as string[];
+        const correctOptions = question.options.filter((opt) => opt.isCorrect);
+        const selectedCorrectOptions = selectedOptions.filter((optId) =>
+          correctOptions.some((opt) => opt.id === optId),
+        );
+
+        if (
+          selectedCorrectOptions.length === correctOptions.length &&
+          selectedOptions.length === correctOptions.length
+        ) {
+          points = question.points;
+        }
+      }
+      // For text answers, manual grading would be needed
+
+      return ctx.db.userAnswer.upsert({
+        where: {
+          attemptId_questionId: {
+            attemptId: input.attemptId,
+            questionId: input.questionId,
+          },
+        },
+        update: {
+          answer: input.answer,
+          points,
+        },
+        create: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
+          answer: input.answer,
+          points,
+        },
+      });
+    }),
+
+  // New: Complete attempt
+  completeAttempt: protectedProcedure
+    .input(z.object({ attemptId: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const attempt = await ctx.db.userAttempt.findUnique({
+        where: {
+          id: input.attemptId,
+          userId: ctx.session.user.id,
+          isCompleted: false,
+        },
+        include: {
+          answers: true,
+        },
+      });
+
+      if (!attempt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attempt not found or already completed",
+        });
+      }
+
+      const totalScore = attempt.answers.reduce(
+        (sum, answer) => sum + answer.points,
+        0,
+      );
+
+      return ctx.db.userAttempt.update({
+        where: { id: input.attemptId },
+        data: {
+          score: totalScore,
+          isCompleted: true,
+          endedAt: new Date(),
+        },
+      });
+    }),
+
+  // New: Get user's attempts for a tryout
+  getUserAttempts: protectedProcedure
+    .input(tryoutIdSchema)
+    .query(async ({ ctx, input }) => {
+      return ctx.db.userAttempt.findMany({
+        where: {
+          userId: ctx.session.user.id,
+          tryoutId: input.id,
+        },
+        include: {
+          tryout: {
+            select: { title: true, duration: true },
+          },
+        },
+        orderBy: { startedAt: "desc" },
+      });
+    }),
+
+  // New: Get attempt details with results
+  getAttemptResults: protectedProcedure
+    .input(z.object({ attemptId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const attempt = await ctx.db.userAttempt.findUnique({
+        where: {
+          id: input.attemptId,
+          userId: ctx.session.user.id,
+        },
+        include: {
+          tryout: {
+            select: { title: true, duration: true },
+          },
+          answers: {
+            include: {
+              question: {
+                include: {
+                  options: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!attempt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attempt not found",
+        });
+      }
+
+      return attempt;
+    }),
+
+  // New: Get active attempt
+  getActiveAttempt: protectedProcedure
+    .input(tryoutIdSchema)
+    .query(async ({ ctx, input }) => {
+      return ctx.db.userAttempt.findFirst({
+        where: {
+          userId: ctx.session.user.id,
+          tryoutId: input.id,
+          isCompleted: false,
+        },
+        include: {
+          answers: true,
+          tryout: {
+            select: {
+              title: true,
+              duration: true,
+              questions: {
+                select: { id: true },
+                orderBy: { order: "asc" },
+              },
+            },
+          },
+        },
+      });
     }),
 
   getByCourse: protectedProcedure

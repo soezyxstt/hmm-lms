@@ -63,7 +63,7 @@ export type TabsType = {
     title: string,
     date: Date
   }[],
-  "try-outs": {
+  "tryouts": {
     id: string,
     title: string,
     classCode: string
@@ -159,7 +159,7 @@ function TryOutSearchItem({
   props,
   router,
   setOpen,
-}: { props: TabsType['try-outs'][number] } & SearchItemBaseProps) {
+}: { props: TabsType['tryouts'][number] } & SearchItemBaseProps) {
   const handleSelect = () => {
     router.push(`/try-outs/${props.id}`)
     setOpen(false)
@@ -181,7 +181,7 @@ const tabsItems: {
   announcements: AnnouncementSearchItem,
   events: EventSearchItem,
   scholarships: ScholarshipSearchItem,
-  "try-outs": TryOutSearchItem
+  "tryouts": TryOutSearchItem
 }
 
 export default function SearchCMDK({ data }: { data: TabsType }) {

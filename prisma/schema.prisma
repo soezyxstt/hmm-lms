@@ -11,6 +11,7 @@ generator client {
 enum Role {
     ADMIN
     STUDENT
+    SUPERADMIN
 }
 
 model User {
@@ -41,6 +42,7 @@ model User {
     createdScholarships  Scholarship[]      @relation("CreatedScholarships")
     uploadedDocuments    Document[]         @relation("UploadedDocuments")
     documentAccesses     DocumentAccess[]   @relation("DocumentAccesses")
+    createdJobVacancies  JobVacancy[]       @relation("CreatedJobVacancies")
     pushSubscriptions    PushSubscription[]
 }
 
@@ -345,4 +347,27 @@ enum DocumentType {
 enum AccessType {
     VIEW
     DOWNLOAD
+}
+
+model JobVacancy {
+    id          String   @id @default(cuid())
+    title       String
+    company     String // corp/org/recruiter
+    position    String
+    eligibility String // who can apply
+    streams     String[] // available streams/tracks
+    overview    String   @db.Text
+    timeline    String   @db.Text
+    applyLink   String
+    isActive    Boolean  @default(true)
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    createdById String
+    createdBy   User   @relation("CreatedJobVacancies", fields: [createdById], references: [id])
+
+    @@map("job_vacancies")
 }

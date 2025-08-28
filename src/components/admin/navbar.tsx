@@ -11,18 +11,16 @@ import SearchCMDK, { type TabsType } from '../main/cmdk-search';
 import {
   Banknote,
   Calendar,
-  // Footprints,
   GraduationCap,
   Home,
   Megaphone,
-  Settings,
   Tally5,
   Users,
   BarChart3,
   FileText,
-  Shield,
   Database,
-  BookOpen
+  BookOpen,
+  Briefcase
 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
@@ -53,13 +51,13 @@ const adminSidebarTabs: {
         { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, tooltip: 'Manage Announcements' },
         { label: 'Events', href: '/admin/events', icon: Calendar, tooltip: 'Manage Events' },
         { label: 'Scholarships', href: '/admin/scholarships', icon: Banknote, tooltip: 'Manage Scholarships' },
+        { label: 'M-Opportunity', href: '/admin/loker', icon: Briefcase, tooltip: 'Manage M-Opportunity' },
       ],
     },
     {
       group: 'User Management',
       items: [
         { label: 'Users', href: '/admin/users', icon: Users, tooltip: 'Manage Users', dev: true },
-        { label: 'Roles & Permissions', href: '/admin/permissions', icon: Shield, tooltip: 'Manage Permissions', dev: true },
       ],
     },
     {
@@ -67,7 +65,6 @@ const adminSidebarTabs: {
       items: [
         { label: 'Database', href: '/admin/database', icon: Database, tooltip: 'Database Management', dev: true },
         { label: 'Logs', href: '/admin/logs', icon: FileText, tooltip: 'System Logs', dev: true },
-        { label: 'Settings', href: '/admin/settings', icon: Settings, tooltip: 'System Settings', dev: true },
       ],
     },
     {
@@ -123,7 +120,7 @@ export default async function AdminNavbar({
     announcements,
     events,
     scholarships,
-    "try-outs": tryouts
+    "tryouts": tryouts
   }
 
   return (

@@ -1,17 +1,20 @@
+// @ts-nocheck
 // next.config.js
-import withPWA from "next-pwa";
+import withPWA from "@ducanh2912/next-pwa";
+import { runtimeCaching } from '@ducanh2912/next-pwa';
 
 const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  customWorkerDir: 'worker',
+  swSrc: 'worker/index.js',
   register: true,
   skipWaiting: true,
+  runtimeCaching,
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // your existing config
+
 };
 
 // @ts-ignore

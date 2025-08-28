@@ -1,15 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import CoursesItem from './course-item';
 import { api } from '~/trpc/server';
-import { auth } from '~/server/auth';
-import { Role } from '@prisma/client';
-import { Button } from '~/components/ui/button';
-import Link from 'next/link';
-
 import { type RouterOutputs } from '~/trpc/react';
 
 export default async function CoursesPage() {
-  const session = await auth();
   const myCourses = await api.course.getMyCourses();
   const allCourses = await api.course.getAllCourses();
 
@@ -32,11 +26,6 @@ export default async function CoursesPage() {
             All Courses
           </TabsTrigger>
         </TabsList>
-        {session?.user.role === Role.ADMIN && (
-          <Button asChild>
-            <Link href="/admin/courses/create">Create Course</Link>
-          </Button>
-        )}
       </div>
       <TabsContent value="my-courses">
         <div className='w-full h-full'>

@@ -8,7 +8,6 @@ import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Edit,
   Users,
   Clock,
@@ -40,12 +39,6 @@ export default async function TryoutDetailsPage({ params }: TryoutDetailsPagePro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/tryouts">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Tryouts
-            </Link>
-          </Button>
           <div>
             <h1 className="text-3xl font-bold">{tryout.title}</h1>
             <p className="text-muted-foreground">

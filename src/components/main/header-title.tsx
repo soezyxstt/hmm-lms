@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 
 export default function HeaderTitle() {
   const pathname = usePathname();
-  const firstPath = pathname.split('/')[1] ?? "";
+  const firstPath = (pathname.split('/')[1] === 'admin' ? pathname.split('/')[2] : pathname.split('/')[1]) ?? "";
   const titleMap: Record<string, string> = {
     dashboard: 'Dashboard',
     courses: 'Courses',
@@ -14,7 +14,13 @@ export default function HeaderTitle() {
     events: 'Events',
     scholarship: 'Scholarship',
     schedule: 'Schedule',
-    "try-outs": 'Try Outs',
+    "tryouts": 'TryOuts',
+    loker: 'M-Opportunity',
+    users: 'User Management',
+    admin: 'Admin Panel',
+    database: 'Database',
+    logs: 'System Logs',
+    analytics: 'Analytics & Reports'
   };
 
   return (

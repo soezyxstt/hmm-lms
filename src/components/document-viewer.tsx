@@ -1,13 +1,12 @@
-// ~/components/viewers/document-viewer.tsx - Updated version
 'use client';
 
 import { useState } from 'react';
 import { Button } from '~/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { FileText, Download, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatFileSize } from '~/lib/file-utils';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 interface Document {
   id: string;
@@ -27,8 +26,8 @@ interface DocumentViewerProps {
 }
 
 export default function DocumentViewer({ document }: DocumentViewerProps) {
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isViewerOpen, setIsViewerOpen] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const getDocumentUrl = (action: 'view' | 'download' = 'view') => {
@@ -80,8 +79,8 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
       <div className="flex items-center gap-3">
         {getIcon()}
         <div>
-          <h4 className="font-medium">{document.title}</h4>
-          <p className="text-sm text-muted-foreground">
+          <h4 className="font-medium text-sm">{document.title}</h4>
+          <p className="text-xs text-muted-foreground">
             {formatFileSize(document.size)} • Uploaded by {document.uploadedBy.name}
           </p>
         </div>
@@ -89,62 +88,67 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
 
       <div className="flex items-center gap-2">
         {canPreview && (
-          <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-1" />
-                View
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-6xl h-[90vh]">
-              <DialogHeader>
-                <DialogTitle>{document.title}</DialogTitle>
-              </DialogHeader>
-              <div className="flex-1 relative">
-                {isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                )}
-                {document.mimeType === 'application/pdf' ? (
-                  <iframe
-                    src={getDocumentUrl('view')}
-                    className="w-full h-full border-0 rounded"
-                    onLoad={() => setIsLoading(false)}
-                    onLoadStart={() => setIsLoading(true)}
-                    title={document.title}
-                  />
-                ) : document.mimeType.includes('image/') ? (
-                  <Image
-                    src={getDocumentUrl('view')}
-                    alt={document.title}
-                    className="w-full h-full object-contain rounded"
-                    onLoad={() => setIsLoading(false)}
-                    onLoadStart={() => setIsLoading(true)}
-                  />
-                ) : null}
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-1" />
-                      Download
-                    </>
-                  )}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          // <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+          //   <DialogTrigger asChild>
+          //     <Button variant="outline" size="sm">
+          //       <Eye className="h-4 w-4 mr-1" />
+          //       View
+          //     </Button>
+          //   </DialogTrigger>
+          //   <DialogContent className="max-w-6xl h-[90vh]">
+          //     <DialogHeader>
+          //       <DialogTitle>{document.title}</DialogTitle>
+          //     </DialogHeader>
+          //     <div className="flex-1 relative h-full">
+          //       {isLoading && (
+          //         <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+          //           <Loader2 className="h-8 w-8 animate-spin" />
+          //         </div>
+          //       )}
+          //       {document.mimeType === 'application/pdf' ? (
+          //         <iframe
+          //           src={getDocumentUrl('view')}
+          //           className="w-full h-full border-0 rounded"
+          //           onLoad={() => setIsLoading(false)}
+          //           onLoadStart={() => setIsLoading(true)}
+          //           title={document.title}
+          //         />
+          //       ) : document.mimeType.includes('image/') ? (
+          //         <Image
+          //           src={getDocumentUrl('view')}
+          //           alt={document.title}
+          //           className="w-full h-full object-contain rounded"
+          //           onLoad={() => setIsLoading(false)}
+          //           onLoadStart={() => setIsLoading(true)}
+          //         />
+          //       ) : null}
+          //     </div>
+          //     <div className="flex justify-end gap-2 pt-4">
+          //       <Button
+          //         variant="outline"
+          //         onClick={handleDownload}
+          //         disabled={isDownloading}
+          //       >
+          //         {isDownloading ? (
+          //           <>
+          //             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          //             Downloading...
+          //           </>
+          //         ) : (
+          //           <>
+          //             <Download className="h-4 w-4 mr-1" />
+          //             Download
+          //           </>
+          //         )}
+          //       </Button>
+          //     </div>
+          //   </DialogContent>
+          // </Dialog>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/documents/${document.id}`} target="_blank">
+              <Eye className="h-4 w-4" />
+            </a>
+          </Button>
         )}
 
         <Button

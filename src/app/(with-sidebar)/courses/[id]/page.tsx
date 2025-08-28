@@ -37,7 +37,7 @@ export default async function DetailedCoursePage({ params }: CoursePageProps) {
     // If user cannot access content (not enrolled and not admin), show preview
     if (!canAccessContent) {
       return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1">
@@ -296,7 +296,7 @@ export default async function DetailedCoursePage({ params }: CoursePageProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground max-sm:text-xs">
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
                           {tryout.duration ? `${tryout.duration} minutes` : 'No time limit'}
@@ -305,13 +305,13 @@ export default async function DetailedCoursePage({ params }: CoursePageProps) {
                           <ClipboardList className="h-4 w-4" />
                           {tryout._count.questions} questions
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 max-sm:hidden">
                           <Users className="h-4 w-4" />
                           {tryout._count.attempts} attempts
                         </span>
                       </div>
                       <Button asChild disabled={!tryout.isActive}>
-                        <Link href={`/tryouts/${tryout.id}`}>
+                        <Link href={`/tryouts/${tryout.id}`} className='text-sm'>
                           Start Tryout
                         </Link>
                       </Button>

@@ -1,36 +1,16 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import EventItem from './event-item';
 import { api } from '~/trpc/server';
-import { auth } from '~/server/auth';
-import { Role } from '@prisma/client';
-import { Button } from '~/components/ui/button';
-import Link from 'next/link';
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { type RouterOutputs } from '~/trpc/react';
 
 export default async function EventsPage() {
-  const session = await auth();
   const myEvents = await api.event.getMyEvents();
   const allEvents = await api.event.getAllEvents();
   const courseEvents = await api.event.getCourseEvents();
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Events</h1>
-        </div>
-        {session?.user.role === Role.ADMIN && (
-          <Button asChild>
-            <Link href="/admin/events/create">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
-            </Link>
-          </Button>
-        )}
-      </div>
-
+    <div className="max-w-5xl mx-auto">
       <Tabs defaultValue="my-events" className="w-full">
         <TabsList className="text-foreground h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 mb-6">
           <TabsTrigger

@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { Role } from "@prisma/client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { R2_BUCKET, r2Client } from "~/lib/r2-client";
+import { sendPushNotification } from '~/lib/send-push';
 
 export const createCourseSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -413,6 +414,13 @@ export const courseRouter = createTRPCRouter({
           },
         },
       });
+
+      // Send a welcome notification to the user who just enrolled
+      sendPushNotification(ctx.session.user.id, {
+        title: "Enrollment Successful!",
+        body: `You have successfully joined the course: ${course.title}`,
+        url: `/courses/${course.id}`,
+      }).catch(console.error);
 
       return {
         success: true,

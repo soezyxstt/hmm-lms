@@ -1,60 +1,79 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { Button } from "~/components/ui/button"
-import { Badge } from "~/components/ui/badge"
-import { Separator } from "~/components/ui/separator"
-import { ProfileAvatar } from './profile-avatar'
-import { EditProfileDialog } from './edit-profile-dialog'
-import { User, Mail, GraduationCap, Calendar, Edit, Shield, BookOpen, Tally5 } from "lucide-react"
-import type { User as userType } from '~/lib/types/user'
-import type { Role } from '@prisma/client'
-
-// Mock user data - replace with actual data fetching
-const mockUser = {
-  id: "1",
-  name: "Adi Haditya Nursyam",
-  email: "13122080@mahasiswa.itb.ac.id",
-  nim: "13122080",
-  faculty: "Faculty of Mechanical and Aerospace Engineering",
-  program: "Mechanical Engineering",
-  position: "Head of Sub-Bureau of Information and Technology Development",
-  role: "STUDENT" as Role,
-  image: "/placeholder.svg?height=200&width=200",
-  courseCount: 5,
-  createdAt: new Date("2023-01-15"),
-  updatedAt: new Date("2024-01-15"),
-}
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
+import { Separator } from "~/components/ui/separator";
+import { ProfileAvatar } from './profile-avatar';
+import { EditProfileDialog } from './edit-profile-dialog';
+import { User, Mail, GraduationCap, Calendar, Edit, Shield, BookOpen, Tally5 } from "lucide-react";
+import { api } from '~/trpc/react';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(mockUser)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const handleProfileUpdate = (updatedData: Partial<userType>) => {
-    setUser((prev) => ({ ...prev, ...updatedData }))
+  const { data: userStats, isLoading: statsLoading } = api.lessonTracker.getUserStats.useQuery();
+  const { data: user, isLoading: userLoading, refetch: refetchUser } = api.user.getCurrentUser.useQuery();
+
+  if (userLoading) {
+    return (
+      <div className="container max-w-5xl mx-auto p-4">
+        <div className="space-y-4">
+          <div className="h-48 bg-muted animate-pulse rounded-lg" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array<number>(3)].map((_, i) => (
+              <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {[...Array<number>(2)].map((_, i) => (
+              <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  if (!user) {
+    return (
+      <div className="container max-w-5xl mx-auto p-4">
+        <p>User not found</p>
+      </div>
+    );
+  }
+
+  const handleProfileUpdate = async () => {
+    try {
+      await refetchUser();
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to refresh profile data");
+    }
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case "ADMIN":
-        return "destructive"
+        return "destructive" as const;
       case "TEACHER":
-        return "default"
+        return "default" as const;
       case "STUDENT":
-        return "secondary"
+        return "secondary" as const;
       default:
-        return "outline"
+        return "outline" as const;
     }
-  }
+  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    }).format(date)
-  }
+    }).format(date);
+  };
 
   return (
     <div className="container max-w-5xl mx-auto space-y-4">
@@ -65,7 +84,7 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="relative">
                 <ProfileAvatar
-                  src={user.image}
+                  src={user.image ?? ""}
                   name={user.name}
                   size="xl"
                   className="duration-300"
@@ -112,43 +131,61 @@ export default function ProfilePage() {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <BookOpen className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{user.courseCount || 0}</p>
-                <p className="text-sm text-gray-500">Active Courses</p>
+                <p className="text-2xl font-bold">
+                  {statsLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    userStats?.activeCourses ?? 0
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">Active Courses</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <GraduationCap className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">4.2</p>
-                <p className="text-sm text-gray-500">Weekly Learning Hours</p>
+                <p className="text-2xl font-bold">
+                  {statsLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    userStats?.weeklyMinutes ?? 0
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">Weekly Learning Minutes</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Tally5 className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                <Tally5 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-sm text-gray-500">Submit Try Out</p>
+                <p className="text-2xl font-bold">
+                  {statsLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    userStats?.totalSessions ?? 0
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">Learning Sessions</p>
               </div>
             </div>
           </CardContent>
@@ -157,7 +194,7 @@ export default function ProfilePage() {
 
       {/* Details Section */}
       <div className="grid md:grid-cols-2 gap-4">
-        <Card className="">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5" />
@@ -166,23 +203,23 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">Faculty</label>
-              <p className="text-sm">{user.faculty || "Not specified"}</p>
+              <label className="text-sm font-medium text-muted-foreground">Faculty</label>
+              <p className="text-sm">{user.faculty ?? "Not specified"}</p>
             </div>
             <Separator />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">Program</label>
-              <p className="text-sm">{user.program || "Not specified"}</p>
+              <label className="text-sm font-medium text-muted-foreground">Program</label>
+              <p className="text-sm">{user.program ?? "Not specified"}</p>
             </div>
             <Separator />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">Position</label>
-              <p className="text-sm">{user.position || "Not specified"}</p>
+              <label className="text-sm font-medium text-muted-foreground">Position</label>
+              <p className="text-sm">{user.position ?? "Not specified"}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -191,18 +228,13 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">Member Since</label>
+              <label className="text-sm font-medium text-muted-foreground">Member Since</label>
               <p className="text-sm">{formatDate(user.createdAt)}</p>
             </div>
             <Separator />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">Last Updated</label>
+              <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
               <p className="text-sm">{formatDate(user.updatedAt)}</p>
-            </div>
-            <Separator />
-            <div className="space-y-2 space-x-2">
-              <label className="text-sm font-medium text-gray-500">Bio</label>
-              <p className="text-sm">Follow my lead</p>
             </div>
           </CardContent>
         </Card>
@@ -215,5 +247,5 @@ export default function ProfilePage() {
         onUpdate={handleProfileUpdate}
       />
     </div>
-  )
+  );
 }

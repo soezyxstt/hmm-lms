@@ -39,7 +39,6 @@ function UsersTable({
   page,
   search,
   roleFilter,
-  facultyFilter,
   onUserSelect,
   onUserEdit,
   onUserDelete,
@@ -48,7 +47,6 @@ function UsersTable({
   page: number;
   search: string;
   roleFilter?: Role;
-  facultyFilter: string;
   onUserSelect: (id: string) => void;
   onUserEdit: (id: string) => void;
   onUserDelete: (id: string) => void;
@@ -59,7 +57,6 @@ function UsersTable({
     limit: 10,
     search: search || undefined,
     role: roleFilter,
-    faculty: facultyFilter || undefined,
   });
 
   const getRoleBadgeVariant = (role: Role) => {
@@ -90,7 +87,6 @@ function UsersTable({
           <TableRow>
             <TableHead>User</TableHead>
             <TableHead>NIM</TableHead>
-            <TableHead>Faculty</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Courses</TableHead>
             <TableHead>Attempts</TableHead>
@@ -118,7 +114,6 @@ function UsersTable({
                 </div>
               </TableCell>
               <TableCell className="font-mono text-sm">{user.nim}</TableCell>
-              <TableCell>{user.faculty ?? "-"}</TableCell>
               <TableCell>
                 <Badge variant={getRoleBadgeVariant(user.role)}>
                   {user.role}
@@ -166,7 +161,6 @@ export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | undefined>();
-  const [facultyFilter, setFacultyFilter] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
@@ -176,10 +170,7 @@ export default function UserManagement() {
     limit: 10,
     search: search || undefined,
     role: roleFilter,
-    faculty: facultyFilter || undefined,
   });
-
-  const { data: faculties } = api.user.getFaculties.useQuery();
 
   const deleteUser = api.user.delete.useMutation({
     onSuccess: () => {
@@ -199,11 +190,6 @@ export default function UserManagement() {
 
   const handleRoleFilter = (value: string) => {
     setRoleFilter(value === "all" ? undefined : (value as Role));
-    setPage(1);
-  };
-
-  const handleFacultyFilter = (value: string) => {
-    setFacultyFilter(value === "all" ? "" : value);
     setPage(1);
   };
 
@@ -230,19 +216,6 @@ export default function UserManagement() {
             <SelectItem value={Role.STUDENT}>Student</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={facultyFilter ?? "all"} onValueChange={handleFacultyFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Faculty" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Faculties</SelectItem>
-            {faculties?.map((faculty) => (
-              <SelectItem key={faculty} value={faculty ?? ""}>
-                {faculty}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Users Table */}
@@ -257,7 +230,6 @@ export default function UserManagement() {
           page={page}
           search={search}
           roleFilter={roleFilter}
-          facultyFilter={facultyFilter}
           onUserSelect={setSelectedUser}
           onUserEdit={setEditingUser}
           onUserDelete={setDeleteDialog}

@@ -11,13 +11,6 @@ import {
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -162,22 +155,6 @@ export default function EditUserDialog({
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               placeholder="Optional"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={Role.ADMIN}>Admin</SelectItem>
-                <SelectItem value={Role.STUDENT}>Student</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>

@@ -1,5 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, adminProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  adminProcedure,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import {
   userIdSchema,
   updateUserRoleSchema,
@@ -7,6 +11,7 @@ import {
   deleteUserSchema,
   getUsersSchema,
 } from "~/lib/schema/user";
+import { editProfileSchema } from '~/lib/schema/profile';
 
 export const userRouter = createTRPCRouter({
   getAll: adminProcedure.input(getUsersSchema).query(async ({ ctx, input }) => {
@@ -165,6 +170,64 @@ export const userRouter = createTRPCRouter({
       return ctx.db.user.delete({
         where: { id: input.id },
       });
+    }),
+
+  getCurrentUser: protectedProcedure.query(async ({ ctx }) => {
+    const { session, db } = ctx;
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        nim: true,
+        faculty: true,
+        program: true,
+        position: true,
+        role: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return user;
+  }),
+
+  updateProfile: protectedProcedure
+    .input(editProfileSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { session, db } = ctx;
+
+      const updatedUser = await db.user.update({
+        where: { id: session.user.id },
+        data: {
+          name: input.name,
+          faculty: input.faculty ?? null,
+          program: input.program ?? null,
+          image: input.image ?? null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          nim: true,
+          faculty: true,
+          program: true,
+          position: true,
+          role: true,
+          image: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return updatedUser;
     }),
 
   getFaculties: adminProcedure.query(async ({ ctx }) => {

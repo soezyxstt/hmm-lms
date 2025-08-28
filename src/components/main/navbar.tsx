@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import SearchCMDK, { type TabsType } from './cmdk-search';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5 } from 'lucide-react';
+import { Banknote, Briefcase, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
@@ -27,8 +27,8 @@ const sidebarTabs: {
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
         { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
-        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
-        { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
+        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
+        { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Tryouts' },
         { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
       ],
     },
@@ -37,6 +37,7 @@ const sidebarTabs: {
       items: [
         { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
         { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
+        {label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity"}
       ],
     },
     {
@@ -94,7 +95,7 @@ export default async function MainNavbar({
     announcements,
     events,
     scholarships,
-    "try-outs": tryout
+    "tryouts": tryout
   }
 
   return (
@@ -145,7 +146,7 @@ async function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {sidebarTabs.map((group) => {
-          if (group.group === 'Admin' && user.role !== 'ADMIN') {
+          if (group.group === 'Admin' && (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
             return null;
           }
           return (

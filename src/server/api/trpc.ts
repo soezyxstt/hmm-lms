@@ -132,10 +132,31 @@ export const protectedProcedure = t.procedure
     });
   });
 
+/**
+ * Admin procedure - Can do everything except changing user roles
+ * Has read/write access to all data but cannot modify user roles
+ */
 export const adminProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user || ctx.session.user.role !== "ADMIN") {
+    if (!ctx.session?.user || !["ADMIN", "SUPERADMIN"].includes(ctx.session.user.role)) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    return next({
+      ctx: {
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  });
+
+/**
+ * Super Admin procedure - Full database control including user role management
+ * Has complete access to all operations including sensitive user management
+ */
+export const superAdminProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user || ctx.session.user.role !== "SUPERADMIN") {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({
