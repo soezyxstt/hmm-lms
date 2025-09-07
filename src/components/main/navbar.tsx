@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '../ui/sidebar';
 import { Separator } from '../ui/separator';
-import HeaderTitle from './header-title';
 import ProfileMenu from './profile-menu';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,6 +10,7 @@ import { Banknote, Briefcase, Calendar, Footprints, GraduationCap, Home, Megapho
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
+import StudentBreadcrumb from '../student-breadcrumb';
 
 const sidebarTabs: {
   group: string,
@@ -37,7 +37,7 @@ const sidebarTabs: {
       items: [
         { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
         { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
-        {label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity"}
+        { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity" }
       ],
     },
     {
@@ -88,6 +88,7 @@ export default async function MainNavbar({
     title: tryout.title,
     classCode: tryout.course.classCode
   }))
+
 
   const tabs =
   {
@@ -187,7 +188,7 @@ function SiteHeader({ data }: { data: TabsType }) {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <HeaderTitle />
+        <StudentBreadcrumb items={data} />
         <div className="ml-auto flex gap-4 items-center">
           <SearchCMDK data={data} />
           <ThemeSwitch />

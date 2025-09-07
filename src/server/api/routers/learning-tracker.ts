@@ -169,8 +169,8 @@ export const trackingRouter = createTRPCRouter({
 
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    const [totalSessions, weeklyMinutes, activeCourses] = await Promise.all([
-      db.learningSession.count({
+    const [totalTryouts, weeklyMinutes, activeCourses] = await Promise.all([
+      db.userAttempt.count({
         where: { userId },
       }),
       db.learningSession.aggregate({
@@ -190,7 +190,7 @@ export const trackingRouter = createTRPCRouter({
     ]);
 
     return {
-      totalSessions,
+      totalTryouts,
       weeklyMinutes: Math.round((weeklyMinutes._sum.duration ?? 0) / 60),
       activeCourses: activeCourses.length,
     };

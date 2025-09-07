@@ -38,7 +38,7 @@ export default function EventItem({ event, href }: EventItemProps) {
 
   return (
     <Link href={href}>
-      <Card className="hover:shadow-md transition-all duration-200 cursor-pointer h-full group hover:scale-[1.01]">
+      <Card className="hover:shadow-md transition-all duration-200 cursor-pointer h-full group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-2 flex-1">

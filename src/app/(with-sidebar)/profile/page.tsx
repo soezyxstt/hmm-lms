@@ -49,7 +49,7 @@ export default function ProfilePage() {
     try {
       await refetchUser();
       toast.success("Profile updated successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to refresh profile data");
     }
   };
@@ -182,10 +182,10 @@ export default function ProfilePage() {
                   {statsLoading ? (
                     <div className="h-8 w-8 bg-muted animate-pulse rounded" />
                   ) : (
-                    userStats?.totalSessions ?? 0
+                    userStats?.totalTryouts ?? 0
                   )}
                 </p>
-                <p className="text-sm text-muted-foreground">Learning Sessions</p>
+                <p className="text-sm text-muted-foreground">Tryout Attempts</p>
               </div>
             </div>
           </CardContent>
