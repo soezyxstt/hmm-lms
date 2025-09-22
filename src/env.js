@@ -15,11 +15,11 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    CLOUDFLARE_R2_ACCOUNT_ID: z.string(),
-    CLOUDFLARE_R2_ACCESS_KEY_ID: z.string(),
-    CLOUDFLARE_R2_SECRET_ACCESS_KEY: z.string(),
-    CLOUDFLARE_R2_BUCKET_NAME: z.string(),
-    CLOUDFLARE_R2_PUBLIC_URL: z.string().url(),
+    DO_SPACES_ENDPOINT: z.string().url(),
+    DO_SPACES_REGION: z.string(),
+    DO_SPACES_KEY: z.string(),
+    DO_SPACES_SECRET: z.string(),
+    DO_SPACES_BUCKET: z.string(),
     VAPID_PRIVATE_KEY: z.string(),
   },
 
@@ -29,7 +29,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string()
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string(),
+    NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT: z.string().url(),
   },
 
   /**
@@ -40,12 +41,12 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
-    CLOUDFLARE_R2_ACCOUNT_ID: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
-    CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
-    CLOUDFLARE_R2_SECRET_ACCESS_KEY:
-      process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-    CLOUDFLARE_R2_BUCKET_NAME: process.env.CLOUDFLARE_R2_BUCKET_NAME,
-    CLOUDFLARE_R2_PUBLIC_URL: process.env.CLOUDFLARE_R2_PUBLIC_URL,
+    DO_SPACES_ENDPOINT: process.env.DO_SPACES_ENDPOINT,
+    DO_SPACES_REGION: process.env.DO_SPACES_REGION,
+    DO_SPACES_KEY: process.env.DO_SPACES_KEY,
+    DO_SPACES_SECRET: process.env.DO_SPACES_SECRET,
+    DO_SPACES_BUCKET: process.env.DO_SPACES_BUCKET,
+    NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT: process.env.NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT,
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
   },

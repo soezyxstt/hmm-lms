@@ -5,6 +5,7 @@ import {
   adminProcedure,
 } from "~/server/api/trpc";
 import type { Prisma } from "@prisma/client";
+import { TRPCError } from '@trpc/server';
 
 const HEARTBEAT_INTERVAL_SECONDS = 15;
 const SESSION_TIMEOUT_SECONDS = HEARTBEAT_INTERVAL_SECONDS * 2; // 90 seconds
@@ -17,8 +18,31 @@ export const trackingRouter = createTRPCRouter({
       const { session, db } = ctx;
       const { courseId } = input;
       const userId = session.user.id;
-
       const now = new Date();
+
+      // --- FIX: ADDED VALIDATION GUARD CLAUSE ---
+      // Verify that the course exists and the user is enrolled before doing anything else.
+      const courseEnrollment = await db.course.findFirst({
+        where: {
+          id: courseId,
+          members: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      });
+
+      if (!courseEnrollment) {
+        // If no enrollment is found, the courseId is invalid for this user.
+        // Stop execution and inform the client.
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "Course not found or you are not enrolled. Tracking will be stopped.",
+        });
+      }
+      // --- END FIX ---
 
       // Get the start of the current day in UTC
       const today = new Date();
@@ -39,7 +63,6 @@ export const trackingRouter = createTRPCRouter({
       if (!recentSession) {
         // Create first session of the day
         console.log("Creating new learning session");
-
         return db.learningSession.create({
           data: {
             userId,
@@ -56,16 +79,13 @@ export const trackingRouter = createTRPCRouter({
 
       if (timeSinceLastUpdate < SESSION_TIMEOUT_SECONDS) {
         // This is a continuation of the existing session
-        // Add the actual time that passed, but cap it at reasonable limits
         const timeToAdd = Math.min(
           Math.max(timeSinceLastUpdate, 1), // At least 1 second
-          HEARTBEAT_INTERVAL_SECONDS + 10, // Max heartbeat interval + 10 seconds buffer
+          HEARTBEAT_INTERVAL_SECONDS + 10,
         );
-
         console.log(
           `Continuing session: adding ${Math.round(timeToAdd)} seconds`,
         );
-
         return db.learningSession.update({
           where: {
             id: recentSession.id,
@@ -81,7 +101,6 @@ export const trackingRouter = createTRPCRouter({
         console.log(
           `Creating new session - gap too large: ${timeSinceLastUpdate}s`,
         );
-
         return db.learningSession.create({
           data: {
             userId,
@@ -195,7 +214,7 @@ export const trackingRouter = createTRPCRouter({
       activeCourses: activeCourses.length,
     };
   }),
-  
+
   getAllUsersAnalytics: adminProcedure
     .input(
       z.object({

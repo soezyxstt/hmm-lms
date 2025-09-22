@@ -8,7 +8,6 @@
     "check": "next lint && tsc --noEmit",
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
-    "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -18,14 +17,20 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prisma:combine": "node scripts/combine-schemas.js",
+    "prisma:generate": "bun run prisma:combine && prisma generate",
+    "prisma:migrate": "bun run prisma:combine && prisma migrate dev",
+    "prisma:studio": "bun run prisma:combine && prisma studio",
+    "db:push": "bun run prisma:combine && prisma db push"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
-    "@aws-sdk/client-s3": "^3.873.0",
+    "@aws-sdk/client-s3": "^3.890.0",
+    "@aws-sdk/lib-storage": "^3.890.0",
     "@aws-sdk/s3-request-presigner": "^3.873.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
@@ -59,6 +64,7 @@
     "little-date": "^1.0.0",
     "lucide-react": "^0.525.0",
     "mime-types": "^3.0.1",
+    "motion": "^12.23.16",
     "next": "^15.2.3",
     "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.4.6",

@@ -1,0 +1,54 @@
+// Core LMS course models
+model Course {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  classCode   String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  syllabus    String?   @db.Text
+  isActive    Boolean   @default(true)
+
+  members          User[]
+  learningSession  LearningSession[]
+  tryout           Tryout[]
+  announcements    Announcement[]
+  events           Event[]             @relation("CourseEvents")
+  testimonial      CourseTestimonial[]
+
+  // NOTE: The direct `document` relation is now gone.
+  // Resources are attached polymorphically.
+}
+
+model CourseTestimonial {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  rating    Int // 1 to 5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+}
+
+model LearningSession {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  date DateTime @db.Date
+
+  duration Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, courseId, date])
+}

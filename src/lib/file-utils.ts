@@ -1,38 +1,39 @@
 // ~/lib/file-utils.ts
-import { DocumentType } from "@prisma/client";
+import { type AttachableType, ResourceCategory } from "@prisma/client";
 
+// Mapped to the new ResourceCategory enum
 export const ALLOWED_MIME_TYPES = {
   // Documents
-  "application/pdf": { type: DocumentType.EBOOK, ext: "pdf" },
+  "application/pdf": { type: ResourceCategory.E_BOOK, ext: "pdf" },
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
-    type: DocumentType.PRESENTATION,
+    type: ResourceCategory.PRESENTATION,
     ext: "pptx",
   },
   "application/vnd.ms-powerpoint": {
-    type: DocumentType.PRESENTATION,
+    type: ResourceCategory.PRESENTATION,
     ext: "ppt",
   },
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-    type: DocumentType.DOCUMENT,
+    type: ResourceCategory.NOTES, // Was DOCUMENT
     ext: "docx",
   },
-  "application/msword": { type: DocumentType.DOCUMENT, ext: "doc" },
+  "application/msword": { type: ResourceCategory.NOTES, ext: "doc" }, // Was DOCUMENT
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
-    type: DocumentType.SPREADSHEET,
+    type: ResourceCategory.OTHER, // Was SPREADSHEET
     ext: "xlsx",
   },
-  "application/vnd.ms-excel": { type: DocumentType.SPREADSHEET, ext: "xls" },
-  "text/csv": { type: DocumentType.SPREADSHEET, ext: "csv" },
+  "application/vnd.ms-excel": { type: ResourceCategory.OTHER, ext: "xls" }, // Was SPREADSHEET
+  "text/csv": { type: ResourceCategory.OTHER, ext: "csv" }, // Was SPREADSHEET
 
   // Images
-  "image/jpeg": { type: DocumentType.IMAGE, ext: "jpg" },
-  "image/jpg": { type: DocumentType.IMAGE, ext: "jpg" },
-  "image/png": { type: DocumentType.IMAGE, ext: "png" },
+  "image/jpeg": { type: ResourceCategory.OTHER, ext: "jpg" }, // Was IMAGE
+  "image/jpg": { type: ResourceCategory.OTHER, ext: "jpg" }, // Was IMAGE
+  "image/png": { type: ResourceCategory.OTHER, ext: "png" }, // Was IMAGE
 
   // Media
-  "video/mp4": { type: DocumentType.VIDEO, ext: "mp4" },
-  "audio/mpeg": { type: DocumentType.AUDIO, ext: "mp3" },
-  "audio/wav": { type: DocumentType.AUDIO, ext: "wav" },
+  "video/mp4": { type: ResourceCategory.VIDEO, ext: "mp4" },
+  "audio/mpeg": { type: ResourceCategory.OTHER, ext: "mp3" }, // Was AUDIO
+  "audio/wav": { type: ResourceCategory.OTHER, ext: "wav" }, // Was AUDIO
 } as const;
 
 export const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB
@@ -57,14 +58,24 @@ export function validateFile(file: File) {
   };
 }
 
+/**
+ * Generates a unique file key for storing in a service like S3.
+ * Revised to be polymorphic, matching the new Resource schema.
+ * @example
+ * generateFileKey('COURSE', 'course_id_123', 'lecture-notes.pdf', ResourceCategory.NOTES)
+ * // Returns: 'courses/course_id_123/notes/1672531200000_lecture-notes.pdf'
+ */
 export function generateFileKey(
-  courseId: string,
+  attachableType: AttachableType,
+  attachableId: string,
   filename: string,
-  type: DocumentType,
+  category: ResourceCategory,
 ): string {
   const timestamp = Date.now();
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
-  return `courses/${courseId}/${type.toLowerCase()}/${timestamp}_${sanitizedFilename}`;
+  const typePlural = `${attachableType.toLowerCase()}s`; // e.g., COURSE -> courses
+
+  return `${typePlural}/${attachableId}/${category.toLowerCase()}/${timestamp}_${sanitizedFilename}`;
 }
 
 export function formatFileSize(bytes: number): string {

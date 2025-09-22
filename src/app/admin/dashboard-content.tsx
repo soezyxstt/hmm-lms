@@ -27,18 +27,18 @@ export function DashboardContent() {
   });
 
   // Queries
-  const { data: overviewStats, isLoading: isLoadingOverview } =
-    api.analytic.getOverviewStats.useQuery(timeRange, {
+  const [overviewStats] =
+    api.analytic.getOverviewStats.useSuspenseQuery(timeRange, {
       refetchInterval: 30000, // Refresh every 30 seconds
     });
 
-  const { data: userActivity } =
-    api.analytic.getUserActivity.useQuery(timeRange, {
+  const [userActivity] =
+    api.analytic.getUserActivity.useSuspenseQuery(timeRange, {
       refetchInterval: 30000,
     });
 
-  const { data: tryoutPerformance } =
-    api.analytic.getTryoutPerformance.useQuery(timeRange, {
+  const [tryoutPerformance] =
+    api.analytic.getTryoutPerformance.useSuspenseQuery(timeRange, {
       refetchInterval: 30000,
     });
 
@@ -79,10 +79,6 @@ export function DashboardContent() {
     },
   ];
 
-  if (isLoadingOverview) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Time Range Picker */}
@@ -118,7 +114,7 @@ export function DashboardContent() {
         />
         <StatCard
           title="Documents"
-          value={overviewStats?.totalDocuments ?? 0}
+          value={overviewStats.totalResources ?? 0}
           description="Active documents"
           icon={FileText}
         />

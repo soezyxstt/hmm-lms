@@ -107,6 +107,12 @@ const MODEL_FIELDS: Record<string, Record<string, { type: string; required?: boo
     isActive: { type: "boolean" },
     createdById: { type: "text", required: true },
   },
+  courseTestimonial: {
+    comment: { type: "textarea", required: true },
+    rating: { type: "number", required: true },
+    userId: { type: "text", required: true },
+    courseId: { type: "text", required: true },
+  },
 };
 
 export function CreateRecordDialog({

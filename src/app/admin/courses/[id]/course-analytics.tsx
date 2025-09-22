@@ -6,29 +6,30 @@ import { Badge } from '~/components/ui/badge';
 import {
   BarChart3,
   TrendingUp,
-  Users,
   Eye,
   Download,
   Calendar,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { type RouterOutputs } from '~/trpc/react';
-
-type Analytics = RouterOutputs['course']['getCourseAnalytics'];
+import { api } from '~/trpc/react';
 
 interface CourseAnalyticsProps {
-  analytics: Omit<Analytics, 'memberStats'> & {
-    memberStats: { date: string; count: number }[];
-  };
+  courseId: string;
 }
 
-export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
-  const totalViews = analytics.documentStats.find(stat => stat.action === 'VIEW')?._count.id ?? 0;
-  const totalDownloads = analytics.documentStats.find(stat => stat.action === 'DOWNLOAD')?._count.id ?? 0;
+export default function CourseAnalytics({ courseId }: CourseAnalyticsProps) {
+  const { data: analytics, isLoading, error } = api.course.getCourseAnalytics.useQuery({ id: courseId });
 
-  const completedAttempts = analytics.tryoutStats.find(stat => stat.isCompleted)?._count.id ?? 0;
-  const incompleteAttempts = analytics.tryoutStats.find(stat => !stat.isCompleted)?._count.id ?? 0;
-  const averageScore = analytics.tryoutStats.find(stat => stat.isCompleted)?._avg.score ?? 0;
+  if (isLoading) return <div>Loading analytics...</div>;
+  if (error) return <div>Error loading analytics: {error.message}</div>;
+  if (!analytics) return null;
+
+  const totalViews = analytics.documentStats.find((stat) => stat.action === 'VIEW')?._count.id ?? 0;
+  const totalDownloads = analytics.documentStats.find((stat) => stat.action === 'DOWNLOAD')?._count.id ?? 0;
+
+  const completedAttempts = analytics.tryoutStats.find((stat) => stat.isCompleted)?._count.id ?? 0;
+  const incompleteAttempts = analytics.tryoutStats.find((stat) => !stat.isCompleted)?._count.id ?? 0;
+  const averageScore = analytics.tryoutStats.find((stat) => stat.isCompleted)?._avg.score ?? 0;
 
   return (
     <div className="space-y-6">
@@ -36,12 +37,12 @@ export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Document Views</CardTitle>
+            <CardTitle className="text-sm font-medium">Resource Views</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalViews}</div>
-            <p className="text-xs text-muted-foreground">Total document views</p>
+            <p className="text-xs text-muted-foreground">Total resource views</p>
           </CardContent>
         </Card>
 
@@ -62,7 +63,7 @@ export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{averageScore?.toFixed(1) ?? 'N/A'}%</div>
             <p className="text-xs text-muted-foreground">Average tryout score</p>
           </CardContent>
         </Card>
@@ -103,7 +104,7 @@ export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Recent Activity
+            Recent Resource Activity
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -120,12 +121,12 @@ export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
                     <span className="text-sm font-medium">{activity.user.name}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {activity.action.toLowerCase()}ed &quot;{activity.document.title}&quot;
+                    {activity.action.toLowerCase()}ed &quot;{activity.resource.title}&quot;
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  {format(activity.accessedAt, 'MMM dd, HH:mm')}
+                  {format(new Date(activity.accessedAt), 'MMM dd, HH:mm')}
                 </div>
               </div>
             ))}
@@ -137,28 +138,6 @@ export default function CourseAnalytics({ analytics }: CourseAnalyticsProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Member Growth */}
-      {analytics.memberStats.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Member Enrollment
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {analytics.memberStats.slice(0, 10).map((stat) => (
-                <div key={stat.date} className="flex items-center justify-between">
-                  <span className="text-sm">{format(new Date(stat.date), 'MMM dd, yyyy')}</span>
-                  <Badge variant="outline">{stat.count} new members</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

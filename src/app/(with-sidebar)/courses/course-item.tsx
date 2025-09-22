@@ -1,7 +1,7 @@
 import { cn } from '~/lib/utils';
 import Link, { type LinkProps } from 'next/link';
 import Image from 'next/image';
-import { FileSpreadsheet, SquarePlay } from 'lucide-react';
+import { FileSpreadsheet, SquarePlay, Star } from 'lucide-react';
 import { Separator } from '~/components/ui/separator';
 type CoursesItemProps = {
   id: string | number;
@@ -10,6 +10,7 @@ type CoursesItemProps = {
   subject: string;
   numberOfMaterials: number;
   numberOfVideos: number;
+  rating?: number;
   className?: string;
   orientation?: 'horizontal' | 'vertical';
 } & LinkProps;
@@ -22,6 +23,7 @@ export default function CoursesItem({
   numberOfMaterials,
   numberOfVideos,
   orientation = 'vertical',
+  rating,
   className,
 }: CoursesItemProps) {
 
@@ -53,11 +55,19 @@ export default function CoursesItem({
         </div>
         <div className='space-y-1'>
           <Separator />
-          <div className='flex justify-end gap-2 items-center md:text-sm self-end text-xs'>
-            <FileSpreadsheet size={10} />
-            <span>{numberOfMaterials}</span>
-            <SquarePlay size={10} />
-            <span>{numberOfVideos}</span>
+          <div className='flex justify-end gap-3 items-center md:text-sm self-end text-xs *:flex *:items-center *:gap-1'>
+            <div className="">
+              <FileSpreadsheet size={10} />
+              <span>{numberOfMaterials}</span>
+            </div>
+            <div className="">
+              <SquarePlay size={10} />
+              <span>{numberOfVideos}</span>
+            </div>
+            <div className="">
+              <Star size={10} className='' />
+              <span>{rating ?? "-"}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -1,169 +1,149 @@
+// ~/components/document-viewer.tsx
 'use client';
 
-import { useState } from 'react';
+import React from 'react';
+import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
-// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
-import { FileText, Download, Eye, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { formatFileSize } from '~/lib/file-utils';
-// import Image from 'next/image';
+import { Link as LinkIcon, ExternalLink, FileText } from 'lucide-react';
+import { format } from 'date-fns';
+import { ResourceType, LinkSource, type Prisma } from '@prisma/client';
+import { getCdnUrl } from '~/lib/utils';
 
-interface Document {
-  id: string;
-  title: string;
-  filename: string;
-  mimeType: string;
-  size: number;
-  type: string;
-  createdAt: Date;
-  uploadedBy: {
-    name: string;
+// Define the type for the resource
+type Resource = Prisma.ResourceGetPayload<{
+  include: {
+    attachment: true;
+    link: true;
+    uploadedBy: { select: { name: true } };
   };
-}
+}>;
 
 interface DocumentViewerProps {
-  document: Document;
+  resource: Resource;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-export default function DocumentViewer({ document }: DocumentViewerProps) {
-  // const [isViewerOpen, setIsViewerOpen] = useState(false);
-  // const [isLoading, setIsLoading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+// Function to check for MS Office documents
+const isMsOfficeFile = (mimeType: string) => {
+  const msOfficeMimeTypes = [
+    'application/vnd.ms-word',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ];
+  return msOfficeMimeTypes.includes(mimeType);
+};
 
-  const getDocumentUrl = (action: 'view' | 'download' = 'view') => {
-    return `/api/documents/${document.id}?action=${action}`;
-  };
+// Function to check for image files
+const isImageFile = (mimeType: string) => {
+  const imageMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/svg+xml',
+    'image/webp',
+  ];
+  return imageMimeTypes.includes(mimeType);
+};
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(getDocumentUrl('download'));
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = document.filename;
-      window.document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      window.document.body.removeChild(a);
-
-      toast.success('Document downloaded successfully');
-    } catch {
-      toast.error('Failed to download document');
-    } finally {
-      setIsDownloading(false);
+// Function to get the correct URL for the document viewer or download
+const getDocUrl = (resource: Resource) => {
+  if (resource.type === ResourceType.FILE && resource.attachment) {
+    if (isMsOfficeFile(resource.attachment.mimeType)) {
+      const cdnUrl = getCdnUrl(resource.attachment.key);
+      return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(cdnUrl)}`;
     }
-  };
-
-  const getIcon = () => {
-    if (document.mimeType.includes('pdf')) {
-      return <FileText className="h-8 w-8 text-red-500" />;
-    } else if (document.mimeType.includes('presentation') || document.mimeType.includes('powerpoint')) {
-      return <FileText className="h-8 w-8 text-orange-500" />;
-    } else if (document.mimeType.includes('word')) {
-      return <FileText className="h-8 w-8 text-blue-500" />;
-    } else if (document.mimeType.includes('sheet') || document.mimeType.includes('excel') || document.mimeType.includes('csv')) {
-      return <FileText className="h-8 w-8 text-green-500" />;
+    return `/api/documents/${resource.id}`;
+  }
+  if (resource.type === ResourceType.LINK && resource.link) {
+    if (resource.link.source === LinkSource.YOUTUBE) {
+      const videoId = resource.link.url.split('v=')[1]?.split('&')[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
     }
-    return <FileText className="h-8 w-8 text-gray-500" />;
-  };
+    if (resource.link.source === LinkSource.GOOGLE_DRIVE) {
+      const fileIdMatch = /\/d\/(.*?)\//.exec(resource.link.url);
+      const fileId = fileIdMatch ? fileIdMatch[1] : null;
+      return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
+    }
+    return null;
+  }
+  return null;
+};
 
-  const canPreview = document.mimeType === 'application/pdf' ||
-    document.mimeType.includes('image/');
+export default function DocumentViewer({ resource, open, onOpenChange }: DocumentViewerProps) {
+  const docUrl = getDocUrl(resource);
+
+  // Determine if the resource is an image file
+  const isImage = resource.type === ResourceType.FILE && resource.attachment && isImageFile(resource.attachment.mimeType);
+
+  // Check if it's a link that can be embedded (YouTube or Google Drive)
+  const isEmbeddableLink = resource.type === ResourceType.LINK && docUrl !== null;
+
+  // The fallback is now only for links that are NOT embeddable
+  const showFallback = resource.type === ResourceType.LINK && !isEmbeddableLink;
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-      <div className="flex items-center gap-3">
-        {getIcon()}
-        <div>
-          <h4 className="font-medium text-sm">{document.title}</h4>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(document.size)} • Uploaded by {document.uploadedBy.name}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="min-w-full h-full flex flex-col p-0 max-h-screen min-h-screen overflow-y-auto">
+        <DialogHeader className="p-4 border-b border-border">
+          <DialogTitle className="flex items-center gap-2">
+            {resource.type === ResourceType.LINK ? <LinkIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+            <span className="flex-1 truncate">{resource.title}</span>
+          </DialogTitle>
+          {/* Include description from original code */}
+          <p className="text-sm text-muted-foreground">
+            {resource.description ?? `Uploaded on ${format(resource.createdAt, 'MMM dd, yyyy')}`}
           </p>
-        </div>
-      </div>
+        </DialogHeader>
 
-      <div className="flex items-center gap-2">
-        {canPreview && (
-          // <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-          //   <DialogTrigger asChild>
-          //     <Button variant="outline" size="sm">
-          //       <Eye className="h-4 w-4 mr-1" />
-          //       View
-          //     </Button>
-          //   </DialogTrigger>
-          //   <DialogContent className="max-w-6xl h-[90vh]">
-          //     <DialogHeader>
-          //       <DialogTitle>{document.title}</DialogTitle>
-          //     </DialogHeader>
-          //     <div className="flex-1 relative h-full">
-          //       {isLoading && (
-          //         <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-          //           <Loader2 className="h-8 w-8 animate-spin" />
-          //         </div>
-          //       )}
-          //       {document.mimeType === 'application/pdf' ? (
-          //         <iframe
-          //           src={getDocumentUrl('view')}
-          //           className="w-full h-full border-0 rounded"
-          //           onLoad={() => setIsLoading(false)}
-          //           onLoadStart={() => setIsLoading(true)}
-          //           title={document.title}
-          //         />
-          //       ) : document.mimeType.includes('image/') ? (
-          //         <Image
-          //           src={getDocumentUrl('view')}
-          //           alt={document.title}
-          //           className="w-full h-full object-contain rounded"
-          //           onLoad={() => setIsLoading(false)}
-          //           onLoadStart={() => setIsLoading(true)}
-          //         />
-          //       ) : null}
-          //     </div>
-          //     <div className="flex justify-end gap-2 pt-4">
-          //       <Button
-          //         variant="outline"
-          //         onClick={handleDownload}
-          //         disabled={isDownloading}
-          //       >
-          //         {isDownloading ? (
-          //           <>
-          //             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          //             Downloading...
-          //           </>
-          //         ) : (
-          //           <>
-          //             <Download className="h-4 w-4 mr-1" />
-          //             Download
-          //           </>
-          //         )}
-          //       </Button>
-          //     </div>
-          //   </DialogContent>
-          // </Dialog>
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/api/documents/${document.id}`} target="_blank">
-              <Eye className="h-4 w-4" />
-            </a>
-          </Button>
+        {showFallback ? (
+          // Fallback for non-embeddable links
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <ExternalLink className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium mb-2">This link cannot be embedded.</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              This viewer only supports YouTube and Google Drive links. Click the button below to open the URL in a new tab.
+            </p>
+            <Button asChild>
+              <a href={resource.link?.url} target="_blank" rel="noopener noreferrer">
+                Open Link <ExternalLink className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+          </div>
+        ) : isImage ? (
+          // Render the Next.js Image component for images
+          <div className="relative flex-1 flex items-center justify-center p-4">
+            <Image
+              src={docUrl ?? ''}
+              alt={resource.title}
+              fill
+              style={{ objectFit: 'contain' }}
+              className="rounded-lg shadow-md"
+            />
+          </div>
+        ) : (
+          // Render the iframe for all other document types (files, embeddable links)
+          <div className="relative flex-1 overflow-hidden">
+            <iframe
+              src={docUrl ?? ''}
+              width="100%"
+              height="100%"
+              style={{ border: 'none' }}
+              title={resource.title}
+              allowFullScreen
+            />
+          </div>
         )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDownload}
-          disabled={isDownloading}
-        >
-          {isDownloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

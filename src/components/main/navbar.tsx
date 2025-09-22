@@ -27,17 +27,17 @@ const sidebarTabs: {
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
         { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
-        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
         { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Tryouts' },
         { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
+        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
       ],
     },
     {
       group: 'Himpunan',
       items: [
-        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events' },
-        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements' },
-        { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity" }
+        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events', dev: true },
+        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements', dev: true },
+        { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity", dev: true },
       ],
     },
     {

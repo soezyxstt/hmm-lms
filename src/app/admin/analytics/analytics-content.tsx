@@ -40,8 +40,8 @@ export function AnalyticsContent() {
       refetchInterval: 60000,
     });
 
-  const { data: documentAnalytics, isLoading: isLoadingDocuments } =
-    api.analytic.getDocumentAnalytics.useQuery(timeRange, {
+  const { data: resourceAnalytics, isLoading: isLoadingDocuments } =
+    api.analytic.getResourceAnalytics.useQuery(timeRange, {
       refetchInterval: 60000,
     });
 
@@ -66,14 +66,14 @@ export function AnalyticsContent() {
     value: item._count.id,
   })) ?? [];
 
-  const documentViewsData = documentAnalytics?.accessOverTime
+  const documentViewsData = resourceAnalytics?.accessOverTime
     .filter(item => item.action === "VIEW")
     .map(item => ({
       date: item.accessedAt.toISOString(),
       value: item._count.id,
     })) ?? [];
 
-  const documentDownloadsData = documentAnalytics?.accessOverTime
+  const documentDownloadsData = resourceAnalytics?.accessOverTime
     .filter(item => item.action === "DOWNLOAD")
     .map(item => ({
       date: item.accessedAt.toISOString(),
@@ -81,7 +81,7 @@ export function AnalyticsContent() {
     })) ?? [];
 
   const handleExport = async () => {
-    if (!overviewStats || !userActivity || !tryoutPerformance || !documentAnalytics || !courseAnalytics) {
+    if (!overviewStats || !userActivity || !tryoutPerformance || !resourceAnalytics || !courseAnalytics) {
       return;
     }
 
@@ -92,7 +92,7 @@ export function AnalyticsContent() {
         overviewStats,
         userActivity,
         tryoutPerformance,
-        documentAnalytics,
+        resourceAnalytics,
         courseAnalytics,
       });
     } catch (error) {
@@ -160,7 +160,7 @@ export function AnalyticsContent() {
             />
             <StatCard
               title="Documents"
-              value={overviewStats?.totalDocuments ?? 0}
+              value={overviewStats?.totalResources ?? 0}
               description="Available"
               icon={FileText}
             />
@@ -339,7 +339,7 @@ export function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {documentAnalytics?.documentStats
+                  {resourceAnalytics?.resourceStats
                     .sort((a, b) => (b.views + b.downloads) - (a.views + a.downloads))
                     .slice(0, 8)
                     .map((doc) => (

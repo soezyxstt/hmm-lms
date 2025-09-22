@@ -3,6 +3,7 @@ import { auth } from "~/server/auth";
 import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import AdminNavbar from '~/components/admin/navbar';
+import { Suspense } from 'react';
 
 export default async function AdminLayout({
   children,
@@ -16,7 +17,11 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  return <AdminNavbar>{children}</AdminNavbar>;
+  return <AdminNavbar>
+    <Suspense fallback={<div className='w-full h-full grid place-items-center'>Fetching data...</div>}>
+      {children}
+    </Suspense>
+  </AdminNavbar>;
 }
 
 export const metadata = {

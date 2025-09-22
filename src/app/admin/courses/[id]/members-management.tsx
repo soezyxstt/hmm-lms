@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog';
-import { Users, Search, UserMinus, Mail, Calendar } from 'lucide-react';
+import { Users, Search, UserMinus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { api } from '~/trpc/react';
 import { toast } from 'sonner';
@@ -93,10 +93,7 @@ export default function MembersManagement({ course }: MembersManagementProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>NIM</TableHead>
-                <TableHead>Faculty</TableHead>
-                <TableHead>Program</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -106,16 +103,8 @@ export default function MembersManagement({ course }: MembersManagementProps) {
                 <TableRow key={member.id}>
                   <TableCell className="font-medium">{member.name}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      {member.email}
-                    </div>
-                  </TableCell>
-                  <TableCell>
                     <Badge variant="outline">{member.nim}</Badge>
                   </TableCell>
-                  <TableCell>{member.faculty ?? 'N/A'}</TableCell>
-                  <TableCell>{member.program ?? 'N/A'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />

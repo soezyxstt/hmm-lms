@@ -13,6 +13,7 @@ import type { PrismaClient } from "@prisma/client";
 // Define model names as const for type safety
 const MODEL_NAMES = [
   "user",
+  "courseTestimonial",
   "account",
   "session",
   "course",
@@ -75,6 +76,7 @@ const bulkCreateSchema = z.object({
 function getModelDelegate(db: PrismaClient, model: ModelName) {
   const delegates = {
     user: db.user,
+    courseTestimonial: db.courseTestimonial,
     account: db.account,
     session: db.session,
     course: db.course,
@@ -101,6 +103,7 @@ const DEFAULT_SORT_ORDERS: Record<
   { field: string; order: "asc" | "desc" }
 > = {
   user: { field: "createdAt", order: "desc" },
+  courseTestimonial: { field: "createdAt", order: "desc" },
   account: { field: "provider", order: "asc" }, // No timestamp, sort by provider
   session: { field: "expires", order: "desc" },
   course: { field: "createdAt", order: "desc" },
@@ -155,6 +158,10 @@ function buildSearchConditions(model: ModelName, search: string) {
     userAnswer: [],
     documentAccess: [],
     pushSubscription: [],
+    courseTestimonial: [
+      { comment: { contains: search, mode: "insensitive" } },
+      { rating: isNaN(Number(search)) ? undefined : Number(search) },
+    ],
   };
   return searchConditions[model] ?? [];
 }
@@ -195,6 +202,10 @@ function getModelIncludes(model: ModelName) {
     documentAccess: {},
     jobVacancy: {},
     pushSubscription: {},
+    courseTestimonial: {
+      user: { select: { name: true, email: true } },
+      course: { select: { title: true, classCode: true } },
+    },
   };
   return includes[model] ?? {};
 }

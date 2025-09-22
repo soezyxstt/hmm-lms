@@ -1,0 +1,88 @@
+// Models for general organizational content
+model Event {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  allDay      Boolean    @default(false)
+  location    String?
+  color       EventColor @default(SKY)
+  rsvp        String?
+
+  timeline    Json?
+  hasTimeline Boolean @default(false)
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  userId String?
+  user   User?   @relation("UserEvents", fields: [userId], references: [id])
+
+  courseId String?
+  course   Course? @relation("CourseEvents", fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Announcement {
+  id        String            @id @default(cuid())
+  title     String
+  content   String            @db.Text
+  scope     AnnouncementScope @default(GLOBAL)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  createdById String
+  createdBy   User   @relation("CreatedAnnouncements", fields: [createdById], references: [id])
+
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("announcements")
+}
+
+model Scholarship {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  provider    String
+  deadline    DateTime
+  link        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  otherLinks  String[]
+  quota       Int?
+  benefits    String[]
+  requirements String[]
+  type        ScholarshipType @default(EXTERNAL)
+
+  createdById String
+  createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
+
+  @@map("scholarships")
+}
+
+model JobVacancy {
+  id          String   @id @default(cuid())
+  title       String
+  company     String
+  position    String
+  eligibility String
+  streams     String[]
+  overview    String   @db.Text
+  timeline    String   @db.Text
+  applyLink   String
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation("CreatedJobVacancies", fields: [createdById], references: [id])
+
+  @@map("job_vacancies")
+}

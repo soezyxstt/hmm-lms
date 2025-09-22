@@ -1,4 +1,3 @@
-// ~/app/admin/tryouts/_components/tryout-form.tsx
 "use client";
 
 import { useState } from "react";
@@ -52,8 +51,8 @@ type Course = RouterOutputs["course"]["getAllCourses"][number];
 export type TryoutFormData = {
   id?: string;
   title: string;
-  description?: string | null;
-  duration?: number | null;
+  description?: string | undefined;
+  duration?: number | undefined;
   courseId: string;
   isActive?: boolean;
   questions: Array<{
@@ -62,12 +61,14 @@ export type TryoutFormData = {
     question: string;
     points: number;
     required: boolean;
+    images?: string[];
     options?: Array<{
       id?: string;
       text: string;
       isCorrect: boolean;
       explanation?: string | null;
     }>;
+    shortAnswer?: string | null; // Allow null
   }>;
 };
 
@@ -106,7 +107,6 @@ export default function TryoutForm({
   });
 
   const form = useForm<CreateTryoutInput>({
-    // @ts-expect-error react hook form sucks
     resolver: zodResolver(createTryoutSchema),
     defaultValues: initialData ? {
       ...initialData,
@@ -116,10 +116,13 @@ export default function TryoutForm({
         ...q,
         points: q.points ?? 1,
         required: q.required ?? true,
+        images: q.images ?? [],
         options: q.options?.map(opt => ({
           ...opt,
           explanation: opt.explanation ?? ""
-        })) ?? []
+        })) ?? [],
+        // --- FIX 1: Initialize shortAnswer when editing ---
+        shortAnswer: q.shortAnswer ?? "",
       }))
     } : {
       title: "",
@@ -132,10 +135,13 @@ export default function TryoutForm({
           question: "",
           points: 1,
           required: true,
+          images: [],
           options: [
             { text: "", isCorrect: false, explanation: "" },
             { text: "", isCorrect: false, explanation: "" },
           ],
+          // --- FIX 2: Initialize shortAnswer for new tryouts ---
+          shortAnswer: "",
         },
       ],
     },
@@ -168,10 +174,13 @@ export default function TryoutForm({
       question: "",
       points: 1,
       required: true,
+      images: [],
       options: [
         { text: "", isCorrect: false, explanation: "" },
         { text: "", isCorrect: false, explanation: "" },
       ],
+      // --- FIX 3: Initialize shortAnswer when adding a new question ---
+      shortAnswer: "",
     };
     append(newQuestion);
 
@@ -188,7 +197,6 @@ export default function TryoutForm({
   return (
     <>
       <Form {...form}>
-        {/* @ts-expect-error - This prop doesn't exist but needed for legacy support */}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-12">
           {/* Basic Information */}
           <Card>
@@ -196,7 +204,6 @@ export default function TryoutForm({
               <CardTitle>Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* @ts-expect-error - This sholdnt be an error */}
               <FormField control={form.control}
                 name="title"
                 render={({ field }) => (
@@ -209,7 +216,6 @@ export default function TryoutForm({
                   </FormItem>
                 )}
               />
-              {/* @ts-expect-error - This sholdnt be an error */}
               <FormField control={form.control}
                 name="description"
                 render={({ field }) => (
@@ -227,7 +233,6 @@ export default function TryoutForm({
               />
 
               <div className="grid grid-cols-2 gap-4">
-                {/* @ts-expect-error - This sholdnt be an error */}
                 <FormField control={form.control}
                   name="courseId"
                   render={({ field }) => (
@@ -254,7 +259,6 @@ export default function TryoutForm({
                     </FormItem>
                   )}
                 />
-                {/* @ts-expect-error - This sholdnt be an error */}
                 <FormField control={form.control}
                   name="duration"
                   render={({ field }) => (
@@ -307,11 +311,9 @@ export default function TryoutForm({
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                  
-                  {/* @ts-expect-error - This sholdnt be an error */}
+
                   <QuestionBuilder form={form}
                     questionIndex={index}
-                    onRemove={() => remove(index)}
                   />
 
                   {index < fields.length - 1 && <Separator className="mt-6" />}

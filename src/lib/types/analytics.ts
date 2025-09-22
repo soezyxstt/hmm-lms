@@ -6,7 +6,7 @@ export interface OverviewStats {
   activeCourses: number;
   totalTryouts: number;
   activeTryouts: number;
-  totalDocuments: number;
+  totalResources: number;
   totalEvents: number;
   totalAnnouncements: number;
   totalScholarships: number;

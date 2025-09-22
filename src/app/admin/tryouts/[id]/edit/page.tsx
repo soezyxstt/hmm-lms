@@ -1,7 +1,4 @@
-// ~/app/admin/tryouts/[id]/edit/page.tsx
-import { auth } from "~/server/auth";
-import { redirect } from "next/navigation";
-import { Role } from "@prisma/client";
+
 import { api } from "~/trpc/server";
 import TryoutForm from '../../create/form';
 import type { TryoutFormData } from '../../create/form';
@@ -13,11 +10,6 @@ interface EditTryoutPageProps {
 }
 
 export default async function EditTryoutPage({ params }: EditTryoutPageProps) {
-  const session = await auth();
-
-  if (!session || session.user.role !== Role.ADMIN) {
-    redirect("/");
-  }
 
   const { id } = await params;
   const [tryout, courses] = await Promise.all([
@@ -28,8 +20,8 @@ export default async function EditTryoutPage({ params }: EditTryoutPageProps) {
   const initialData: TryoutFormData = {
     id: tryout.id,
     title: tryout.title,
-    description: tryout.description,
-    duration: tryout.duration,
+    description: tryout.description ?? "",
+    duration: tryout.duration ?? 60,
     courseId: tryout.courseId,
     isActive: tryout.isActive,
     questions: tryout.questions.map(q => ({
@@ -44,17 +36,13 @@ export default async function EditTryoutPage({ params }: EditTryoutPageProps) {
         isCorrect: opt.isCorrect,
         explanation: opt.explanation,
       })),
+      images: q.images || [],
+      shortAnswer: q.shortAnswer ?? "",
     })),
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Edit Tryout</h1>
-        <p className="text-muted-foreground">
-          Modify the tryout details and questions
-        </p>
-      </div>
+    <div className="max-w-5xl mx-auto">
       <TryoutForm
         courses={courses}
         initialData={initialData}

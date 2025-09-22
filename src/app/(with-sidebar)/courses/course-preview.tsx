@@ -1,46 +1,49 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { Badge } from '~/components/ui/badge';
 import {
   BookOpen,
-  FileText,
-  Video,
-  ClipboardList,
   Users,
   Lock,
-  Award
+  Award,
+  Star,
+  BookMarked
 } from 'lucide-react';
+import { type Prisma } from '@prisma/client';
 
-interface CoursePreviewProps {
-  course: {
-    title: string;
-    description?: string | null;
-    classCode: string;
+type CourseForPreview = Prisma.CourseGetPayload<{
+  include: {
+    testimonial: { include: { user: true } };
     _count: {
-      members: number;
-      tryout: number;
+      select: {
+        members: true;
+        tryout: true;
+        resources: true;
+      };
     };
   };
+}>
+
+const getInitials = (name: string | null) => {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('');
+};
+
+interface CoursePreviewProps {
+  course: CourseForPreview;
 }
 
 export default function CoursePreview({ course }: CoursePreviewProps) {
   const previewItems = [
     {
-      title: "E-books & Reading Materials",
-      description: "Access comprehensive reading materials and textbooks",
+      title: "Learning Resources",
+      description: "Access e-books, videos, presentations, and notes",
       icon: BookOpen,
-      count: "2+ resources",
-    },
-    {
-      title: "Video Lectures",
-      description: "Watch recorded lectures and tutorials",
-      icon: Video,
-      count: "5+ videos",
-    },
-    {
-      title: "Presentations & Slides",
-      description: "Download lecture slides and presentations",
-      icon: FileText,
-      count: "10+ slides",
+      count: `${course._count.resources} resources`,
     },
     {
       title: "Practice Tryouts",
@@ -48,16 +51,10 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
       icon: Award,
       count: `${course._count.tryout} tryouts`,
     },
-    {
-      title: "Previous Exams",
-      description: "Review past exam papers for better preparation",
-      icon: ClipboardList,
-      count: "Multiple exams",
-    },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Card className="border-dashed border-2 border-muted-foreground/25">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -69,6 +66,23 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {course.syllabus && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <BookMarked className="h-6 w-6 text-primary" />
+              <CardTitle>Syllabus</CardTitle>
+            </div>
+            <CardDescription>An overview of the topics you&apos;ll master in this course.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {course.syllabus}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -96,6 +110,43 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
           </div>
         </CardContent>
       </Card>
+
+      {course.testimonial && course.testimonial.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {course.testimonial.map((testimonial, index) => (
+              <Card key={index} className="flex flex-col">
+                <CardContent className="p-6 flex flex-col flex-grow">
+                  <div className="flex items-center mb-4">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-5 w-5 ${i < testimonial.rating
+                          ? 'text-primary fill-primary'
+                          : 'text-muted-foreground/50 fill-muted'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                  <blockquote className="text-muted-foreground flex-grow italic">
+                    &ldquo;{testimonial.comment}&rdquo;
+                  </blockquote>
+                  <div className="flex items-center gap-3 mt-6">
+                    <Avatar>
+                      <AvatarImage src={testimonial.user.image ?? undefined} alt={testimonial.user.name ?? 'User'} />
+                      <AvatarFallback>{getInitials(testimonial.user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-sm">{testimonial.user.name}</p>
+                      <p className="text-xs text-muted-foreground">{testimonial.user.nim}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Card>

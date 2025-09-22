@@ -19,8 +19,8 @@ interface ExportData {
     }>;
     attemptsOverTime: Array<{ startedAt: Date; _count: { id: number } }>;
   };
-  documentAnalytics: {
-    documentStats: Array<{
+  resourceAnalytics: {
+    resourceStats: Array<{
       id: string;
       title: string;
       type: string;
@@ -57,7 +57,7 @@ export async function exportAnalyticsData(data: ExportData) {
     ["Active Courses", data.overviewStats.activeCourses],
     ["Total Tryouts", data.overviewStats.totalTryouts],
     ["Active Tryouts", data.overviewStats.activeTryouts],
-    ["Total Documents", data.overviewStats.totalDocuments],
+    ["Total Documents", data.overviewStats.totalResources],
     ["Total Events", data.overviewStats.totalEvents],
     ["Total Announcements", data.overviewStats.totalAnnouncements],
     ["Total Scholarships", data.overviewStats.totalScholarships],
@@ -104,7 +104,7 @@ export async function exportAnalyticsData(data: ExportData) {
   // Document Analytics Sheet
   const documentAnalyticsData = [
     ["Document Title", "Type", "Views", "Downloads", "Total Access"],
-    ...data.documentAnalytics.documentStats.map(item => [
+    ...data.resourceAnalytics.resourceStats.map(item => [
       item.title,
       item.type,
       item.views,

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { precacheAndRoute } from "workbox-precaching";
 
 // This line is the placeholder next-pwa needs to inject the precache manifest.

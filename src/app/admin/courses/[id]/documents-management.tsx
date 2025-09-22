@@ -29,33 +29,39 @@ import {
   FileText,
   Search,
   Trash2,
-  Eye,
   Download,
   Calendar,
   User,
   HardDrive,
+  Link as LinkIcon,
+  ExternalLink,
+  Eye, // Added Eye icon for the view button
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { api } from '~/trpc/react';
 import { toast } from 'sonner';
 import { type RouterOutputs } from '~/trpc/react';
+import { ResourceType } from '@prisma/client';
+import DocumentViewer from '~/components/document-viewer'; // Import the new viewer
 
 type Course = RouterOutputs['course']['getCourseForAdmin'];
+type Resource = NonNullable<RouterOutputs['course']['getCourseForAdmin']>['resources'][number];
 
 interface DocumentsManagementProps {
   course: Course;
 }
 
-const getDocumentTypeColor = (type: string) => {
+const getResourceCategoryColor = (category: string | null) => {
   const colors = {
-    EBOOK: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    E_BOOK: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
     PRESENTATION: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-    DOCUMENT: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    NOTES: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    PROBLEMS: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
     VIDEO: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-    EXAM: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-    MATERIAL: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+    SYLLABUS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    OTHER: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
   };
-  return colors[type as keyof typeof colors] || colors.MATERIAL;
+  return colors[category as keyof typeof colors] || colors.OTHER;
 };
 
 const formatFileSize = (bytes: number) => {
@@ -68,11 +74,13 @@ const formatFileSize = (bytes: number) => {
 
 export default function DocumentsManagement({ course }: DocumentsManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [openViewer, setOpenViewer] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const utils = api.useUtils();
 
-  const deleteDocumentMutation = api.course.deleteDocument.useMutation({
+  const deleteResourceMutation = api.course.deleteResource.useMutation({
     onSuccess: async () => {
-      toast.success('Document deleted successfully');
+      toast.success('Resource deleted successfully');
       await utils.course.getCourseForAdmin.invalidate({ id: course.id });
     },
     onError: (error) => {
@@ -80,30 +88,45 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
     },
   });
 
-  const filteredDocuments = course.document.filter((doc) =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.type.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredResources = course.resources.filter((resource) =>
+    resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ??
+    (resource.type === ResourceType.FILE && resource.attachment?.filename.toLowerCase().includes(searchTerm.toLowerCase())) ??
+    (resource.type === ResourceType.LINK && resource.link?.url.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
-  const handleDeleteDocument = (documentId: string) => {
-    deleteDocumentMutation.mutate({ documentId });
+  const handleDeleteResource = (resourceId: string) => {
+    deleteResourceMutation.mutate({ resourceId });
   };
 
-  const totalSize = course.document.reduce((sum, doc) => sum + doc.size, 0);
-  const totalViews = course.document.reduce((sum, doc) => sum + doc.views, 0);
-  const totalDownloads = course.document.reduce((sum, doc) => sum + doc.downloads, 0);
+  const handleViewResource = (resource: Resource) => {
+    setSelectedResource(resource);
+    setOpenViewer(true);
+  };
+
+  const totalFileSize = course.resources
+    .filter((res) => res.type === ResourceType.FILE)
+    .reduce((sum, res) => sum + (res.attachment?.size ?? 0), 0);
+
+  const totalFiles = course.resources.filter((res) => res.type === ResourceType.FILE).length;
+  const totalLinks = course.resources.filter((res) => res.type === ResourceType.LINK).length;
 
   return (
     <div className="space-y-6">
+      {selectedResource && (
+        <DocumentViewer
+          resource={selectedResource}
+          open={openViewer}
+          onOpenChange={setOpenViewer}
+        />
+      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Documents</p>
-                <p className="text-2xl font-bold">{course.document.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Resources</p>
+                <p className="text-2xl font-bold">{course.resources.length}</p>
               </div>
               <FileText className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -114,8 +137,8 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Size</p>
-                <p className="text-2xl font-bold">{formatFileSize(totalSize)}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Files</p>
+                <p className="text-2xl font-bold">{totalFiles}</p>
               </div>
               <HardDrive className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -126,10 +149,10 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Views</p>
-                <p className="text-2xl font-bold">{totalViews}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Links</p>
+                <p className="text-2xl font-bold">{totalLinks}</p>
               </div>
-              <Eye className="h-8 w-8 text-muted-foreground" />
+              <LinkIcon className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -138,34 +161,34 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Downloads</p>
-                <p className="text-2xl font-bold">{totalDownloads}</p>
+                <p className="text-sm font-medium text-muted-foreground">Files Size</p>
+                <p className="text-2xl font-bold">{formatFileSize(totalFileSize)}</p>
               </div>
-              <Download className="h-8 w-8 text-muted-foreground" />
+              <HardDrive className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Documents Table */}
+      {/* Resources Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Documents Management
+            Resources Management
           </CardTitle>
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search documents..."
+                placeholder="Search resources..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Badge variant="secondary">
-              {filteredDocuments.length} of {course.document.length} documents
+              {filteredResources.length} of {course.resources.length} resources
             </Badge>
           </div>
         </CardHeader>
@@ -176,60 +199,78 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Downloads</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Uploaded By</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDocuments.map((document) => (
-                  <TableRow key={document.id}>
+                {filteredResources.map((resource) => (
+                  <TableRow key={resource.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{document.title}</p>
-                        <p className="text-sm text-muted-foreground">{document.filename}</p>
+                      <div className="flex items-center gap-2">
+                        {resource.type === ResourceType.FILE ? (
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="font-medium">{resource.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {resource.type === ResourceType.FILE ? resource.attachment?.filename : resource.link?.url}
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getDocumentTypeColor(document.type)}>
-                        {document.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatFileSize(document.size)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                        {document.views}
-                      </div>
+                      <Badge variant="outline">{resource.type}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Download className="h-4 w-4 text-muted-foreground" />
-                        {document.downloads}
-                      </div>
+                      {resource.category && (
+                        <Badge className={getResourceCategoryColor(resource.category)}>
+                          {resource.category.replace('_', ' ')}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        {document.uploadedBy.name}
+                        {resource.uploadedBy.name}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        {format(document.createdAt, 'MMM dd, yyyy')}
+                        {format(resource.createdAt, 'MMM dd, yyyy')}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center gap-2 justify-end">
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`/api/documents/${document.id}`} target="_blank">
-                            <Eye className="h-4 w-4" />
-                          </a>
+                        {/* New View Button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewResource(resource)}
+                        >
+                          <Eye className="h-4 w-4" />
                         </Button>
+                        {/* Download button for files only */}
+                        {resource.type === ResourceType.FILE && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`/api/documents/${resource.id}?action=download`} target="_blank">
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        {/* Link button for links only */}
+                        {resource.type === ResourceType.LINK && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={resource.link?.url} target="_blank">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -242,19 +283,19 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                              <AlertDialogTitle>Delete Resource</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete &quot;{document.title}&quot;?
+                                Are you sure you want to delete &quot;{resource.title}&quot;?
                                 This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteDocument(document.id)}
+                                onClick={() => handleDeleteResource(resource.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Delete Document
+                                Delete Resource
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -265,11 +306,11 @@ export default function DocumentsManagement({ course }: DocumentsManagementProps
                 ))}
               </TableBody>
             </Table>
-            {filteredDocuments.length === 0 && (
+            {filteredResources.length === 0 && (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  {searchTerm ? 'No documents found matching your search' : 'No documents uploaded yet'}
+                  {searchTerm ? 'No resources found matching your search' : 'No resources uploaded yet'}
                 </p>
               </div>
             )}

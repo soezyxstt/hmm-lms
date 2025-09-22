@@ -17,6 +17,7 @@ export interface Question {
   order: number;
   required: boolean;
   options: QuestionOption[];
+  images: string[]; // Array of image URLs
 }
 
 export interface Course {

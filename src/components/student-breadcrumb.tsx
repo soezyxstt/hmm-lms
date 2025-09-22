@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
 import type { TabsType } from './main/cmdk-search';
+import { Fragment } from 'react';
 
 const definedDBItems = ['courses', 'tryouts', 'scholarships', 'events', 'announcements', 'loker']
 
@@ -35,9 +36,9 @@ export default function StudentBreadcrumb({ items, isMobile = false }: { items: 
             const href = `/${pathNames.slice(0, index + 1).join("/")}`
             const isLast = index === pathNames.length - 1
             return (
-              <>
-                {index !== 0 && <BreadcrumbSeparator />}
-                <BreadcrumbItem key={href} className='capitalize'>
+              <Fragment key={href + index}>
+                {index !== 0 && <BreadcrumbSeparator key={href + index + "separator"} />}
+                <BreadcrumbItem key={href + index} className='capitalize'>
                   {isLast ? (
                     <BreadcrumbPage>{path.replace(/-/g, " ")}</BreadcrumbPage>
                   ) : (
@@ -48,7 +49,7 @@ export default function StudentBreadcrumb({ items, isMobile = false }: { items: 
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
-              </>
+              </Fragment>
             )
           })}
         </BreadcrumbList>

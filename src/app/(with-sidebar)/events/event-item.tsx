@@ -4,13 +4,13 @@ import { Badge } from '~/components/ui/badge';
 import { CalendarDays, Clock, MapPin, User, GraduationCap, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RouterOutputs } from '~/trpc/react';
+import GeometryBackground from '~/components/ui/background/geometry';
 
 interface EventItemProps {
   event: RouterOutputs['event']['getAllEvents'][number];
   href: string;
 }
 
-// Theme-adaptive color system for cards
 const colorThemes = {
   SKY: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700',
   AMBER: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700',
@@ -38,7 +38,8 @@ export default function EventItem({ event, href }: EventItemProps) {
 
   return (
     <Link href={href}>
-      <Card className="hover:shadow-md transition-all duration-200 cursor-pointer h-full group">
+      <Card className="hover:shadow-md transition-all duration-200 cursor-pointer h-full group relative">
+        <GeometryBackground className='' />
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-2 flex-1">

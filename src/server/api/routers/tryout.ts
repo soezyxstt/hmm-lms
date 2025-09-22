@@ -26,9 +26,12 @@ export const tryoutRouter = createTRPCRouter({
             create: questions.map((question, index) => ({
               type: question.type,
               question: question.question,
+              images: question.images,
               points: question.points,
               required: question.required,
               order: index + 1,
+              // --- FIX: Add shortAnswer to the create operation ---
+              shortAnswer: question.shortAnswer,
               options: question.options
                 ? {
                     create: question.options.map((option, optionIndex) => ({
@@ -113,75 +116,65 @@ export const tryoutRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, questions, ...updateData } = input;
 
-      // Check if tryout exists
-      const existingTryout = await ctx.db.tryout.findUnique({
-        where: { id },
-        include: { questions: { include: { options: true } } },
-      });
-
-      if (!existingTryout) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Tryout not found",
-        });
-      }
-
-      // If questions are provided, update them
-      if (questions) {
-        // Delete existing questions and their options
-        await ctx.db.question.deleteMany({
-          where: { tryoutId: id },
+      return ctx.db.$transaction(async (tx) => {
+        // First, update the simple fields of the tryout itself
+        await tx.tryout.update({
+          where: { id },
+          data: updateData,
         });
 
-        // Create new questions
-        await ctx.db.question.createMany({
-          data: questions.map((question, index) => ({
-            tryoutId: id,
-            type: question.type,
-            question: question.question,
-            points: question.points,
-            required: question.required,
-            order: index + 1,
-          })),
-        });
+        // If questions were included in the update payload, replace them
+        if (questions) {
+          // 1. Delete all old questions associated with this tryout
+          await tx.question.deleteMany({
+            where: { tryoutId: id },
+          });
 
-        // Create options for questions that have them
-        for (let i = 0; i < questions.length; i++) {
-          const question = questions[i];
-          if (question?.options && question.options.length > 0) {
-            const createdQuestion = await ctx.db.question.findFirst({
-              where: { tryoutId: id, order: i + 1 },
+          // 2. Create the new questions with all their data
+          // Note: We use a loop with 'create' instead of 'createMany' to handle nested options correctly.
+          for (let i = 0; i < questions.length; i++) {
+            const question = questions[i]!;
+            await tx.question.create({
+              data: {
+                tryoutId: id,
+                type: question.type,
+                question: question.question,
+                images: question.images,
+                points: question.points,
+                required: question.required,
+                order: i + 1,
+                // --- FIX: Add shortAnswer to the update/re-create operation ---
+                shortAnswer: question.shortAnswer,
+                options: question.options
+                  ? {
+                      create: question.options.map((option, optionIndex) => ({
+                        text: option.text,
+                        isCorrect: option.isCorrect,
+                        explanation: option.explanation,
+                        order: optionIndex + 1,
+                      })),
+                    }
+                  : undefined,
+              },
             });
-
-            if (createdQuestion) {
-              await ctx.db.questionOption.createMany({
-                data: question.options.map((option, optionIndex) => ({
-                  questionId: createdQuestion.id,
-                  text: option.text,
-                  isCorrect: option.isCorrect,
-                  explanation: option.explanation,
-                  order: optionIndex + 1,
-                })),
-              });
-            }
           }
         }
-      }
 
-      return ctx.db.tryout.update({
-        where: { id },
-        data: updateData,
-        include: {
-          questions: {
-            include: {
-              options: true,
+        // Return the fully updated tryout with all relations
+        return tx.tryout.findUnique({
+          where: { id },
+          include: {
+            questions: {
+              include: {
+                options: true,
+              },
+              orderBy: { order: "asc" },
             },
-            orderBy: { order: "asc" },
+            course: {
+              select: { title: true, classCode: true },
+            },
           },
-          course: {
-            select: { title: true, classCode: true },
-          },
-        },
+        });
       });
     }),
 
@@ -373,7 +366,7 @@ export const tryoutRouter = createTRPCRouter({
         });
       }
 
-      // Calculate points based on question type and answer
+      // --- SCORING LOGIC ---
       let points = 0;
       if (question.type === "MULTIPLE_CHOICE_SINGLE") {
         const selectedOption = question.options.find(
@@ -383,20 +376,37 @@ export const tryoutRouter = createTRPCRouter({
           points = question.points;
         }
       } else if (question.type === "MULTIPLE_CHOICE_MULTIPLE") {
-        const selectedOptions = JSON.parse(input.answer) as string[];
-        const correctOptions = question.options.filter((opt) => opt.isCorrect);
-        const selectedCorrectOptions = selectedOptions.filter((optId) =>
-          correctOptions.some((opt) => opt.id === optId),
-        );
+        try {
+          const selectedOptions = JSON.parse(input.answer) as string[];
+          const correctOptions = question.options.filter(
+            (opt) => opt.isCorrect,
+          );
+          const selectedCorrectOptions = selectedOptions.filter((optId) =>
+            correctOptions.some((opt) => opt.id === optId),
+          );
 
+          if (
+            selectedCorrectOptions.length === correctOptions.length &&
+            selectedOptions.length === correctOptions.length
+          ) {
+            points = question.points;
+          }
+        } catch {
+          // Invalid JSON answer, score is 0
+          points = 0;
+        }
+        // --- FIX: ADDED AUTO-SCORING FOR SHORT ANSWER ---
+      } else if (question.type === "SHORT_ANSWER") {
+        // Check if the correct answer exists and compare case-insensitively
         if (
-          selectedCorrectOptions.length === correctOptions.length &&
-          selectedOptions.length === correctOptions.length
+          question.shortAnswer &&
+          input.answer.trim().toLowerCase() ===
+            question.shortAnswer.trim().toLowerCase()
         ) {
           points = question.points;
         }
       }
-      // For text answers, manual grading would be needed
+      // LONG_ANSWER questions will default to 0 points for manual grading.
 
       return ctx.db.userAnswer.upsert({
         where: {

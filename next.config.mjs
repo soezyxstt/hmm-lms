@@ -13,7 +13,9 @@ const pwaConfig = withPWA({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-
+  images: {
+    domains: ["hmm-lms.sgp1.digitaloceanspaces.com"],
+  },
 };
 
 export default pwaConfig(nextConfig);

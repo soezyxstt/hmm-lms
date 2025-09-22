@@ -33,6 +33,7 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import type { Tryout, UserAttempt, Question, QuestionOption } from "~/lib/types/tryout";
+import MotionImageDialog from '~/components/motion/dialog';
 
 interface TryoutAttemptClientProps {
   attempt: UserAttempt;
@@ -90,7 +91,7 @@ export function TryoutAttemptClient({
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tryout.duration, attempt.startedAt]);
 
   const formatTime = (ms: number): string => {
@@ -189,7 +190,7 @@ export function TryoutAttemptClient({
 
   const renderTextAnswer = (question: Question, questionAnswer: string) => (
     <Textarea
-      value={questionAnswer}
+      value={questionAnswer ?? ''}
       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
       placeholder="Type your answer here..."
       className={question.type === "LONG_ANSWER" ? "min-h-32" : ""}
@@ -218,7 +219,7 @@ export function TryoutAttemptClient({
   };
 
   const answeredQuestions = Object.keys(answers).filter(
-    questionId => answers[questionId] && answers[questionId].trim() !== ""
+    questionId => answers[questionId] && answers[questionId].trim() !== "" && answers[questionId].trim() !== "[]"
   ).length;
 
   if (!currentQuestion) {
@@ -289,11 +290,30 @@ export function TryoutAttemptClient({
           <div className="prose prose-sm max-w-none">
             <p>{currentQuestion.question}</p>
           </div>
+
+          {/* --- FIX: RENDER QUESTION IMAGES --- */}
+          {currentQuestion.images && currentQuestion.images.length > 0 && (
+            <div className="flex flex-wrap gap-4 h-44">
+              {currentQuestion.images.map((imgUrl) => (
+                <div key={imgUrl} className="relative w-fit h-44">
+                  {/* <Image
+                    src={imgUrl}
+                    alt="Question attachment"
+                    fill
+                    style={{ objectFit: 'contain' }}
+                    className="rounded-md border"
+                  /> */}
+                  <MotionImageDialog layoutId={imgUrl + 'question'} src={imgUrl} alt="Question attachment" className="rounded-md border object-contain h-full w-max" width={1000} height={1000} />
+                </div>
+              ))}
+            </div>
+          )}
+
           {renderQuestion()}
         </CardContent>
       </Card>
 
-      {/* Navigation */}
+      {/* Navigation & Submit */}
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
@@ -337,9 +357,9 @@ export function TryoutAttemptClient({
                 key={question.id}
                 variant={index === currentQuestionIndex ? "default" : "outline"}
                 size="sm"
-                className={`h-8 w-8 p-0 ${answers[question.id]
-                    ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
-                    : ''
+                className={`h-8 w-8 p-0 ${answers[question.id] && answers[question.id]?.trim() !== "" && answers[question.id]?.trim() !== "[]"
+                  ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+                  : ''
                   }`}
                 onClick={() => setCurrentQuestionIndex(index)}
               >

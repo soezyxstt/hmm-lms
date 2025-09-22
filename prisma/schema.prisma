@@ -1,373 +1,448 @@
-// prisma/schema.prisma// prisma/schema.prisma
+// ----------------------------------------------------------------
+// THIS IS A GENERATED FILE. DO NOT EDIT.
+// ----------------------------------------------------------------
+
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
+// User-related enums
 enum Role {
-    ADMIN
-    STUDENT
-    SUPERADMIN
+  ADMIN
+  STUDENT
+  SUPERADMIN
 }
 
-model User {
-    id       String @id @default(cuid())
-    email    String @unique
-    name     String
-    password String
-
-    nim      String  @unique
-    faculty  String?
-    program  String?
-    position String?
-    role     Role    @default(STUDENT)
-
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
-    emailVerified    DateTime?
-    image            String?
-    accounts         Account[]
-    sessions         Session[]
-    courses          Course[]
-    learningSessions LearningSession[]
-    userAttempts     UserAttempt[]
-
-    createdEvents        Event[]            @relation("CreatedBy")
-    events               Event[]            @relation("UserEvents")
-    createdAnnouncements Announcement[]     @relation("CreatedAnnouncements")
-    createdScholarships  Scholarship[]      @relation("CreatedScholarships")
-    uploadedDocuments    Document[]         @relation("UploadedDocuments")
-    documentAccesses     DocumentAccess[]   @relation("DocumentAccesses")
-    createdJobVacancies  JobVacancy[]       @relation("CreatedJobVacancies")
-    pushSubscriptions    PushSubscription[]
+// Resource system enums
+enum ResourceType {
+  FILE
+  LINK
 }
 
-model PushSubscription {
-    id        String   @id @default(cuid())
-    endpoint  String   @unique
-    p256dh    String
-    auth      String
-    createdAt DateTime @default(now())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@index([userId])
+enum ResourceCategory {
+  E_BOOK
+  PRESENTATION
+  NOTES
+  PROBLEMS
+  VIDEO
+  SYLLABUS
+  OTHER
 }
 
-model Account {
-    id                String  @id @default(cuid())
-    userId            String
-    type              String
-    provider          String
-    providerAccountId String
-    refresh_token     String? @db.Text
-    access_token      String? @db.Text
-    expires_at        Int?
-    token_type        String?
-    scope             String?
-    id_token          String? @db.Text
-    session_state     String?
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@unique([provider, providerAccountId])
+enum AttachableType {
+  COURSE
+  ANNOUNCEMENT
+  EVENT
+  JOB_VACANCY
+  SCHOLARSHIP
 }
 
-model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Course {
-    id          String   @id @default(cuid())
-    title       String
-    description String?
-    classCode   String   @unique
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    members         User[]
-    learningSession LearningSession[]
-    tryout          Tryout[]
-    announcements   Announcement[]
-    events          Event[]           @relation("CourseEvents")
-    document        Document[]
-}
-
-model LearningSession {
-    id       String @id @default(cuid())
-    userId   String
-    courseId String
-
-    date DateTime @db.Date
-
-    duration Int
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-    course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-    @@index([userId, courseId, date])
-}
-
-model Tryout {
-    id          String   @id @default(cuid())
-    title       String
-    description String?
-    duration    Int? // Duration in minutes
-    isActive    Boolean  @default(true)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    courseId    String
-
-    questions Question[]
-    attempts  UserAttempt[]
-    course    Course        @relation(fields: [courseId], references: [id])
-
-    @@map("tryouts")
-}
-
-model Question {
-    id       String       @id @default(cuid())
-    tryoutId String
-    type     QuestionType
-    question String
-    points   Int          @default(1)
-    order    Int
-    required Boolean      @default(true)
-
-    tryout  Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
-    options QuestionOption[]
-    answers UserAnswer[]
-
-    @@map("questions")
-}
-
-model QuestionOption {
-    id          String  @id @default(cuid())
-    questionId  String
-    text        String
-    isCorrect   Boolean @default(false)
-    order       Int
-    explanation String? @db.Text
-
-    question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-    @@map("question_options")
-}
-
-model UserAttempt {
-    id          String    @id @default(cuid())
-    userId      String
-    tryoutId    String
-    score       Float     @default(0)
-    maxScore    Float     @default(0)
-    startedAt   DateTime  @default(now())
-    endedAt     DateTime?
-    isCompleted Boolean   @default(false)
-
-    user    User         @relation(fields: [userId], references: [id])
-    tryout  Tryout       @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
-    answers UserAnswer[]
-
-    @@map("user_attempts")
-}
-
-model UserAnswer {
-    id         String   @id @default(cuid())
-    attemptId  String
-    questionId String
-    answer     String // JSON string for multiple answers or plain text
-    points     Float    @default(0)
-    createdAt  DateTime @default(now())
-
-    attempt  UserAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-    question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-    @@unique([attemptId, questionId])
-    @@map("user_answers")
-}
-
-model Event {
-    id          String     @id @default(cuid())
-    title       String
-    description String?
-    start       DateTime
-    end         DateTime
-    allDay      Boolean    @default(false)
-    location    String?
-    color       EventColor @default(SKY)
-    rsvp        String?
-
-    // Timeline fields (optional)
-    timeline    Json? // Store timeline data as JSON
-    hasTimeline Boolean @default(false)
-
-    // Who created this event
-    createdById String
-    createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
-
-    // For personal events, linked to a specific user's calendar
-    userId String?
-    user   User?   @relation("UserEvents", fields: [userId], references: [id])
-
-    // For course-wide events
-    courseId String?
-    course   Course? @relation("CourseEvents", fields: [courseId], references: [id])
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@map("events")
-}
-
-enum QuestionType {
-    MULTIPLE_CHOICE_SINGLE
-    MULTIPLE_CHOICE_MULTIPLE
-    SHORT_ANSWER
-    LONG_ANSWER
-}
-
-enum EventColor {
-    SKY
-    AMBER
-    VIOLET
-    ROSE
-    EMERALD
-    ORANGE
-}
-
-model Announcement {
-    id        String            @id @default(cuid())
-    title     String
-    content   String            @db.Text
-    scope     AnnouncementScope @default(GLOBAL)
-    createdAt DateTime          @default(now())
-    updatedAt DateTime          @updatedAt
-
-    createdById String
-    createdBy   User   @relation("CreatedAnnouncements", fields: [createdById], references: [id])
-
-    courseId String?
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-    @@map("announcements")
-}
-
-enum AnnouncementScope {
-    GLOBAL
-    COURSE
-}
-
-model Scholarship {
-    id          String   @id @default(cuid())
-    title       String
-    description String   @db.Text
-    provider    String
-    deadline    DateTime
-    link        String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    createdById String
-    createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
-
-    @@map("scholarships")
-}
-
-model Document {
-    id          String       @id @default(cuid())
-    title       String
-    description String?
-    filename    String // Original filename
-    key         String // R2 object key
-    mimeType    String
-    size        Int // Size in bytes
-    type        DocumentType
-    isActive    Boolean      @default(true)
-
-    // Course relation
-    courseId String
-    course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-    // Who uploaded this document
-    uploadedById String
-    uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])
-
-    // Access tracking
-    downloads Int @default(0)
-    views     Int @default(0)
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    // Access logs
-    accessLogs DocumentAccess[]
-
-    @@map("documents")
-}
-
-model DocumentAccess {
-    id         String     @id @default(cuid())
-    documentId String
-    userId     String
-    action     AccessType // VIEW, DOWNLOAD
-    ipAddress  String?
-    userAgent  String?
-    accessedAt DateTime   @default(now())
-
-    document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-    user     User     @relation("DocumentAccesses", fields: [userId], references: [id], onDelete: Cascade)
-
-    @@map("document_access")
-}
-
-enum DocumentType {
-    EBOOK // PDF books
-    PRESENTATION // PPTX, PPT
-    DOCUMENT // DOCX, DOC
-    SPREADSHEET // XLSX, XLS, CSV
-    IMAGE // JPG, PNG, JPEG
-    VIDEO // MP4
-    AUDIO // MP3, WAV
-    EXAM // Previous exam papers
-    MATERIAL // General course materials
+enum LinkSource {
+  YOUTUBE
+  GOOGLE_DRIVE
 }
 
 enum AccessType {
-    VIEW
-    DOWNLOAD
+  VIEW
+  DOWNLOAD
+}
+
+// Quiz-related enums
+enum QuestionType {
+  MULTIPLE_CHOICE_SINGLE
+  MULTIPLE_CHOICE_MULTIPLE
+  SHORT_ANSWER
+  LONG_ANSWER
+}
+
+// Organization-related enums
+enum EventColor {
+  SKY
+  AMBER
+  VIOLET
+  ROSE
+  EMERALD
+  ORANGE
+}
+
+enum AnnouncementScope {
+  GLOBAL
+  COURSE
+}
+
+enum ScholarshipType {
+  INTERNAL
+  EXTERNAL
+}
+
+// Core LMS course models
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  classCode   String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  syllabus    String?  @db.Text
+  isActive    Boolean  @default(true)
+
+  members         User[]
+  learningSession LearningSession[]
+  tryout          Tryout[]
+  announcements   Announcement[]
+  events          Event[]             @relation("CourseEvents")
+  testimonial     CourseTestimonial[]
+
+  // NOTE: The direct `document` relation is now gone.
+  // Resources are attached polymorphically.
+}
+
+model CourseTestimonial {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  rating    Int // 1 to 5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+}
+
+model LearningSession {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  date DateTime @db.Date
+
+  duration Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, courseId, date])
+}
+
+// Models for general organizational content
+model Event {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  allDay      Boolean    @default(false)
+  location    String?
+  color       EventColor @default(SKY)
+  rsvp        String?
+
+  timeline    Json?
+  hasTimeline Boolean @default(false)
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  userId String?
+  user   User?   @relation("UserEvents", fields: [userId], references: [id])
+
+  courseId String?
+  course   Course? @relation("CourseEvents", fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Announcement {
+  id        String            @id @default(cuid())
+  title     String
+  content   String            @db.Text
+  scope     AnnouncementScope @default(GLOBAL)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  createdById String
+  createdBy   User   @relation("CreatedAnnouncements", fields: [createdById], references: [id])
+
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("announcements")
+}
+
+model Scholarship {
+  id           String          @id @default(cuid())
+  title        String
+  description  String          @db.Text
+  provider     String
+  deadline     DateTime
+  link         String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  otherLinks   String[]
+  quota        Int?
+  benefits     String[]
+  requirements String[]
+  type         ScholarshipType @default(EXTERNAL)
+
+  createdById String
+  createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
+
+  @@map("scholarships")
 }
 
 model JobVacancy {
-    id          String   @id @default(cuid())
-    title       String
-    company     String // corp/org/recruiter
-    position    String
-    eligibility String // who can apply
-    streams     String[] // available streams/tracks
-    overview    String   @db.Text
-    timeline    String   @db.Text
-    applyLink   String
-    isActive    Boolean  @default(true)
+  id          String   @id @default(cuid())
+  title       String
+  company     String
+  position    String
+  eligibility String
+  streams     String[]
+  overview    String   @db.Text
+  timeline    String   @db.Text
+  applyLink   String
+  isActive    Boolean  @default(true)
 
-    // Metadata
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // Relations
-    createdById String
-    createdBy   User   @relation("CreatedJobVacancies", fields: [createdById], references: [id])
+  createdById String
+  createdBy   User   @relation("CreatedJobVacancies", fields: [createdById], references: [id])
 
-    @@map("job_vacancies")
+  @@map("job_vacancies")
+}
+
+// Models for quizzes/tryouts and student attempts
+model Tryout {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  duration    Int? // Duration in minutes
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courseId    String
+
+  questions Question[]
+  attempts  UserAttempt[]
+  course    Course        @relation(fields: [courseId], references: [id])
+
+  @@map("tryouts")
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  tryoutId    String
+  type        QuestionType
+  question    String
+  points      Int          @default(1)
+  order       Int
+  required    Boolean      @default(true)
+  images      String[]     @default([])
+  explanation String?      @db.Text
+  shortAnswer String?      @db.Text
+
+  tryout  Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+  answers UserAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id          String  @id @default(cuid())
+  questionId  String
+  text        String
+  isCorrect   Boolean @default(false)
+  order       Int
+  explanation String? @db.Text
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+model UserAttempt {
+  id          String    @id @default(cuid())
+  userId      String
+  tryoutId    String
+  score       Float     @default(0)
+  maxScore    Float     @default(0)
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  isCompleted Boolean   @default(false)
+
+  user    User         @relation(fields: [userId], references: [id])
+  tryout  Tryout       @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  answers UserAnswer[]
+
+  @@map("user_attempts")
+}
+
+model UserAnswer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  questionId String
+  answer     String // JSON string for multiple answers or plain text
+  points     Float    @default(0)
+  createdAt  DateTime @default(now())
+
+  attempt  UserAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("user_answers")
+}
+
+// The polymorphic resource system
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  type        ResourceType // The format: FILE or LINK
+
+  attachableId   String
+  attachableType AttachableType // e.g., COURSE, ANNOUNCEMENT, EVENT
+
+  category ResourceCategory?
+
+  attachment Attachment?
+  link       Link?
+  isActive   Boolean     @default(true) // <-- ADDED THIS LINE
+
+  uploadedById String
+  uploadedBy   User     @relation("UploadedResources", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accessLogs ResourceAccess[]
+
+  @@index([attachableId, attachableType])
+  @@map("resources")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  filename   String
+  key        String
+  mimeType   String
+  size       Int
+  resourceId String   @unique
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+model Link {
+  id         String     @id @default(cuid())
+  url        String
+  source     LinkSource
+  resourceId String     @unique
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@map("links")
+}
+
+model ResourceAccess {
+  id         String     @id @default(cuid())
+  action     AccessType
+  ipAddress  String?
+  userAgent  String?
+  accessedAt DateTime   @default(now())
+
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("ResourceAccesses", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resource_access")
+}
+
+// User and authentication models
+model User {
+  id       String @id @default(cuid())
+  email    String @unique
+  name     String
+  password String
+
+  nim      String  @unique
+  faculty  String?
+  program  String?
+  position String?
+  role     Role    @default(STUDENT)
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  emailVerified    DateTime?
+  image            String?
+  accounts         Account[]
+  sessions         Session[]
+  courses          Course[]
+  learningSessions LearningSession[]
+  userAttempts     UserAttempt[]
+
+  createdEvents        Event[]             @relation("CreatedBy")
+  events               Event[]             @relation("UserEvents")
+  createdAnnouncements Announcement[]      @relation("CreatedAnnouncements")
+  createdScholarships  Scholarship[]       @relation("CreatedScholarships")
+  createdJobVacancies  JobVacancy[]        @relation("CreatedJobVacancies")
+  pushSubscriptions    PushSubscription[]
+  courseTestimonial    CourseTestimonial[]
+
+  // Updated relations for the new resource system
+  uploadedResources Resource[]       @relation("UploadedResources")
+  resourceAccesses  ResourceAccess[] @relation("ResourceAccesses")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

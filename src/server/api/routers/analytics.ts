@@ -1,8 +1,11 @@
 // ~/server/api/routers/analytics.ts
-/* eslint-disable */
-// @ts-nocheck
+
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
 const timeRangeSchema = z.object({
@@ -12,7 +15,7 @@ const timeRangeSchema = z.object({
 
 export const analyticsRouter = createTRPCRouter({
   // Overview stats
-  getOverviewStats: protectedProcedure
+  getOverviewStats: adminProcedure
     .input(timeRangeSchema)
     .query(async ({ ctx, input }) => {
       // Check if user is admin
@@ -32,7 +35,7 @@ export const analyticsRouter = createTRPCRouter({
         activeCourses,
         totalTryouts,
         activeTryouts,
-        totalDocuments,
+        totalResources, // Formerly totalDocuments
         totalEvents,
         totalAnnouncements,
         totalScholarships,
@@ -51,13 +54,9 @@ export const analyticsRouter = createTRPCRouter({
         }),
         // Total courses
         ctx.db.course.count(),
-        // Active courses (with recent activity)
+        // Active courses
         ctx.db.course.count({
-          where: {
-            updatedAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-            },
-          },
+          where: { isActive: true }, // Changed from updatedAt to isActive flag
         }),
         // Total tryouts
         ctx.db.tryout.count(),
@@ -65,11 +64,12 @@ export const analyticsRouter = createTRPCRouter({
         ctx.db.tryout.count({
           where: { isActive: true },
         }),
-        // Total documents
-        ctx.db.document.count({
+        // Total resources (documents/links)
+        ctx.db.resource.count({
+          // Changed from 'document' to 'resource'
           where: { isActive: true },
         }),
-        // Total events
+        // Total events in time range
         ctx.db.event.count({
           where: {
             start: {
@@ -78,7 +78,7 @@ export const analyticsRouter = createTRPCRouter({
             },
           },
         }),
-        // Total announcements
+        // Total announcements in time range
         ctx.db.announcement.count({
           where: {
             createdAt: {
@@ -87,7 +87,7 @@ export const analyticsRouter = createTRPCRouter({
             },
           },
         }),
-        // Total scholarships
+        // Total scholarships created in time range
         ctx.db.scholarship.count({
           where: {
             createdAt: {
@@ -96,7 +96,7 @@ export const analyticsRouter = createTRPCRouter({
             },
           },
         }),
-        // Total job vacancies
+        // Total active job vacancies created in time range
         ctx.db.jobVacancy.count({
           where: {
             isActive: true,
@@ -115,11 +115,23 @@ export const analyticsRouter = createTRPCRouter({
         activeCourses,
         totalTryouts,
         activeTryouts,
-        totalDocuments,
+        totalResources,
         totalEvents,
         totalAnnouncements,
         totalScholarships,
         totalJobVacancies,
+      } as {
+        totalUsers: number;
+        newUsers: number;
+        totalCourses: number;
+        activeCourses: number;
+        totalTryouts: number;
+        activeTryouts: number;
+        totalResources: number;
+        totalEvents: number;
+        totalAnnouncements: number;
+        totalScholarships: number;
+        totalJobVacancies: number;
       };
     }),
 
@@ -197,17 +209,6 @@ export const analyticsRouter = createTRPCRouter({
         select: {
           id: true,
           title: true,
-          _count: {
-            attempts: {
-              where: {
-                startedAt: {
-                  gte: from,
-                  lte: to,
-                },
-                isCompleted: true,
-              },
-            },
-          },
           attempts: {
             where: {
               startedAt: {
@@ -219,7 +220,6 @@ export const analyticsRouter = createTRPCRouter({
             select: {
               score: true,
               maxScore: true,
-              startedAt: true,
             },
           },
         },
@@ -273,8 +273,8 @@ export const analyticsRouter = createTRPCRouter({
       };
     }),
 
-  // Document analytics
-  getDocumentAnalytics: protectedProcedure
+  // Resource analytics (formerly Document analytics)
+  getResourceAnalytics: protectedProcedure
     .input(timeRangeSchema)
     .query(async ({ ctx, input }) => {
       if (
@@ -286,14 +286,16 @@ export const analyticsRouter = createTRPCRouter({
 
       const { from, to } = input;
 
-      // Get document access stats
-      const documentStats = await ctx.db.document.findMany({
+      // Get resource access stats
+      const resources = await ctx.db.resource.findMany({
+        where: {
+          isActive: true,
+        },
         select: {
           id: true,
           title: true,
           type: true,
-          views: true,
-          downloads: true,
+          category: true,
           createdAt: true,
           accessLogs: {
             where: {
@@ -304,17 +306,32 @@ export const analyticsRouter = createTRPCRouter({
             },
             select: {
               action: true,
-              accessedAt: true,
             },
           },
         },
-        where: {
-          isActive: true,
-        },
+      });
+
+      const resourceStats = resources.map((resource) => {
+        const views = resource.accessLogs.filter(
+          (log) => log.action === "VIEW",
+        ).length;
+        const downloads = resource.accessLogs.filter(
+          (log) => log.action === "DOWNLOAD",
+        ).length;
+        return {
+          id: resource.id,
+          title: resource.title,
+          type: resource.type,
+          category: resource.category,
+          createdAt: resource.createdAt,
+          views,
+          downloads,
+        };
       });
 
       // Get access over time
-      const accessOverTime = await ctx.db.documentAccess.groupBy({
+      const accessOverTime = await ctx.db.resourceAccess.groupBy({
+        // Changed from documentAccess
         by: ["accessedAt", "action"],
         where: {
           accessedAt: {
@@ -331,12 +348,12 @@ export const analyticsRouter = createTRPCRouter({
       });
 
       return {
-        documentStats,
+        resourceStats,
         accessOverTime,
       };
     }),
 
-  // Course completion rates
+  // Course analytics
   getCourseAnalytics: protectedProcedure
     .input(timeRangeSchema)
     .query(async ({ ctx, input }) => {
@@ -356,25 +373,9 @@ export const analyticsRouter = createTRPCRouter({
           classCode: true,
           createdAt: true,
           _count: {
-            members: true,
+            select: { members: true },
           },
-          members: {
-            select: {
-              id: true,
-              learningSessions: {
-                where: {
-                  date: {
-                    gte: from,
-                    lte: to,
-                  },
-                },
-                select: {
-                  duration: true,
-                  date: true,
-                },
-              },
-            },
-          },
+          // This is the only relation needed for session data
           learningSession: {
             where: {
               date: {
@@ -384,7 +385,6 @@ export const analyticsRouter = createTRPCRouter({
             },
             select: {
               duration: true,
-              date: true,
               userId: true,
             },
           },

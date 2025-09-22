@@ -1,19 +1,15 @@
-// ~/app/api/documents/[id]/route.ts (updated)
+// ~/app/api/documents/[id]/route.ts
+// ... (imports)
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { r2Client, GetObjectCommand, R2_BUCKET } from "~/lib/r2-client";
-import { Role } from "@prisma/client";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { Role, ResourceType, AccessType, AttachableType } from "@prisma/client";
+import s3Client from "~/lib/s3-client";
 
 export async function GET(
   request: NextRequest,
-  {
-    params,
-  }: {
-    params: Promise<{
-      id: string;
-    }>;
-  },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -21,111 +17,99 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { id } = await params;
-    const documentId = id;
+    const { id: resourceId } = await params;
     const url = new URL(request.url);
-    const action = url.searchParams.get("action") ?? "view"; // 'view' or 'download'
+    const action = url.searchParams.get("action") ?? "view";
 
-    const document = await db.document.findUnique({
-      where: { id: documentId },
+    // Step 1: Find the resource and its attachment
+    const resource = await db.resource.findUnique({
+      where: { id: resourceId },
       include: {
-        course: {
-          include: {
-            members: {
-              where: { id: session.user.id },
-              select: { id: true },
-            },
-          },
-        },
+        attachment: true,
       },
     });
 
-    if (!document) {
-      return new NextResponse("Document not found", { status: 404 });
+    // Step 2: Validate the resource and its file
+    if (
+      !resource ||
+      resource.type !== ResourceType.FILE ||
+      !resource.attachment
+    ) {
+      return new NextResponse("Resource not found or is not a file", {
+        status: 404,
+      });
     }
 
-    if (!document.isActive) {
-      return new NextResponse("Document is not available", { status: 410 });
+    if (!resource.isActive) {
+      return new NextResponse("Resource is not available", { status: 410 });
     }
 
-    const isEnrolled = document.course.members.length > 0;
-    const isAdmin = session.user.role === Role.ADMIN; // This matches your adminProcedure logic
+    // Step 3: Check permissions by querying the related course
+    // This is the key change to fix the error.
+    let isEnrolled = false;
+    if (resource.attachableType === AttachableType.COURSE) {
+      const course = await db.course.findUnique({
+        where: { id: resource.attachableId },
+        include: {
+          members: {
+            where: { id: session.user.id },
+            select: { id: true },
+          },
+        },
+      });
+      isEnrolled = !!course?.members.length;
+    }
+
+    const isAdmin = session.user.role === (Role.ADMIN || Role.SUPERADMIN);
 
     if (!isEnrolled && !isAdmin) {
       return new NextResponse("Access denied", { status: 403 });
     }
 
+    // ... (rest of the code for streaming and logging)
     const getCommand = new GetObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: document.key,
+      Bucket: process.env.DO_SPACES_BUCKET,
+      Key: resource.attachment.key,
     });
 
-    const response = await r2Client.send(getCommand);
+    const s3Response = await s3Client.send(getCommand);
 
-    if (!response.Body) {
+    if (!s3Response.Body) {
       return new NextResponse("File not found in storage", { status: 404 });
     }
 
-    // Log access
-    await db.documentAccess.create({
+    await db.resourceAccess.create({
       data: {
-        documentId: document.id,
+        resourceId: resource.id,
         userId: session.user.id,
-        action: action === "download" ? "DOWNLOAD" : "VIEW",
-        ipAddress:
-          request.headers.get("x-forwarded-for") ??
-          request.headers.get("x-real-ip") ??
-          "unknown",
+        action: action === "download" ? AccessType.DOWNLOAD : AccessType.VIEW,
+        ipAddress: request.headers.get("x-forwarded-for") ?? "unknown",
         userAgent: request.headers.get("user-agent") ?? "unknown",
       },
     });
 
-    // Update counters
-    if (action === "download") {
-      await db.document.update({
-        where: { id: document.id },
-        data: { downloads: { increment: 1 } },
-      });
-    } else {
-      await db.document.update({
-        where: { id: document.id },
-        data: { views: { increment: 1 } },
-      });
-    }
-
-    const chunks: Uint8Array[] = [];
-    const reader = response.Body.transformToWebStream().getReader();
-
-    while (true) {
-      const result: ReadableStreamReadResult<Uint8Array> = await reader.read();
-      if (result.done) break;
-      chunks.push(result.value);
-    }
-
-    const buffer = Buffer.concat(chunks);
-
     const headers = new Headers();
-    headers.set("Content-Type", document.mimeType);
-    headers.set("Content-Length", document.size.toString());
+    headers.set("Content-Type", resource.attachment.mimeType);
+    headers.set("Content-Length", resource.attachment.size.toString());
 
     if (action === "download") {
       headers.set(
         "Content-Disposition",
-        `attachment; filename="${document.filename}"`,
+        `attachment; filename="${resource.attachment.filename}"`,
       );
     } else {
       headers.set(
         "Content-Disposition",
-        `inline; filename="${document.filename}"`,
+        `inline; filename="${resource.attachment.filename}"`,
       );
     }
 
     headers.set("Cache-Control", "private, max-age=3600");
-    headers.set("ETag", `"${document.id}-${document.updatedAt.getTime()}"`);
-
-    return new NextResponse(buffer, { headers });
+    headers.set("ETag", `"${resource.id}-${resource.updatedAt.getTime()}"`);
+    const stream = s3Response.Body.transformToWebStream();
+    return new NextResponse(stream, { headers });
   } catch (error) {
-    console.error("Document serving error:", error);
+    console.error("Resource serving error:", error);
     return new NextResponse("Internal server error", { status: 500 });
   }
 }

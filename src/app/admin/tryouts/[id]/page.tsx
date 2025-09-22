@@ -27,7 +27,7 @@ interface TryoutDetailsPageProps {
 export default async function TryoutDetailsPage({ params }: TryoutDetailsPageProps) {
   const session = await auth();
 
-  if (!session || session.user.role !== Role.ADMIN) {
+  if (!session || (session.user.role !== Role.ADMIN && session.user.role !== Role.SUPERADMIN)) {
     redirect("/");
   }
   const { id } = await params;

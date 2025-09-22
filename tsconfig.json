@@ -34,10 +34,8 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.cjs",
-    "**/*.js",
     ".next/types/**/*.ts",
     "types/next-auth.d.ts"
 , "next.config.mjs"  ],
-  "exclude": ["node_modules", "public/sw.js", "public/workbox-*.js", "public/worker-*.js"]
+  "exclude": ["node_modules", "public/sw.js", "public/workbox-*.js", "public/worker-*.js", "scripts/**/*", "worker/index.js"]
 }

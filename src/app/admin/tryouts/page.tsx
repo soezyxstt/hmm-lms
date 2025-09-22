@@ -10,14 +10,14 @@ import TryoutsList from './list';
 export default async function AdminTryoutsPage() {
   const session = await auth();
 
-  if (!session || session.user.role !== Role.ADMIN) {
+  if (!session || (session.user.role !== Role.ADMIN && session.user.role !== Role.SUPERADMIN)) {
     redirect("/");
   }
 
   const tryouts = await api.tryout.getAll();
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Manage Tryouts</h1>

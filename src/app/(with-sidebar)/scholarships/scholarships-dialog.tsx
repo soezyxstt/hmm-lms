@@ -5,20 +5,23 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Table, TableBody, TableCell, TableRow } from '~/components/ui/table';
 
 type ScholarshipDialogProps = {
-  mitra: string;
-  title: string;
-  description: string;
-  deadline: string;
-  status: string;
-  quota: number;
-  type: string;
-  benefits: string[];
-  requirements: string[];
-  link: string;
+  scholarship: {
+    provider: string;
+    title: string;
+    description: string;
+    deadline: Date;
+    quota: number | null;
+    type: string;
+    benefits: string[];
+    requirements: string[];
+    link: string;
+    otherLinks?: string[];
+  },
   children?: ReactNode;
 };
 
-export default function ScholarshipDialog({ title, link, children, ...props }: ScholarshipDialogProps) {
+export default function ScholarshipDialog({ scholarship, children }: ScholarshipDialogProps) {
+  const { title, link, ...props } = scholarship;
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -40,7 +43,7 @@ export default function ScholarshipDialog({ title, link, children, ...props }: S
                       <li key={index}>{item}</li>
                     ))}
                   </ol>
-                ) : value}</TableCell>
+                ) : typeof value === 'object' ? value?.toDateString() : value}</TableCell>
               </TableRow>
             ))}
           </TableBody>
