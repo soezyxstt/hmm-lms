@@ -50,33 +50,33 @@ export function AnalyticsContent() {
       refetchInterval: 60000,
     });
 
-  // Transform data for charts
+  // ✨ CHANGED: Remove .toISOString() calls as data is now a string
   const userRegistrationData = userActivity?.userRegistrations.map(item => ({
-    date: item.createdAt.toISOString(),
+    date: item.createdAt, // Was item.createdAt.toISOString()
     value: item._count.id,
   })) ?? [];
 
   const learningActivityData = userActivity?.learningSessions.map(item => ({
-    date: item.date.toISOString(),
+    date: item.date, // Was item.date.toISOString()
     value: item._count.id,
   })) ?? [];
 
   const tryoutAttemptsData = tryoutPerformance?.attemptsOverTime.map(item => ({
-    date: item.startedAt.toISOString(),
+    date: item.startedAt, // Was item.startedAt.toISOString()
     value: item._count.id,
   })) ?? [];
 
   const documentViewsData = resourceAnalytics?.accessOverTime
     .filter(item => item.action === "VIEW")
     .map(item => ({
-      date: item.accessedAt.toISOString(),
+      date: item.accessedAt, // Was item.accessedAt.toISOString()
       value: item._count.id,
     })) ?? [];
 
   const documentDownloadsData = resourceAnalytics?.accessOverTime
     .filter(item => item.action === "DOWNLOAD")
     .map(item => ({
-      date: item.accessedAt.toISOString(),
+      date: item.accessedAt, // Was item.accessedAt.toISOString()
       value: item._count.id,
     })) ?? [];
 
@@ -103,6 +103,13 @@ export function AnalyticsContent() {
   };
 
   const isLoading = isLoadingOverview || isLoadingActivity || isLoadingTryouts || isLoadingDocuments || isLoadingCourses;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <div className="text-muted-foreground">Loading analytics...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

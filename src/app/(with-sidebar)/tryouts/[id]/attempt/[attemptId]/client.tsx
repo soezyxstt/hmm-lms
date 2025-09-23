@@ -1,4 +1,3 @@
-// ~/app/(student)/tryouts/[id]/attempt/[attemptId]/client.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -32,8 +31,9 @@ import {
 } from "lucide-react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
-import type { Tryout, UserAttempt, Question, QuestionOption } from "~/lib/types/tryout";
+import type { Tryout, UserAttempt, Question } from "~/lib/types/tryout";
 import MotionImageDialog from '~/components/motion/dialog';
+import type { QuestionOption } from '@prisma/client';
 
 interface TryoutAttemptClientProps {
   attempt: UserAttempt;
@@ -149,15 +149,22 @@ export function TryoutAttemptClient({
     <RadioGroup
       value={questionAnswer}
       onValueChange={(value) => handleAnswerChange(question.id, value)}
-      className="space-y-3"
+      className="space-y-2"
     >
       {question.options.map((option: QuestionOption) => (
-        <div key={option.id} className="flex items-center space-x-2">
-          <RadioGroupItem value={option.id} id={option.id} />
-          <Label htmlFor={option.id} className="flex-1 cursor-pointer">
-            {option.text}
-          </Label>
-        </div>
+        <Label key={option.id} htmlFor={option.id} className="p-4 flex-col items-start border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary">
+          <div className="space-x-3">
+            <RadioGroupItem value={option.id} id={option.id} />
+            <span className="flex-1">{option.text}</span>
+          </div>
+          {option.images && option.images.length > 0 && (
+            <div className="pl-8 flex flex-wrap gap-2">
+              {option.images.map(imgUrl => (
+                <MotionImageDialog key={imgUrl} layoutId={imgUrl + option.id} width={1000} height={1000} src={imgUrl} alt="Option image" className="h-20 w-20 rounded-md border object-cover" />
+              ))}
+            </div>
+          )}
+        </Label>
       ))}
     </RadioGroup>
   );
@@ -166,23 +173,30 @@ export function TryoutAttemptClient({
     const selectedOptions: string[] = questionAnswer ? JSON.parse(questionAnswer) as string[] : [];
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {question.options.map((option: QuestionOption) => (
-          <div key={option.id} className="flex items-center space-x-2">
-            <Checkbox
-              id={option.id}
-              checked={selectedOptions.includes(option.id)}
-              onCheckedChange={(checked) => {
-                const newSelected = checked
-                  ? [...selectedOptions, option.id]
-                  : selectedOptions.filter((id: string) => id !== option.id);
-                void handleAnswerChange(question.id, JSON.stringify(newSelected));
-              }}
-            />
-            <Label htmlFor={option.id} className="flex-1 cursor-pointer">
-              {option.text}
-            </Label>
-          </div>
+          <Label key={option.id} htmlFor={option.id} className="p-4 border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary flex-col items-start">
+            <div className="flex space-x-3">
+              <Checkbox
+                id={option.id}
+                checked={selectedOptions.includes(option.id)}
+                onCheckedChange={(checked) => {
+                  const newSelected = checked
+                    ? [...selectedOptions, option.id]
+                    : selectedOptions.filter((id: string) => id !== option.id);
+                  void handleAnswerChange(question.id, JSON.stringify(newSelected));
+                }}
+              />
+              <span className="flex-1">{option.text}</span>
+            </div>
+            {option.images && option.images.length > 0 && (
+              <div className="pl-8 flex flex-wrap gap-2">
+                {option.images.map(imgUrl => (
+                  <MotionImageDialog key={imgUrl} layoutId={imgUrl + option.id} width={1000} height={1000} src={imgUrl} alt="Option image" className="h-20 w-20 rounded-md border object-cover" />
+                ))}
+              </div>
+            )}
+          </Label>
         ))}
       </div>
     );
@@ -287,24 +301,14 @@ export function TryoutAttemptClient({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none dark:prose-invert">
             <p>{currentQuestion.question}</p>
           </div>
 
-          {/* --- FIX: RENDER QUESTION IMAGES --- */}
           {currentQuestion.images && currentQuestion.images.length > 0 && (
-            <div className="flex flex-wrap gap-4 h-44">
+            <div className="flex flex-wrap gap-4 h-44 overflow-x-auto">
               {currentQuestion.images.map((imgUrl) => (
-                <div key={imgUrl} className="relative w-fit h-44">
-                  {/* <Image
-                    src={imgUrl}
-                    alt="Question attachment"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                    className="rounded-md border"
-                  /> */}
-                  <MotionImageDialog layoutId={imgUrl + 'question'} src={imgUrl} alt="Question attachment" className="rounded-md border object-contain h-full w-max" width={1000} height={1000} />
-                </div>
+                < MotionImageDialog key={imgUrl} layoutId={imgUrl + 'question'} src={imgUrl} alt="Question attachment" className="rounded-md border object-contain h-full w-max" width={1000} height={1000} />
               ))}
             </div>
           )}

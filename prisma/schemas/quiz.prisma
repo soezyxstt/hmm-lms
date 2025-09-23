@@ -17,16 +17,16 @@ model Tryout {
 }
 
 model Question {
-  id          String       @id @default(cuid())
-  tryoutId    String
-  type        QuestionType
-  question    String
-  points      Int          @default(1)
-  order       Int
-  required    Boolean      @default(true)
-  images      String[]     @default([]) // Array of image URLs
-  explanation String?      @db.Text
-  shortAnswer String?      @db.Text
+  id           String       @id @default(cuid())
+  tryoutId     String
+  type         QuestionType
+  question     String
+  points       Int          @default(1)
+  order        Int
+  required     Boolean      @default(true)
+  images       String[]     @default([]) // Array of image URLs
+  explanation  String?      @db.Text
+  shortAnswers String[]     @default([]) // For short answer questions
 
   tryout  Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
   options QuestionOption[]
@@ -36,12 +36,13 @@ model Question {
 }
 
 model QuestionOption {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   questionId  String
   text        String
-  isCorrect   Boolean @default(false)
+  isCorrect   Boolean  @default(false)
   order       Int
-  explanation String? @db.Text
+  explanation String?  @db.Text
+  images      String[] @default([]) // Array of image URLs
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 

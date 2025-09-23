@@ -25,7 +25,9 @@ export default async function TryoutAttemptPage({ params }: TryoutAttemptPagePro
 
     return (
       <TryoutAttemptClient
+        // @ts-expect-error Server Component
         attempt={attempt}
+        // @ts-expect-error Server Component
         tryout={tryout}
         tryoutId={id}
       />

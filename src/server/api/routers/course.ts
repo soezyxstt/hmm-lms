@@ -670,4 +670,31 @@ export const courseRouter = createTRPCRouter({
         removedCount: userIds.length,
       };
     }),
+  
+  removeCourseMembers: adminProcedure
+    .input(
+      z.object({
+        courseId: z.string().cuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { courseId } = input;
+      const course = await ctx.db.course.findUnique({
+        where: { id: courseId },
+        include: { members: true },
+      });
+      if (!course) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Course not found." });
+      }
+      const memberIds = course.members.map((member) => member.id);
+      await ctx.db.course.update({
+        where: { id: courseId },
+        data: {
+          members: {
+            disconnect: memberIds.map((id) => ({ id })),
+          },
+        },
+      });
+      return { success: true, removedCount: memberIds.length };
+    }),
 });

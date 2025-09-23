@@ -1,5 +1,5 @@
-// ~/app/(student)/tryouts/[id]/results/[attemptId]/page.tsx
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { api } from "~/trpc/server";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
@@ -14,17 +14,12 @@ import {
   XCircle,
   AlertCircle,
   RotateCcw,
+  Lightbulb,
 } from "lucide-react";
 import { format } from "date-fns";
-import type { AttemptResults, ResultsUserAnswer } from "~/lib/types/tryout";
+import type { ResultsUserAnswer } from "~/lib/types/tryout";
 import type { JSX } from 'react';
-
-interface TryoutResultsPageProps {
-  params: Promise<{
-    id: string;
-    attemptId: string;
-  }>;
-}
+import type { QuestionOption } from '@prisma/client';
 
 type ScoreBadgeVariant = "default" | "secondary" | "destructive";
 
@@ -46,29 +41,38 @@ const getScoreLabel = (percentage: number): string => {
   return "Needs Improvement";
 };
 
+const OptionDetail = ({ option }: { option: QuestionOption }) => (
+  <div className="flex flex-col gap-2">
+    <span>{option.text}</span>
+    {option.images && option.images.length > 0 && (
+      <div className="flex flex-wrap gap-2">
+        {option.images.map(imgUrl => (
+          <Image key={imgUrl} src={imgUrl} alt="Option image" width={64} height={64} className="h-16 w-16 rounded-md border object-cover" />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 const renderMultipleChoiceAnswer = (
   answer: ResultsUserAnswer,
   isCorrect: boolean
 ): JSX.Element => {
   const { question } = answer;
+  const correctOptions = question.options.filter(opt => opt.isCorrect);
 
   if (question.type === "MULTIPLE_CHOICE_SINGLE") {
     const selectedOption = question.options.find(opt => opt.id === answer.answer);
-    const correctOptions = question.options.filter(opt => opt.isCorrect);
-
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="text-sm font-medium">Your Answer:</div>
         <div className="text-sm text-muted-foreground">
-          {selectedOption?.text ?? "No answer"}
+          {selectedOption ? <OptionDetail option={selectedOption} /> : "No answer"}
         </div>
-
         {!isCorrect && (
           <div className="space-y-1">
-            <div className="text-sm font-medium text-success">Correct Answer:</div>
-            <div className="text-sm text-success">
-              {correctOptions.map(opt => opt.text).join(", ")}
-            </div>
+            <div className="text-sm font-medium text-green-600">Correct Answer:</div>
+            {correctOptions.map(opt => <div key={opt.id} className="text-sm text-green-600"><OptionDetail option={opt} /></div>)}
           </div>
         )}
       </div>
@@ -78,62 +82,79 @@ const renderMultipleChoiceAnswer = (
   if (question.type === "MULTIPLE_CHOICE_MULTIPLE") {
     try {
       const selectedIds = JSON.parse(answer.answer) as string[];
-      const selectedOptions = question.options.filter(opt =>
-        selectedIds.includes(opt.id)
-      );
-      const correctOptions = question.options.filter(opt => opt.isCorrect);
-
+      const selectedOptions = question.options.filter(opt => selectedIds.includes(opt.id));
       return (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="text-sm font-medium">Your Answer:</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground space-y-2">
             {selectedOptions.length > 0
-              ? selectedOptions.map(opt => opt.text).join(", ")
+              ? selectedOptions.map(opt => <div key={opt.id}><OptionDetail option={opt} /></div>)
               : "No answer"}
           </div>
-
           {!isCorrect && (
-            <div className="space-y-1">
+            <div className="space-y-1 mt-3">
               <div className="text-sm font-medium text-green-600">Correct Answer:</div>
-              <div className="text-sm text-green-600">
-                {correctOptions.map(opt => opt.text).join(", ")}
+              <div className="space-y-2">
+                {correctOptions.map(opt => <div key={opt.id} className="text-sm text-green-600"><OptionDetail option={opt} /></div>)}
               </div>
             </div>
           )}
         </div>
       );
     } catch {
-      return (
-        <div className="text-sm text-muted-foreground">
-          Invalid answer format
-        </div>
-      );
+      return <div className="text-sm text-muted-foreground">Invalid answer format</div>;
     }
   }
-
   return <div>Unsupported question type</div>;
 };
 
-const renderTextAnswer = (answer: ResultsUserAnswer, isCorrect: boolean): JSX.Element => (
-  <div className="space-y-2">
-    <div className="text-sm font-medium">Your Answer:</div>
-    <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
-      {answer.answer || "No answer provided"}
-    </div>
-    {!isCorrect && (
-      <div className="text-sm text-warning">
-        <AlertCircle className="h-4 w-4 inline mr-1" />
-        This answer requires manual grading
+const renderTextAnswer = (answer: ResultsUserAnswer, isCorrect: boolean): JSX.Element => {
+  const { question } = answer;
+  return (
+    <div className="space-y-3">
+      <div className="text-sm font-medium">Your Answer:</div>
+      <div className="text-sm text-muted-foreground bg-muted p-2 rounded-md whitespace-pre-wrap">
+        {answer.answer || "No answer provided"}
       </div>
-    )}
-  </div>
-);
+      {!isCorrect && question.type === "SHORT_ANSWER" && (
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-green-600">Possible Correct Answers:</div>
+          <div className="text-sm text-green-600 bg-green-50 dark:bg-green-950/50 p-2 rounded-md">
+            {question.shortAnswers && question.shortAnswers.length > 0 ? (
+              <ul className="list-disc list-inside space-y-1">
+                {question.shortAnswers.map((ans, idx) => (
+                  <li key={idx}>{typeof ans === 'string' ? ans : ans.value}</li>
+                ))}
+              </ul>
+            ) : (
+              "No correct answers provided."
+            )}
+          </div>
+        </div>
+      )}
+      {!isCorrect && question.type === "LONG_ANSWER" && (
+        <div className="text-sm text-amber-600">
+          <AlertCircle className="h-4 w-4 inline mr-1" />
+          This answer requires manual grading.
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface TryoutResultsPageProps {
+  params: Promise<{
+    id: string;
+    attemptId: string;
+  }>;
+}
+
 
 export default async function TryoutResultsPage({ params }: TryoutResultsPageProps) {
   const { id, attemptId } = await params;
 
   try {
-    const attempt = await api.tryout.getAttemptResults({ attemptId }) as AttemptResults;
+    const attempt = await api.tryout.getAttemptResults({ attemptId });
 
     if (!attempt) {
       redirect(`/tryouts/${id}`);
@@ -233,44 +254,64 @@ export default async function TryoutResultsPage({ params }: TryoutResultsPagePro
           <CardHeader>
             <CardTitle>Question Review</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {attempt.answers.map((answer, index) => {
               const { question } = answer;
               const isCorrect = answer.points > 0;
 
               return (
-                <div key={answer.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Question {index + 1}</span>
-                        {isCorrect ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-600" />
-                        )}
+                <div key={answer.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                  <div className="border rounded-lg p-4 space-y-4 bg-background">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Question {index + 1}</span>
+                          {isCorrect ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {question.question}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {question.question}
-                      </p>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                        {answer.points}/{question.points}
+                      <div className="text-right space-y-1">
+                        <div className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                          {answer.points}/{question.points}
+                        </div>
+                        <div className="text-xs text-muted-foreground">points</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">points</div>
                     </div>
+
+                    {question.images && question.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {question.images.map(imgUrl => (
+                          <Image key={imgUrl} src={imgUrl} alt="Question attachment" width={128} height={128} className="h-32 w-auto rounded-md border object-contain" />
+                        ))}
+                      </div>
+                    )}
+
+                    {(question.type === "MULTIPLE_CHOICE_SINGLE" || question.type === "MULTIPLE_CHOICE_MULTIPLE") &&
+                      renderMultipleChoiceAnswer(answer, isCorrect)}
+
+                    {(question.type === "SHORT_ANSWER" || question.type === "LONG_ANSWER") &&
+                      renderTextAnswer(answer, isCorrect)}
                   </div>
 
-                  {/* Render answers based on question type */}
-                  {(question.type === "MULTIPLE_CHOICE_SINGLE" ||
-                    question.type === "MULTIPLE_CHOICE_MULTIPLE") &&
-                    renderMultipleChoiceAnswer(answer, isCorrect)
-                  }
-
-                  {(question.type === "SHORT_ANSWER" || question.type === "LONG_ANSWER") &&
-                    renderTextAnswer(answer, isCorrect)
-                  }
+                  {question.explanation && (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm text-blue-800 dark:text-blue-300">Explanation</h4>
+                          <p className="text-sm text-blue-700 dark:text-blue-300/80 mt-1 whitespace-pre-wrap">
+                            {question.explanation}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

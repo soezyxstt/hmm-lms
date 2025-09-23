@@ -1,13 +1,5 @@
 // ~/lib/types/tryout.ts
-import type { QuestionType } from "@prisma/client";
-
-export interface QuestionOption {
-  id: string;
-  text: string;
-  order: number;
-  isCorrect?: boolean; // Only available for admin/results view
-  explanation?: string | null;
-}
+import type { QuestionOption, QuestionType } from "@prisma/client";
 
 export interface Question {
   id: string;
@@ -42,6 +34,18 @@ export interface UserAnswer {
   answer: string;
   points: number;
   createdAt: Date;
+  question: {
+    id: string;
+    type: QuestionType;
+    question: string;
+    points: number;
+    options: QuestionOption[];
+    images: string[]; // Array of image URLs
+    shortAnswers?: Array<{
+      value: string;
+    }> | string[];
+    explanation?: string | null;
+  };
 }
 
 export interface UserAttempt {
@@ -74,11 +78,12 @@ export interface ResultsUserAnswer {
     type: QuestionType;
     question: string;
     points: number;
-    options: Array<{
-      id: string;
-      text: string;
-      isCorrect: boolean;
-    }>;
+    options: QuestionOption[];
+    images: string[]; // Array of image URLs
+    shortAnswers?: Array<{
+      value: string;
+    }> | string[];
+    explanation?: string | null;
   };
 }
 

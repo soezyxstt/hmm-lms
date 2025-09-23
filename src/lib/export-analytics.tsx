@@ -7,8 +7,9 @@ interface ExportData {
   timeRange: TimeRange;
   overviewStats: OverviewStats;
   userActivity: {
-    userRegistrations: Array<{ createdAt: Date; _count: { id: number } }>;
-    learningSessions: Array<{ date: Date; _count: { id: number }; _sum: { duration: number | null } }>;
+    // CHANGED: Date objects are now ISO strings from the API
+    userRegistrations: Array<{ createdAt: string; _count: { id: number } }>;
+    learningSessions: Array<{ date: string; _count: { id: number }; _sum: { duration: number | null } }>;
   };
   tryoutPerformance: {
     tryoutPerformance: Array<{
@@ -17,7 +18,8 @@ interface ExportData {
       totalAttempts: number;
       averageScore: number;
     }>;
-    attemptsOverTime: Array<{ startedAt: Date; _count: { id: number } }>;
+    // CHANGED: Date objects are now ISO strings from the API
+    attemptsOverTime: Array<{ startedAt: string; _count: { id: number } }>;
   };
   resourceAnalytics: {
     resourceStats: Array<{
@@ -27,7 +29,8 @@ interface ExportData {
       views: number;
       downloads: number;
     }>;
-    accessOverTime: Array<{ accessedAt: Date; action: string; _count: { id: number } }>;
+    // CHANGED: Date objects are now ISO strings from the API
+    accessOverTime: Array<{ accessedAt: string; action: string; _count: { id: number } }>;
   };
   courseAnalytics: Array<{
     id: string;
@@ -48,6 +51,7 @@ export async function exportAnalyticsData(data: ExportData) {
   const overviewData = [
     ["Metric", "Value"],
     ["Export Date", format(new Date(), "yyyy-MM-dd HH:mm:ss")],
+    // NOTE: timeRange still uses Date objects, as it comes from the client state directly
     ["Period From", format(data.timeRange.from, "yyyy-MM-dd")],
     ["Period To", format(data.timeRange.to, "yyyy-MM-dd")],
     [""],
@@ -70,7 +74,8 @@ export async function exportAnalyticsData(data: ExportData) {
   const userRegistrationsData = [
     ["Date", "New Users"],
     ...data.userActivity.userRegistrations.map(item => [
-      format(item.createdAt, "yyyy-MM-dd"),
+      // CHANGED: Parse the string back to a Date for formatting
+      format(new Date(item.createdAt), "yyyy-MM-dd"),
       item._count.id,
     ]),
   ];
@@ -81,7 +86,8 @@ export async function exportAnalyticsData(data: ExportData) {
   const learningSessionsData = [
     ["Date", "Sessions", "Total Duration (minutes)"],
     ...data.userActivity.learningSessions.map(item => [
-      format(item.date, "yyyy-MM-dd"),
+      // CHANGED: Parse the string back to a Date for formatting
+      format(new Date(item.date), "yyyy-MM-dd"),
       item._count.id,
       item._sum.duration ?? 0,
     ]),

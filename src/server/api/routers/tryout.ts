@@ -1,4 +1,3 @@
-// ~/server/api/routers/tryout.ts
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -30,8 +29,9 @@ export const tryoutRouter = createTRPCRouter({
               points: question.points,
               required: question.required,
               order: index + 1,
-              // --- FIX: Add shortAnswer to the create operation ---
-              shortAnswer: question.shortAnswer,
+              explanation: question.explanation,
+              shortAnswers:
+                question.shortAnswers?.map((ans) => ans.value) ?? [],
               options: question.options
                 ? {
                     create: question.options.map((option, optionIndex) => ({
@@ -39,6 +39,7 @@ export const tryoutRouter = createTRPCRouter({
                       isCorrect: option.isCorrect,
                       explanation: option.explanation,
                       order: optionIndex + 1,
+                      images: option.images,
                     })),
                   }
                 : undefined,
@@ -61,8 +62,6 @@ export const tryoutRouter = createTRPCRouter({
 
   getMyTryouts: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-
-    // 1. Find all courses the user is enrolled in.
     const coursesWithTryouts = await ctx.db.course.findMany({
       where: {
         members: {
@@ -71,18 +70,14 @@ export const tryoutRouter = createTRPCRouter({
           },
         },
       },
-      // 2. For each course, include its tryouts with specific conditions.
       include: {
         tryout: {
-          // Only include tryouts that are active.
           where: {
             isActive: true,
           },
-          // Sort the tryouts within each course.
           orderBy: {
             createdAt: "desc",
           },
-          // Include the same details for each tryout as before.
           include: {
             attempts: {
               where: {
@@ -102,12 +97,9 @@ export const tryoutRouter = createTRPCRouter({
         },
       },
       orderBy: {
-        title: "asc", // Sort the courses alphabetically by title.
+        title: "asc",
       },
     });
-
-    // 3. (Optional) Filter out courses that have no active tryouts.
-    // This provides a cleaner response for the frontend.
     return coursesWithTryouts.filter((course) => course.tryout.length > 0);
   }),
 
@@ -117,21 +109,16 @@ export const tryoutRouter = createTRPCRouter({
       const { id, questions, ...updateData } = input;
 
       return ctx.db.$transaction(async (tx) => {
-        // First, update the simple fields of the tryout itself
         await tx.tryout.update({
           where: { id },
           data: updateData,
         });
 
-        // If questions were included in the update payload, replace them
         if (questions) {
-          // 1. Delete all old questions associated with this tryout
           await tx.question.deleteMany({
             where: { tryoutId: id },
           });
 
-          // 2. Create the new questions with all their data
-          // Note: We use a loop with 'create' instead of 'createMany' to handle nested options correctly.
           for (let i = 0; i < questions.length; i++) {
             const question = questions[i]!;
             await tx.question.create({
@@ -143,8 +130,8 @@ export const tryoutRouter = createTRPCRouter({
                 points: question.points,
                 required: question.required,
                 order: i + 1,
-                // --- FIX: Add shortAnswer to the update/re-create operation ---
-                shortAnswer: question.shortAnswer,
+                explanation: question.explanation,
+                shortAnswers: question.shortAnswers?.map((ans) => ans.value),
                 options: question.options
                   ? {
                       create: question.options.map((option, optionIndex) => ({
@@ -152,6 +139,7 @@ export const tryoutRouter = createTRPCRouter({
                         isCorrect: option.isCorrect,
                         explanation: option.explanation,
                         order: optionIndex + 1,
+                        images: option.images,
                       })),
                     }
                   : undefined,
@@ -160,7 +148,6 @@ export const tryoutRouter = createTRPCRouter({
           }
         }
 
-        // Return the fully updated tryout with all relations
         return tx.tryout.findUnique({
           where: { id },
           include: {
@@ -211,7 +198,6 @@ export const tryoutRouter = createTRPCRouter({
       return tryout;
     }),
 
-  // New: Get tryout for student with limited info (no correct answers)
   getForStudent: protectedProcedure
     .input(tryoutIdSchema)
     .query(async ({ ctx, input }) => {
@@ -225,6 +211,7 @@ export const tryoutRouter = createTRPCRouter({
                   id: true,
                   text: true,
                   order: true,
+                  images: true,
                 },
                 orderBy: { order: "asc" },
               },
@@ -244,7 +231,6 @@ export const tryoutRouter = createTRPCRouter({
         });
       }
 
-      // Check if user is enrolled in the course
       const enrollment = await ctx.db.course.findFirst({
         where: {
           id: tryout.courseId,
@@ -264,7 +250,6 @@ export const tryoutRouter = createTRPCRouter({
       return tryout;
     }),
 
-  // New: Start a tryout attempt
   startAttempt: protectedProcedure
     .input(tryoutIdSchema)
     .mutation(async ({ ctx, input }) => {
@@ -297,7 +282,6 @@ export const tryoutRouter = createTRPCRouter({
         });
       }
 
-      // Check for existing incomplete attempt
       const existingAttempt = await ctx.db.userAttempt.findFirst({
         where: {
           userId: ctx.session.user.id,
@@ -310,7 +294,6 @@ export const tryoutRouter = createTRPCRouter({
         return existingAttempt;
       }
 
-      // Calculate max score
       const maxScore = tryout.questions.reduce((sum, q) => sum + q.points, 0);
 
       return ctx.db.userAttempt.create({
@@ -322,7 +305,6 @@ export const tryoutRouter = createTRPCRouter({
       });
     }),
 
-  // New: Submit answers for a question
   submitAnswer: protectedProcedure
     .input(
       z.object({
@@ -366,7 +348,6 @@ export const tryoutRouter = createTRPCRouter({
         });
       }
 
-      // --- SCORING LOGIC ---
       let points = 0;
       if (question.type === "MULTIPLE_CHOICE_SINGLE") {
         const selectedOption = question.options.find(
@@ -392,21 +373,19 @@ export const tryoutRouter = createTRPCRouter({
             points = question.points;
           }
         } catch {
-          // Invalid JSON answer, score is 0
           points = 0;
         }
-        // --- FIX: ADDED AUTO-SCORING FOR SHORT ANSWER ---
       } else if (question.type === "SHORT_ANSWER") {
-        // Check if the correct answer exists and compare case-insensitively
         if (
-          question.shortAnswer &&
-          input.answer.trim().toLowerCase() ===
-            question.shortAnswer.trim().toLowerCase()
+          Array.isArray(question.shortAnswers) &&
+          question.shortAnswers.some(
+            (ans) =>
+              ans.trim().toLowerCase() === input.answer.trim().toLowerCase(),
+          )
         ) {
           points = question.points;
         }
       }
-      // LONG_ANSWER questions will default to 0 points for manual grading.
 
       return ctx.db.userAnswer.upsert({
         where: {
@@ -428,7 +407,6 @@ export const tryoutRouter = createTRPCRouter({
       });
     }),
 
-  // New: Complete attempt
   completeAttempt: protectedProcedure
     .input(z.object({ attemptId: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -465,7 +443,6 @@ export const tryoutRouter = createTRPCRouter({
       });
     }),
 
-  // New: Get user's attempts for a tryout
   getUserAttempts: protectedProcedure
     .input(tryoutIdSchema)
     .query(async ({ ctx, input }) => {
@@ -483,7 +460,6 @@ export const tryoutRouter = createTRPCRouter({
       });
     }),
 
-  // New: Get attempt details with results
   getAttemptResults: protectedProcedure
     .input(z.object({ attemptId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
@@ -518,7 +494,6 @@ export const tryoutRouter = createTRPCRouter({
       return attempt;
     }),
 
-  // New: Get active attempt
   getActiveAttempt: protectedProcedure
     .input(tryoutIdSchema)
     .query(async ({ ctx, input }) => {
@@ -670,7 +645,6 @@ export const tryoutRouter = createTRPCRouter({
         });
       }
 
-      // Calculate statistics
       const completedAttempts = tryout.attempts.filter((a) => a.isCompleted);
       const averageScore =
         completedAttempts.length > 0
@@ -706,7 +680,6 @@ export const tryoutRouter = createTRPCRouter({
       };
     }),
 
-  // Get tryout for editing (without sensitive data)
   getForEdit: adminProcedure
     .input(tryoutIdSchema)
     .query(async ({ ctx, input }) => {
@@ -737,7 +710,6 @@ export const tryoutRouter = createTRPCRouter({
       return tryout;
     }),
 
-  // Duplicate a tryout
   duplicate: adminProcedure
     .input(tryoutIdSchema)
     .mutation(async ({ ctx, input }) => {
@@ -766,7 +738,7 @@ export const tryoutRouter = createTRPCRouter({
           description: originalTryout.description,
           duration: originalTryout.duration,
           courseId: originalTryout.courseId,
-          isActive: false, // Duplicated tryouts start as inactive
+          isActive: false,
           questions: {
             create: originalTryout.questions.map((question, index) => ({
               type: question.type,
@@ -774,6 +746,8 @@ export const tryoutRouter = createTRPCRouter({
               points: question.points,
               required: question.required,
               order: index + 1,
+              explanation: question.explanation,
+              shortAnswers: question.shortAnswers,
               options:
                 question.options.length > 0
                   ? {
@@ -782,6 +756,7 @@ export const tryoutRouter = createTRPCRouter({
                         isCorrect: option.isCorrect,
                         explanation: option.explanation,
                         order: optionIndex + 1,
+                        images: option.images,
                       })),
                     }
                   : undefined,
@@ -801,7 +776,6 @@ export const tryoutRouter = createTRPCRouter({
       });
     }),
 
-  // Get attempt details for review
   getAttemptDetails: adminProcedure
     .input(z.object({ attemptId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {

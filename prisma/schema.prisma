@@ -10,7 +10,6 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
-
 // User-related enums
 enum Role {
   ADMIN
@@ -79,24 +78,23 @@ enum ScholarshipType {
   INTERNAL
   EXTERNAL
 }
-
 // Core LMS course models
 model Course {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
-  classCode   String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  syllabus    String?  @db.Text
-  isActive    Boolean  @default(true)
+  classCode   String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  syllabus    String?   @db.Text
+  isActive    Boolean   @default(true)
 
-  members         User[]
-  learningSession LearningSession[]
-  tryout          Tryout[]
-  announcements   Announcement[]
-  events          Event[]             @relation("CourseEvents")
-  testimonial     CourseTestimonial[]
+  members          User[]
+  learningSession  LearningSession[]
+  tryout           Tryout[]
+  announcements    Announcement[]
+  events           Event[]             @relation("CourseEvents")
+  testimonial      CourseTestimonial[]
 
   // NOTE: The direct `document` relation is now gone.
   // Resources are attached polymorphically.
@@ -134,7 +132,6 @@ model LearningSession {
 
   @@index([userId, courseId, date])
 }
-
 // Models for general organizational content
 model Event {
   id          String     @id @default(cuid())
@@ -183,19 +180,19 @@ model Announcement {
 }
 
 model Scholarship {
-  id           String          @id @default(cuid())
-  title        String
-  description  String          @db.Text
-  provider     String
-  deadline     DateTime
-  link         String
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  otherLinks   String[]
-  quota        Int?
-  benefits     String[]
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  provider    String
+  deadline    DateTime
+  link        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  otherLinks  String[]
+  quota       Int?
+  benefits    String[]
   requirements String[]
-  type         ScholarshipType @default(EXTERNAL)
+  type        ScholarshipType @default(EXTERNAL)
 
   createdById String
   createdBy   User   @relation("CreatedScholarships", fields: [createdById], references: [id])
@@ -215,15 +212,14 @@ model JobVacancy {
   applyLink   String
   isActive    Boolean  @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   createdById String
   createdBy   User   @relation("CreatedJobVacancies", fields: [createdById], references: [id])
 
   @@map("job_vacancies")
 }
-
 // Models for quizzes/tryouts and student attempts
 model Tryout {
   id          String   @id @default(cuid())
@@ -243,16 +239,16 @@ model Tryout {
 }
 
 model Question {
-  id          String       @id @default(cuid())
-  tryoutId    String
-  type        QuestionType
-  question    String
-  points      Int          @default(1)
-  order       Int
-  required    Boolean      @default(true)
-  images      String[]     @default([])
-  explanation String?      @db.Text
-  shortAnswer String?      @db.Text
+  id           String       @id @default(cuid())
+  tryoutId     String
+  type         QuestionType
+  question     String
+  points       Int          @default(1)
+  order        Int
+  required     Boolean      @default(true)
+  images       String[]     @default([]) // Array of image URLs
+  explanation  String?      @db.Text
+  shortAnswers String[]     @default([]) // For short answer questions
 
   tryout  Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
   options QuestionOption[]
@@ -262,12 +258,13 @@ model Question {
 }
 
 model QuestionOption {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   questionId  String
   text        String
-  isCorrect   Boolean @default(false)
+  isCorrect   Boolean  @default(false)
   order       Int
-  explanation String? @db.Text
+  explanation String?  @db.Text
+  images      String[] @default([]) // Array of image URLs
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
@@ -378,14 +375,14 @@ model User {
   name     String
   password String
 
-  nim      String  @unique
-  faculty  String?
-  program  String?
-  position String?
-  role     Role    @default(STUDENT)
+  nim       String  @unique
+  faculty   String?
+  program   String?
+  position  String?
+  role      Role    @default(STUDENT)
 
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   emailVerified    DateTime?
   image            String?
   accounts         Account[]
@@ -394,11 +391,11 @@ model User {
   learningSessions LearningSession[]
   userAttempts     UserAttempt[]
 
-  createdEvents        Event[]             @relation("CreatedBy")
-  events               Event[]             @relation("UserEvents")
-  createdAnnouncements Announcement[]      @relation("CreatedAnnouncements")
-  createdScholarships  Scholarship[]       @relation("CreatedScholarships")
-  createdJobVacancies  JobVacancy[]        @relation("CreatedJobVacancies")
+  createdEvents        Event[]          @relation("CreatedBy")
+  events               Event[]          @relation("UserEvents")
+  createdAnnouncements Announcement[]   @relation("CreatedAnnouncements")
+  createdScholarships  Scholarship[]    @relation("CreatedScholarships")
+  createdJobVacancies  JobVacancy[]     @relation("CreatedJobVacancies")
   pushSubscriptions    PushSubscription[]
   courseTestimonial    CourseTestimonial[]
 

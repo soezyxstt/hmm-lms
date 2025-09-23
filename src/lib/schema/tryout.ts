@@ -1,29 +1,31 @@
 // ~/lib/schema/tryout.ts
+
 import { z } from "zod";
 import { QuestionType } from "@prisma/client";
 
+// ⬇️ *** THIS IS THE CORRECTED VALIDATION LOGIC *** ⬇️
 const questionRefinement = (
   data: {
     type: QuestionType;
-    options?: {isCorrect: boolean}[];
-    shortAnswer?: string | null;
+    options?: { isCorrect: boolean }[];
+    // FIX: Updated the type to match the new schema for shortAnswers
+    shortAnswers?: { value: string }[];
   },
   ctx: z.RefinementCtx,
 ) => {
-  // Rule 1: Multiple choice questions must have at least 2 options
+  // Rule 1: Multiple choice questions must have at least 2 options (Unchanged)
   if (
     (data.type === QuestionType.MULTIPLE_CHOICE_SINGLE ||
       data.type === QuestionType.MULTIPLE_CHOICE_MULTIPLE) &&
-    (!data.options || (data.options.length < 2))
+    (!data.options || data.options.length < 2)
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Multiple choice questions must have at least 2 options.",
       path: ["options"],
     });
-  }
+  } // Rule 2: Single choice questions must have exactly one correct answer (Unchanged)
 
-  // Rule 2: Single choice questions must have exactly one correct answer
   if (data.type === QuestionType.MULTIPLE_CHOICE_SINGLE && data.options) {
     const correctAnswers = data.options.filter((opt) => opt.isCorrect).length;
     if (correctAnswers !== 1) {
@@ -34,18 +36,22 @@ const questionRefinement = (
         path: ["options"],
       });
     }
-  }
+  } // FIX: Rule 3 is now updated to validate the array of objects
 
-  // Rule 3: Short answer questions must have a correct answer for auto-grading
-  if (
-    data.type === QuestionType.SHORT_ANSWER &&
-    (!data.shortAnswer || data.shortAnswer.trim() === "")
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "A correct answer is required for short answer questions.",
-      path: ["shortAnswer"],
-    });
+  if (data.type === QuestionType.SHORT_ANSWER) {
+    // Check if the array is missing, empty, or contains any objects with an empty `value` string.
+    if (
+      !data.shortAnswers ||
+      data.shortAnswers.length === 0 ||
+      data.shortAnswers.some((ans) => ans.value.trim() === "")
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Short answer questions must have at least one non-empty correct answer.",
+        path: ["shortAnswers"],
+      });
+    }
   }
 };
 
@@ -54,17 +60,20 @@ export const questionOptionSchema = z.object({
   text: z.string().min(1, "Option text cannot be empty"),
   isCorrect: z.boolean(),
   explanation: z.string().nullable().optional(),
+  images: z.array(z.string().url()).optional(), // Added .url() for better validation
 });
 
 export const questionSchema = z
   .object({
+    id: z.string().cuid().optional(), // Added ID for consistency with update schema
     type: z.nativeEnum(QuestionType),
     question: z.string().min(1, "Question text cannot be empty."),
     points: z.number().min(1, "Points must be at least 1."),
     required: z.boolean(),
-    images: z.array(z.string()).optional(),
+    images: z.array(z.string().url()).optional(), // Added .url()
     options: z.array(questionOptionSchema).optional(),
-    shortAnswer: z.string().optional().nullable(), // Allow null
+    shortAnswers: z.array(z.object({ value: z.string() })).optional(),
+    explanation: z.string().nullable().optional(),
   })
   .superRefine(questionRefinement);
 
@@ -78,17 +87,6 @@ export const createTryoutSchema = z.object({
     .min(1, "At least one question is required"),
 });
 
-export const updateQuestionSchema = z.object({
-  id: z.string().optional(), // Existing questions will have an ID
-  type: z.nativeEnum(QuestionType),
-  question: z.string().min(1, "Question text cannot be empty."),
-  points: z.number().min(1, "Points must be at least 1."),
-  required: z.boolean(),
-  images: z.array(z.string()).optional(),
-  options: z.array(questionOptionSchema).optional(),
-  shortAnswer: z.string().optional().nullable(),
-}).superRefine(questionRefinement); // Apply the same validation rules
-
 export const updateTryoutSchema = z.object({
   id: z.string().cuid(),
   title: z
@@ -99,13 +97,11 @@ export const updateTryoutSchema = z.object({
   duration: z.number().min(1, "Duration must be at least 1 minute.").optional(),
   isActive: z.boolean().optional(),
   courseId: z.string().cuid("Please select a valid course.").optional(),
-  // Use the new updateQuestionSchema here
   questions: z
-    .array(updateQuestionSchema)
+    .array(questionSchema) // Re-using the base question schema is cleaner
     .min(1, "At least one question is required.")
     .optional(),
 });
-
 
 export const tryoutIdSchema = z.object({
   id: z.string().cuid(),

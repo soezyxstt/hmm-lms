@@ -27,7 +27,6 @@ export const analyticsRouter = createTRPCRouter({
       }
 
       const { from, to } = input;
-
       const [
         totalUsers,
         newUsers,
@@ -35,76 +34,28 @@ export const analyticsRouter = createTRPCRouter({
         activeCourses,
         totalTryouts,
         activeTryouts,
-        totalResources, // Formerly totalDocuments
+        totalResources,
         totalEvents,
         totalAnnouncements,
         totalScholarships,
         totalJobVacancies,
       ] = await Promise.all([
-        // Total users
         ctx.db.user.count(),
-        // New users in time range
-        ctx.db.user.count({
-          where: {
-            createdAt: {
-              gte: from,
-              lte: to,
-            },
-          },
-        }),
-        // Total courses
+        ctx.db.user.count({ where: { createdAt: { gte: from, lte: to } } }),
         ctx.db.course.count(),
-        // Active courses
-        ctx.db.course.count({
-          where: { isActive: true }, // Changed from updatedAt to isActive flag
-        }),
-        // Total tryouts
+        ctx.db.course.count({ where: { isActive: true } }),
         ctx.db.tryout.count(),
-        // Active tryouts
-        ctx.db.tryout.count({
-          where: { isActive: true },
-        }),
-        // Total resources (documents/links)
-        ctx.db.resource.count({
-          // Changed from 'document' to 'resource'
-          where: { isActive: true },
-        }),
-        // Total events in time range
-        ctx.db.event.count({
-          where: {
-            start: {
-              gte: from,
-              lte: to,
-            },
-          },
-        }),
-        // Total announcements in time range
+        ctx.db.tryout.count({ where: { isActive: true } }),
+        ctx.db.resource.count({ where: { isActive: true } }),
+        ctx.db.event.count({ where: { start: { gte: from, lte: to } } }),
         ctx.db.announcement.count({
-          where: {
-            createdAt: {
-              gte: from,
-              lte: to,
-            },
-          },
+          where: { createdAt: { gte: from, lte: to } },
         }),
-        // Total scholarships created in time range
         ctx.db.scholarship.count({
-          where: {
-            createdAt: {
-              gte: from,
-              lte: to,
-            },
-          },
+          where: { createdAt: { gte: from, lte: to } },
         }),
-        // Total active job vacancies created in time range
         ctx.db.jobVacancy.count({
-          where: {
-            isActive: true,
-            createdAt: {
-              gte: from,
-              lte: to,
-            },
-          },
+          where: { isActive: true, createdAt: { gte: from, lte: to } },
         }),
       ]);
 
@@ -120,18 +71,6 @@ export const analyticsRouter = createTRPCRouter({
         totalAnnouncements,
         totalScholarships,
         totalJobVacancies,
-      } as {
-        totalUsers: number;
-        newUsers: number;
-        totalCourses: number;
-        activeCourses: number;
-        totalTryouts: number;
-        activeTryouts: number;
-        totalResources: number;
-        totalEvents: number;
-        totalAnnouncements: number;
-        totalScholarships: number;
-        totalJobVacancies: number;
       };
     }),
 
@@ -148,46 +87,31 @@ export const analyticsRouter = createTRPCRouter({
 
       const { from, to } = input;
 
-      // Get user registrations over time
       const userRegistrations = await ctx.db.user.groupBy({
         by: ["createdAt"],
-        where: {
-          createdAt: {
-            gte: from,
-            lte: to,
-          },
-        },
-        _count: {
-          id: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
+        where: { createdAt: { gte: from, lte: to } },
+        _count: { id: true },
+        orderBy: { createdAt: "asc" },
       });
 
-      // Get learning sessions over time
       const learningSessions = await ctx.db.learningSession.groupBy({
         by: ["date"],
-        where: {
-          date: {
-            gte: from,
-            lte: to,
-          },
-        },
-        _count: {
-          id: true,
-        },
-        _sum: {
-          duration: true,
-        },
-        orderBy: {
-          date: "asc",
-        },
+        where: { date: { gte: from, lte: to } },
+        _count: { id: true },
+        _sum: { duration: true },
+        orderBy: { date: "asc" },
       });
 
       return {
-        userRegistrations,
-        learningSessions,
+        // ✨ CHANGED: Convert Date objects to ISO strings
+        userRegistrations: userRegistrations.map((item) => ({
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+        })),
+        learningSessions: learningSessions.map((item) => ({
+          ...item,
+          date: item.date.toISOString(),
+        })),
       };
     }),
 
@@ -246,30 +170,21 @@ export const analyticsRouter = createTRPCRouter({
         };
       });
 
-      // Get attempts over time
       const attemptsOverTime = await ctx.db.userAttempt.groupBy({
         by: ["startedAt"],
-        where: {
-          startedAt: {
-            gte: from,
-            lte: to,
-          },
-          isCompleted: true,
-        },
-        _count: {
-          id: true,
-        },
-        _avg: {
-          score: true,
-        },
-        orderBy: {
-          startedAt: "asc",
-        },
+        where: { startedAt: { gte: from, lte: to }, isCompleted: true },
+        _count: { id: true },
+        _avg: { score: true },
+        orderBy: { startedAt: "asc" },
       });
 
       return {
         tryoutPerformance,
-        attemptsOverTime,
+        // ✨ CHANGED: Convert Date objects to ISO strings
+        attemptsOverTime: attemptsOverTime.map((item) => ({
+          ...item,
+          startedAt: item.startedAt.toISOString(),
+        })),
       };
     }),
 
@@ -311,7 +226,7 @@ export const analyticsRouter = createTRPCRouter({
         },
       });
 
-      const resourceStats = resources.map((resource) => {
+      const resourceStatsRaw = resources.map((resource) => {
         const views = resource.accessLogs.filter(
           (log) => log.action === "VIEW",
         ).length;
@@ -329,27 +244,23 @@ export const analyticsRouter = createTRPCRouter({
         };
       });
 
-      // Get access over time
       const accessOverTime = await ctx.db.resourceAccess.groupBy({
-        // Changed from documentAccess
         by: ["accessedAt", "action"],
-        where: {
-          accessedAt: {
-            gte: from,
-            lte: to,
-          },
-        },
-        _count: {
-          id: true,
-        },
-        orderBy: {
-          accessedAt: "asc",
-        },
+        where: { accessedAt: { gte: from, lte: to } },
+        _count: { id: true },
+        orderBy: { accessedAt: "asc" },
       });
 
       return {
-        resourceStats,
-        accessOverTime,
+        // ✨ CHANGED: Convert Date objects to ISO strings
+        resourceStats: resourceStatsRaw.map((resource) => ({
+          ...resource,
+          createdAt: resource.createdAt.toISOString(),
+        })),
+        accessOverTime: accessOverTime.map((item) => ({
+          ...item,
+          accessedAt: item.accessedAt.toISOString(),
+        })),
       };
     }),
 
@@ -391,7 +302,7 @@ export const analyticsRouter = createTRPCRouter({
         },
       });
 
-      const courseAnalytics = courseStats.map((course) => {
+      const courseAnalyticsRaw = courseStats.map((course) => {
         const totalMembers = course._count.members;
         const activeLearners = new Set(
           course.learningSession.map((session) => session.userId),
@@ -416,6 +327,11 @@ export const analyticsRouter = createTRPCRouter({
         };
       });
 
-      return courseAnalytics;
+      return courseAnalyticsRaw.map((course) => ({
+        ...course,
+        createdAt: courseStats
+          .find((c) => c.id === course.id)!
+          .createdAt.toISOString(),
+      }));
     }),
 });

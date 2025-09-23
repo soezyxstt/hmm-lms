@@ -51,6 +51,16 @@ export default function MembersManagement({ course }: MembersManagementProps) {
     },
   });
 
+  const removeAllMembersMutation = api.course.removeCourseMembers.useMutation({
+    onSuccess: async () => {
+      toast.success('All members removed successfully');
+      await utils.course.getCourseForAdmin.invalidate({ id: course.id });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
+  });
+
   const filteredMembers = course.members.filter(
     (member) =>
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,9 +92,34 @@ export default function MembersManagement({ course }: MembersManagementProps) {
               className="pl-10"
             />
           </div>
-          <Badge variant="secondary">
-            {filteredMembers.length} of {course.members.length} members
-          </Badge>
+          <div className="flex max-sm:flex-col gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className='cursor-pointer' variant='destructive' size='sm'>Remove All</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove Member</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to remove all members from this course?
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => removeAllMembersMutation.mutate({ courseId: course.id })}
+                    className="bg-destructive hover:bg-destructive/90 cursor-pointer"
+                  >
+                    Remove Member
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Badge variant="secondary">
+              {filteredMembers.length} of {course.members.length} members
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -135,7 +170,7 @@ export default function MembersManagement({ course }: MembersManagementProps) {
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleRemoveMember(member.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-destructive cursor-pointer hover:bg-destructive/90"
                           >
                             Remove Member
                           </AlertDialogAction>

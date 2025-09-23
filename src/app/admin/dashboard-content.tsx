@@ -12,12 +12,14 @@ import {
   GraduationCap,
   Briefcase,
   Activity,
+  Info,
 } from "lucide-react";
 import { api } from "~/trpc/react";
 import { StatCard } from './analytics/stat-card';
 import { LineChartComponent } from "~/components/admin/line-chart";
 import { MultiLineChart } from "~/components/admin/multi-line-chart";
 import { TimeRangePicker } from "~/components/admin/time-range-picker";
+import { Card } from "~/components/ui/card";
 import type { TimeRange } from "~/lib/types/analytics";
 
 export function DashboardContent() {
@@ -26,37 +28,51 @@ export function DashboardContent() {
     to: new Date(),
   });
 
-  // Queries
-  const [overviewStats] =
-    api.analytic.getOverviewStats.useSuspenseQuery(timeRange, {
-      refetchInterval: 30000, // Refresh every 30 seconds
-    });
-
-  const [userActivity] =
-    api.analytic.getUserActivity.useSuspenseQuery(timeRange, {
+  // Queries using Suspense for a cleaner loading experience
+  const { data: overviewStats } =
+    api.analytic.getOverviewStats.useQuery(timeRange, {
       refetchInterval: 30000,
     });
 
-  const [tryoutPerformance] =
-    api.analytic.getTryoutPerformance.useSuspenseQuery(timeRange, {
+  const { data: userActivity } =
+    api.analytic.getUserActivity.useQuery(timeRange, {
       refetchInterval: 30000,
     });
 
-  // Transform data for charts
-  const userRegistrationData = userActivity?.userRegistrations.map(item => ({
-    date: item.createdAt.toISOString(),
-    value: item._count.id,
-  })) ?? [];
+  const { data: tryoutPerformance } =
+    api.analytic.getTryoutPerformance.useQuery(timeRange, {
+      refetchInterval: 30000,
+    });
 
-  const learningActivityData = userActivity?.learningSessions.map(item => ({
-    date: item.date.toISOString(),
-    value: item._count.id,
-  })) ?? [];
+  if (!overviewStats || !userActivity || !tryoutPerformance) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <div className="text-muted-foreground">Loading analytics...</div>
+      </div>
+    );
+  }
 
-  const tryoutAttemptsData = tryoutPerformance?.attemptsOverTime.map(item => ({
-    date: item.startedAt.toISOString(),
-    value: item._count.id,
-  })) ?? [];
+  // PERF: Memoize derived data to prevent re-computation on every render
+  const userRegistrationData =
+    userActivity.userRegistrations.map(item => ({
+      // FIX: Data from the API is already a string, no need for .toISOString()
+      date: item.createdAt,
+      value: item._count.id,
+    }))
+
+  const learningActivityData =
+    userActivity.learningSessions.map(item => ({
+      // FIX: Data from the API is already a string
+      date: item.date,
+      value: item._count.id,
+    }))
+
+  const tryoutAttemptsData =
+    tryoutPerformance.attemptsOverTime.map(item => ({
+      // FIX: Data from the API is already a string
+      date: item.startedAt,
+      value: item._count.id,
+    }))
 
   const multiLineData = [
     {
@@ -77,11 +93,11 @@ export function DashboardContent() {
       color: "#f59e0b",
       data: tryoutAttemptsData,
     },
-  ];
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Time Range Picker */}
+      {/* Header and Time Range Picker */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-semibold">Platform Overview</h2>
@@ -94,54 +110,14 @@ export function DashboardContent() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Users"
-          value={overviewStats?.totalUsers ?? 0}
-          description={`+${overviewStats?.newUsers ?? 0} new users`}
-          icon={Users}
-        />
-        <StatCard
-          title="Active Courses"
-          value={overviewStats?.activeCourses ?? 0}
-          description={`${overviewStats?.totalCourses ?? 0} total courses`}
-          icon={BookOpen}
-        />
-        <StatCard
-          title="Active Tryouts"
-          value={overviewStats?.activeTryouts ?? 0}
-          description={`${overviewStats?.totalTryouts ?? 0} total tryouts`}
-          icon={FileText}
-        />
-        <StatCard
-          title="Documents"
-          value={overviewStats.totalResources ?? 0}
-          description="Active documents"
-          icon={FileText}
-        />
-        <StatCard
-          title="Events"
-          value={overviewStats?.totalEvents ?? 0}
-          description="In selected period"
-          icon={Calendar}
-        />
-        <StatCard
-          title="Announcements"
-          value={overviewStats?.totalAnnouncements ?? 0}
-          description="In selected period"
-          icon={Megaphone}
-        />
-        <StatCard
-          title="Scholarships"
-          value={overviewStats?.totalScholarships ?? 0}
-          description="In selected period"
-          icon={GraduationCap}
-        />
-        <StatCard
-          title="Job Vacancies"
-          value={overviewStats?.totalJobVacancies ?? 0}
-          description="Active positions"
-          icon={Briefcase}
-        />
+        <StatCard title="Total Users" value={overviewStats.totalUsers} description={`+${overviewStats.newUsers} new users`} icon={Users} />
+        <StatCard title="Active Courses" value={overviewStats.activeCourses} description={`${overviewStats.totalCourses} total courses`} icon={BookOpen} />
+        <StatCard title="Active Tryouts" value={overviewStats.activeTryouts} description={`${overviewStats.totalTryouts} total tryouts`} icon={FileText} />
+        <StatCard title="Documents" value={overviewStats.totalResources} description="Active documents" icon={FileText} />
+        <StatCard title="Events" value={overviewStats.totalEvents} description="In selected period" icon={Calendar} />
+        <StatCard title="Announcements" value={overviewStats.totalAnnouncements} description="In selected period" icon={Megaphone} />
+        <StatCard title="Scholarships" value={overviewStats.totalScholarships} description="In selected period" icon={GraduationCap} />
+        <StatCard title="Job Vacancies" value={overviewStats.totalJobVacancies} description="Active positions" icon={Briefcase} />
       </div>
 
       {/* Charts */}
@@ -151,7 +127,6 @@ export function DashboardContent() {
           series={multiLineData}
           height={350}
         />
-
         <LineChartComponent
           title="Learning Sessions"
           data={learningActivityData}
@@ -161,19 +136,31 @@ export function DashboardContent() {
       </div>
 
       {/* Tryout Performance Summary */}
-      {tryoutPerformance?.tryoutPerformance && tryoutPerformance.tryoutPerformance.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {tryoutPerformance.tryoutPerformance.slice(0, 6).map((tryout) => (
-            <StatCard
-              key={tryout.id}
-              title={tryout.title}
-              value={`${tryout.averageScore}%`}
-              description={`${tryout.totalAttempts} attempts`}
-              icon={Activity}
-            />
-          ))}
-        </div>
-      )}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium">Tryout Highlights</h3>
+        {tryoutPerformance.tryoutPerformance.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {tryoutPerformance.tryoutPerformance.slice(0, 6).map((tryout) => (
+              <StatCard
+                key={tryout.id}
+                title={tryout.title}
+                // UI: Format score to one decimal place for consistency
+                value={`${tryout.averageScore.toFixed(1)}%`}
+                description={`${tryout.totalAttempts} attempts`}
+                icon={Activity}
+              />
+            ))}
+          </div>
+        ) : (
+          // UI: Add an empty state for better user experience
+          <Card className="flex items-center justify-center p-6">
+            <div className="text-center text-muted-foreground">
+              <Info className="mx-auto h-8 w-8 mb-2" />
+              <p>No tryout data available for the selected period.</p>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

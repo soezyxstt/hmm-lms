@@ -37,7 +37,7 @@ export default async function EditTryoutPage({ params }: EditTryoutPageProps) {
         explanation: opt.explanation,
       })),
       images: q.images || [],
-      shortAnswer: q.shortAnswer ?? "",
+      shortAnswers: q.shortAnswers ?? [],
     })),
   };
 
