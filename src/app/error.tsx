@@ -15,8 +15,8 @@ export default function Error({
       <div className='text-center flex flex-col gap-2'>
         <p className='text-2xl md:text-4xl font-medium'>Error</p>
         <p
-          className=''>{error.message.includes("PWAError") ?
-            error.message.replace("(PWAError)", "") : 'Oops... an Error occurred'}</p>
+          className=''>{error.message ?
+            error.message : 'Oops... an Error occurred'}</p>
       </div>
       <Button
         onClick={reset}

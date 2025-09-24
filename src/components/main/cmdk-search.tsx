@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-// import Link from 'next/link';
 import { Banknote, Bell, Calendar, CornerDownLeft, FileSpreadsheet, Footprints, GraduationCap, Home, Megaphone, Settings, SquarePlay, Tally5, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Kbd } from '../ui/key-bind';
@@ -15,7 +14,7 @@ const tabs = [
       { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
       { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
       { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
-      { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
+      { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Try Outs' },
       { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
     ],
   },

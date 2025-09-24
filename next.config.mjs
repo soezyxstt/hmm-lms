@@ -16,6 +16,7 @@ const nextConfig = {
   images: {
     domains: ["hmm-lms.sgp1.digitaloceanspaces.com"],
   },
+  output: 'standalone',
 };
 
 export default pwaConfig(nextConfig);
