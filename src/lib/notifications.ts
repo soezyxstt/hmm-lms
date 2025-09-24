@@ -43,6 +43,6 @@ export async function sendNotificationToMultiple(
   return results.map((result, index) => ({
     subscription: subscriptions[index],
     success: result.status === "fulfilled" && result.value.success,
-    error: result.status === "rejected" ? result.reason : undefined,
+    error: result.status === "rejected" ? result.reason as string : undefined,
   }));
 }

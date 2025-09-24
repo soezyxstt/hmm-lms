@@ -4,7 +4,7 @@ import { runtimeCaching } from '@ducanh2912/next-pwa';
 const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  customWorkerSrc: 'worker/index.js',
+  customWorkerSrc: 'worker/index',
   register: true,
   workboxOptions: {
     runtimeCaching,
