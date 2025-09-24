@@ -551,7 +551,7 @@ export const courseRouter = createTRPCRouter({
           },
         },
         _count: {
-          id: true,
+          _all: true,
         },
       });
 
@@ -559,7 +559,7 @@ export const courseRouter = createTRPCRouter({
       const tryoutStats = await ctx.db.userAttempt.groupBy({
         by: ["isCompleted"],
         where: { tryout: { courseId: input.id } },
-        _count: { id: true },
+        _count: { _all: true },
         _avg: { score: true },
       });
 

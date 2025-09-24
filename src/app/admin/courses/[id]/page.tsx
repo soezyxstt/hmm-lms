@@ -36,8 +36,8 @@ export default async function CourseAdminPage({ params }: CourseAdminPageProps) 
     api.course.getCourseAnalytics({ id }),
   ]);
 
-  const totalViews = analytics.documentStats.find((stat) => stat.action === 'VIEW')?._count.id ?? 0;
-  const totalDownloads = analytics.documentStats.find((stat) => stat.action === 'DOWNLOAD')?._count.id ?? 0;
+  const totalViews = analytics.documentStats.find((stat) => stat.action === 'VIEW')?._count._all ?? 0;
+  const totalDownloads = analytics.documentStats.find((stat) => stat.action === 'DOWNLOAD')?._count._all ?? 0;
 
   const totalResources = course.resources.length;
   const totalFiles = course.resources.filter(res => res.type === ResourceType.FILE).length;

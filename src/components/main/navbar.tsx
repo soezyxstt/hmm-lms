@@ -86,9 +86,8 @@ export default async function MainNavbar({
   const tryout = (await getTryouts()).map(tryout => ({
     id: tryout.id,
     title: tryout.title,
-    classCode: tryout.course.classCode
+    classCode: tryout.course.classCode ?? "N/A"
   }))
-
 
   const tabs =
   {
@@ -96,7 +95,7 @@ export default async function MainNavbar({
     announcements,
     events,
     scholarships,
-    "tryouts": tryout
+    tryouts: tryout
   }
 
   return (

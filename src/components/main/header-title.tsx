@@ -14,7 +14,7 @@ export default function HeaderTitle() {
     events: 'Events',
     scholarship: 'Scholarship',
     schedule: 'Schedule',
-    "tryouts": 'TryOuts',
+    "tryouts": 'Tryouts',
     loker: 'M-Opportunity',
     users: 'User Management',
     admin: 'Admin Panel',

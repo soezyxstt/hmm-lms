@@ -112,7 +112,7 @@ export default async function AdminNavbar({
   const tryouts = (await getTryouts()).map(tryout => ({
     id: tryout.id,
     title: tryout.title,
-    classCode: tryout.course.classCode
+    classCode: tryout.course.classCode ?? "N/A"
   }))
 
   const tabs = {
@@ -120,7 +120,7 @@ export default async function AdminNavbar({
     announcements,
     events,
     scholarships,
-    "tryouts": tryouts
+    tryouts: tryouts
   }
 
   return (
