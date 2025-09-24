@@ -14,13 +14,13 @@ import {
   GraduationCap,
   Home,
   Megaphone,
-  Tally5,
   Users,
   BarChart3,
   FileText,
   Database,
   BookOpen,
-  Briefcase
+  Briefcase,
+  TestTube
 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
@@ -47,10 +47,10 @@ const adminSidebarTabs: {
       group: 'Content Management',
       items: [
         { label: 'Courses', href: '/admin/courses', icon: GraduationCap, tooltip: 'Manage Courses' },
-        { label: 'Tryouts', href: '/admin/tryouts', icon: Tally5, tooltip: 'Manage Tryouts' },
+        { label: 'Scholarships', href: '/admin/scholarships', icon: Banknote, tooltip: 'Manage Scholarships' },
+        { label: 'Tryouts', href: '/admin/tryouts', icon: TestTube, tooltip: 'Manage Tryouts' },
         { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, tooltip: 'Manage Announcements' },
         { label: 'Events', href: '/admin/events', icon: Calendar, tooltip: 'Manage Events' },
-        { label: 'Scholarships', href: '/admin/scholarships', icon: Banknote, tooltip: 'Manage Scholarships' },
         { label: 'M-Opportunity', href: '/admin/loker', icon: Briefcase, tooltip: 'Manage M-Opportunity' },
       ],
     },
