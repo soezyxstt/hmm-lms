@@ -24,11 +24,11 @@ export default function CourseAnalytics({ courseId }: CourseAnalyticsProps) {
   if (error) return <div>Error loading analytics: {error.message}</div>;
   if (!analytics) return null;
 
-  const totalViews = analytics.documentStats.find((stat) => stat.action === 'VIEW')?._count.id ?? 0;
-  const totalDownloads = analytics.documentStats.find((stat) => stat.action === 'DOWNLOAD')?._count.id ?? 0;
+  const totalViews = analytics.documentStats.find((stat) => stat.action === 'VIEW')?._count._all ?? 0;
+  const totalDownloads = analytics.documentStats.find((stat) => stat.action === 'DOWNLOAD')?._count._all ?? 0;
 
-  const completedAttempts = analytics.tryoutStats.find((stat) => stat.isCompleted)?._count.id ?? 0;
-  const incompleteAttempts = analytics.tryoutStats.find((stat) => !stat.isCompleted)?._count.id ?? 0;
+  const completedAttempts = analytics.tryoutStats.find((stat) => stat.isCompleted)?._count._all ?? 0;
+  const incompleteAttempts = analytics.tryoutStats.find((stat) => !stat.isCompleted)?._count._all ?? 0;
   const averageScore = analytics.tryoutStats.find((stat) => stat.isCompleted)?._avg.score ?? 0;
 
   return (
