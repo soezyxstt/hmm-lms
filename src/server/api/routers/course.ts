@@ -14,8 +14,8 @@ import {
   ResourceType,
 } from "@prisma/client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { sendPushNotification } from "~/lib/send-push";
 import s3Client from "~/lib/s3-client";
+import { NotificationTriggers } from "~/server/services/notification-triggers";
 
 export const createCourseSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -80,9 +80,15 @@ export const courseRouter = createTRPCRouter({
   createCourse: adminProcedure
     .input(createCourseSchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.course.create({
+      const data = await ctx.db.course.create({
         data: input,
-      });
+      })
+
+      if (data) {
+        await NotificationTriggers.onCourseCreated(data.id);
+      }
+
+      return data;
     }),
 
   updateCourse: adminProcedure
@@ -403,12 +409,6 @@ export const courseRouter = createTRPCRouter({
           },
         },
       });
-
-      sendPushNotification(ctx.session.user.id, {
-        title: "Enrollment Successful!",
-        body: `You have successfully joined the course: ${course.title}`,
-        url: `/courses/${course.id}`,
-      }).catch(console.error);
 
       return {
         success: true,

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { InstallPrompt } from '~/components/install-prompt';
 import MainNavbar from '~/components/main/navbar';
-import { NotificationPromptModal } from '~/components/notif-prompt-modal';
+// import { NotificationPromptModal } from '~/components/notif-prompt-modal';
 import { auth } from '~/server/auth';
 
 export default async function Layout({
@@ -18,7 +18,7 @@ export default async function Layout({
     <MainNavbar>
       <Suspense fallback={<div className='w-full h-full grid place-items-center'>Fetching data...</div>}>
         <InstallPrompt />
-        <NotificationPromptModal />
+        {/* <NotificationPromptModal /> */}
         {children}
       </Suspense>
     </MainNavbar>

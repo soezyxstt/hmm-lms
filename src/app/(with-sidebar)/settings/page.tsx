@@ -10,6 +10,7 @@ import { useDisplaySetting } from '~/components/providers/display-provider'
 import { FONT_FAMILIES, FONT_SIZES, SPACING_SIZES } from '~/components/providers/constants'
 import { Separator } from '~/components/ui/separator'
 import { cn } from '~/lib/utils'
+import NotificationSettings from './notifications'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -80,7 +81,10 @@ export default function SettingsPage() {
         <p className="text-muted-foreground mt-2">Customize your experience with personalized preferences</p>
       </div>
 
+      <NotificationSettings />
+
       <div className="grid gap-6 lg:grid-cols-3">
+
         {/* Theme Settings */}
         <Card className="lg:col-span-1">
           <CardHeader>

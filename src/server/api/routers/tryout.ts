@@ -11,6 +11,7 @@ import {
   courseIdSchema,
 } from "~/lib/schema/tryout";
 import z from "zod";
+import { NotificationTriggers } from "~/server/services/notification-triggers";
 
 export const tryoutRouter = createTRPCRouter({
   create: adminProcedure
@@ -18,7 +19,7 @@ export const tryoutRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { questions, ...tryoutData } = input;
 
-      return ctx.db.tryout.create({
+      const newTryout = await ctx.db.tryout.create({
         data: {
           ...tryoutData,
           questions: {
@@ -58,6 +59,10 @@ export const tryoutRouter = createTRPCRouter({
           },
         },
       });
+
+      await NotificationTriggers.onTryoutCreated(newTryout.id);
+
+      return newTryout;
     }),
 
   getMyTryouts: protectedProcedure.query(async ({ ctx }) => {
