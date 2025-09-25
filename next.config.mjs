@@ -1,5 +1,4 @@
 import withPWA from "@ducanh2912/next-pwa";
-import { runtimeCaching } from '@ducanh2912/next-pwa';
 
 const pwaConfig = withPWA({
   // dest: "public",
@@ -42,7 +41,7 @@ const pwaConfig = withPWA({
    * @desc Points to the directory containing your custom service worker implementation.
    * @required for push notifications
    */
-  customWorkerSrc: "worker",
+  // customWorkerSrc: "worker",
 
   // ---------------- CACHING STRATEGY ----------------
   /**
@@ -74,6 +73,7 @@ const pwaConfig = withPWA({
    * @default true
    */
   aggressiveFrontEndNavCaching: true,
+  sw: '/public/sw.js',
 });
 
 /** @type {import('next').NextConfig} */
