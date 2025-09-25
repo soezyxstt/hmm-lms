@@ -5,6 +5,7 @@ import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "~/lib/utils"
 
+// Main Tabs component - Simplified to a regular tabs component.
 function Tabs({
   className,
   ...props
@@ -18,6 +19,7 @@ function Tabs({
   )
 }
 
+// TabsList component (unchanged)
 function TabsList({
   className,
   ...props
@@ -34,6 +36,7 @@ function TabsList({
   )
 }
 
+// TabsTrigger component (unchanged)
 function TabsTrigger({
   className,
   ...props
@@ -50,6 +53,7 @@ function TabsTrigger({
   )
 }
 
+// TabsContent component (unchanged)
 function TabsContent({
   className,
   ...props

@@ -15,6 +15,13 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    DO_SPACES_ENDPOINT: z.string().url(),
+    DO_SPACES_REGION: z.string(),
+    DO_SPACES_KEY: z.string(),
+    DO_SPACES_SECRET: z.string(),
+    DO_SPACES_BUCKET: z.string(),
+    VAPID_PRIVATE_KEY: z.string(),
+    VAPID_SUBJECT: z.string().url().or(z.string().email()),
   },
 
   /**
@@ -23,7 +30,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string(),
+    NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT: z.string().url(),
   },
 
   /**
@@ -34,6 +42,15 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    DO_SPACES_ENDPOINT: process.env.DO_SPACES_ENDPOINT,
+    DO_SPACES_REGION: process.env.DO_SPACES_REGION,
+    DO_SPACES_KEY: process.env.DO_SPACES_KEY,
+    DO_SPACES_SECRET: process.env.DO_SPACES_SECRET,
+    DO_SPACES_BUCKET: process.env.DO_SPACES_BUCKET,
+    NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT: process.env.NEXT_PUBLIC_DO_SPACES_CDN_ENDPOINT,
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

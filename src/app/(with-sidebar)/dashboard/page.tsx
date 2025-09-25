@@ -28,7 +28,7 @@ export default function DashboardPage() {
   return (
     <div className="flex mx-auto gap-6 max-sm:flex-col max-w-5xl">
       <div className="space-y-4 md:space-y-6 flex-1">
-        <div className="w-full overflow-x-auto gap-4 md:gap-6 h-48 md:h-36 grid grid-cols-3">
+        <div className="w-full overflow-x-auto gap-4 h-48 md:h-36 grid grid-cols-3">
           {courses.map((course, index) => (
             <CoursesItem
               key={course.id}

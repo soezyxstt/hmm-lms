@@ -7,6 +7,8 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from '~/components/ui/sonner';
 import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
+import Script from 'next/script';
+import { RegisterSW } from '~/components/register-sw';
 
 export const metadata: Metadata = {
   title: {
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
   },
   description: "LMS for Himpunan Mahasiswa Mesin ITB",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  manifest: "/manifest.json",
 };
 
 const inter = Inter({
@@ -108,12 +111,32 @@ export default function RootLayout({
         ${lobsterTwo.variable} 
         ${caveat.variable} 
         ${shadowsIntoLight.variable} 
-        bg-background text-navy`} suppressHydrationWarning>
+        bg-background text-primary-foreground`} suppressHydrationWarning>
+      <Script
+        async
+        strategy="afterInteractive"
+        src="https://www.googletagmanager.com/gtag/js?id=G-ETWTWVST67"
+      />
+      <Script
+        id="google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ETWTWVST67');
+          `,
+        }}
+      />
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       <body>
         <SessionProvider>
           <TRPCReactProvider>
             <DisplaySettingProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <ThemeProvider attribute="class" defaultTheme="light">
+                <RegisterSW />
                 {children}
               </ThemeProvider>
             </DisplaySettingProvider>

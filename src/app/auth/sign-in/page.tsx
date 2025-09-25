@@ -48,13 +48,13 @@ export default function SignIn() {
     startTransition(async () => {
       const result = await signIn('credentials', {
         ...data,
-        redirect: false, // Handle redirect manually
+        redirect: false,
       });
 
       if (result?.error) {
-        toast.error('Sign in failed. Please check your email or password.');
+        toast.error("Sign in failed.");
       } else {
-        toast.success('Sign in success');
+        toast.success('Sign in success.');
         router.push('/dashboard');
         form.reset();
       }
@@ -90,7 +90,7 @@ export default function SignIn() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className='flex flex-col items-center w-sm gap-4 bg-white px-6 py-4 rounded-xl backdrop-blur-sm shadow'
+          className='flex flex-col items-center w-sm gap-4 bg-card px-6 py-4 rounded-xl backdrop-blur-sm shadow'
         >
           <div className='flex flex-col mb-4 gap-2 items-center'>
             <h1 className='font-semibold text-base'>Sign in to your account</h1>
@@ -103,7 +103,7 @@ export default function SignIn() {
             name='email'
             render={({ field }) => (
               <FormItem className='w-full'>
-                <FormLabel className='self-start text-navy font-medium'>
+                <FormLabel className='self-start text-primary font-medium'>
                   Email
                 </FormLabel>
                 <FormControl>
@@ -134,7 +134,7 @@ export default function SignIn() {
             name='password'
             render={({ field }) => (
               <FormItem className='w-full'>
-                <FormLabel className='self-start text-navy font-medium'>
+                <FormLabel className='self-start text-primary font-medium'>
                   Password
                 </FormLabel>
                 <FormControl>
@@ -146,12 +146,12 @@ export default function SignIn() {
                     />
                     {showPassword ? (
                       <FiEye
-                        className='absolute right-3 cursor-pointer text-navy'
+                        className='absolute right-3 cursor-pointer text-primary'
                         onClick={() => setShowPassword(false)}
                       />
                     ) : (
                       <FiEyeOff
-                        className='absolute right-3 cursor-pointer text-navy'
+                        className='absolute right-3 cursor-pointer text-primary'
                         onClick={() => setShowPassword(true)}
                       />
                     )}

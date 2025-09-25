@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation';
+import { auth } from '~/server/auth';
 
-export default function Home() {
-  redirect('/dashboard');
+export default async function Home() {
+  const session = await auth();
+
+  if (session?.user) {
+    redirect('/dashboard');
+  }
+
+  redirect('/auth/sign-in');
 }
-
-export const metadata = {
-  title: 'Dashboard',
-};

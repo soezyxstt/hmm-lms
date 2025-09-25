@@ -102,7 +102,7 @@ export default function SignUpPage() {
         width={2000}
         height={2000}
       />
-      <div className="flex flex-col items-center w-sm gap-4 bg-white px-6 py-4 rounded-xl shadow">
+      <div className="flex flex-col items-center w-sm gap-4 bg-card px-6 py-4 rounded-xl shadow">
         <h1 className='font-semibold text-base'>Sign up to HMM LMS</h1>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
@@ -169,12 +169,12 @@ export default function SignUpPage() {
                       />
                       {showPassword ? (
                         <FiEye
-                          className="absolute right-3 cursor-pointer text-navy"
+                          className="absolute right-3 cursor-pointer text-primary"
                           onClick={() => setShowPassword(false)}
                         />
                       ) : (
                         <FiEyeOff
-                          className="absolute right-3 cursor-pointer text-navy"
+                          className="absolute right-3 cursor-pointer text-primary"
                           onClick={() => setShowPassword(true)}
                         />
                       )}
@@ -200,12 +200,12 @@ export default function SignUpPage() {
                       />
                       {showConfirmPassword ? (
                         <FiEye
-                          className="absolute right-3 cursor-pointer text-navy"
+                          className="absolute right-3 cursor-pointer text-primary"
                           onClick={() => setShowConfirmPassword(false)}
                         />
                       ) : (
                         <FiEyeOff
-                          className="absolute right-3 cursor-pointer text-navy"
+                          className="absolute right-3 cursor-pointer text-primary"
                           onClick={() => setShowConfirmPassword(true)}
                         />
                       )}

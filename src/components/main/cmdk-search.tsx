@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import Link from 'next/link';
-import { Banknote, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, User } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Banknote, Bell, Calendar, CornerDownLeft, FileSpreadsheet, Footprints, GraduationCap, Home, Megaphone, Settings, SquarePlay, Tally5, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Kbd } from '../ui/key-bind';
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
-const sidebarTabs = [
+const tabs = [
   {
     group: 'Academics',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
       { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
       { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
-      { label: 'Try Outs', href: '/try-outs', icon: Tally5, tooltip: 'Try Outs' },
+      { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Try Outs' },
       { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
     ],
   },
@@ -27,55 +28,168 @@ const sidebarTabs = [
   {
     group: 'Preferences',
     items: [
-      { label: 'Profile', href: '/profile', icon: User, tooltip: 'Profile' },
       { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
     ],
   },
-]
-
-const tabs = {
-  courses: {
-    icon: GraduationCap,
+  {
+    group: 'Others',
     items: [
-      {
-        id: '1',
-        title: 'Introduction to Mechanical Engineering',
-        totalLessons: 12,
-        totalVideos: 8,
-      },
-      {
-        id: '2',
-        title: 'Measurement Techniques',
-        totalLessons: 10,
-        totalVideos: 7,
-      },
-      {
-        id: '3',
-        title: 'Pipe System Fundamentals',
-        totalLessons: 15,
-        totalVideos: 10,
-      },
-      {
-        id: '4',
-        title: 'Printer Maintenance',
-        totalLessons: 8,
-        totalVideos: 5,
-      },
-      {
-        id: '5',
-        title: 'Advanced CAD Design',
-        totalLessons: 14,
-        totalVideos: 9,
-      },
+      { label: 'Profile', href: '/profile', icon: User },
+      { label: 'Notifications', href: '/notifications', icon: Bell }
     ]
   }
+]
+
+export type TabsType = {
+  courses: {
+    id: string,
+    title: string,
+    totalLessons: number,
+    totalVideos: number
+  }[],
+  announcements: {
+    id: string,
+    title: string,
+    date: Date
+  }[],
+  events: {
+    id: string,
+    title: string,
+    date: Date
+  }[],
+  scholarships: {
+    id: string,
+    title: string,
+    date: Date
+  }[],
+  "tryouts": {
+    id: string,
+    title: string,
+    classCode: string
+  }[],
 }
 
-export default function SearchCMDK() {
+// Helper type for the router prop
+// Helper type for the common router and setOpen props
+type SearchItemBaseProps = {
+  router: AppRouterInstance
+  setOpen: Dispatch<SetStateAction<boolean>>
+}
+
+function CourseSearchItem({
+  props,
+  router,
+  setOpen,
+}: { props: TabsType['courses'][number] } & SearchItemBaseProps) {
+  const handleSelect = () => {
+    router.push(`/courses/${props.id}`)
+    setOpen(false) // Close the command menu on selection
+  }
+
+  return (
+    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+      <GraduationCap className='mr-2' />
+      <span>{props.title}</span>
+      <div className='flex justify-end gap-2 items-center md:text-sm self-end text-xs ml-auto'>
+        <FileSpreadsheet size={10} />
+        <span>{props.totalLessons}</span>
+        <SquarePlay size={10} />
+        <span>{props.totalVideos}</span>
+      </div>
+    </CommandItem>
+  )
+}
+
+function AnnouncementSearchItem({
+  props,
+  router,
+  setOpen,
+}: { props: TabsType['announcements'][number] } & SearchItemBaseProps) {
+  const handleSelect = () => {
+    router.push(`/announcements?id=${props.id}`)
+    setOpen(false)
+  }
+
+  return (
+    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+      <Megaphone className='mr-2' />
+      <span>{props.title}</span>
+    </CommandItem>
+  )
+}
+
+function EventSearchItem({
+  props,
+  router,
+  setOpen,
+}: { props: TabsType['events'][number] } & SearchItemBaseProps) {
+  const handleSelect = () => {
+    router.push(`/events?id=${props.id}`)
+    setOpen(false)
+  }
+
+  return (
+    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+      <Footprints className='mr-2' />
+      <span>{props.title}</span>
+    </CommandItem>
+  )
+}
+
+function ScholarshipSearchItem({
+  props,
+  router,
+  setOpen,
+}: { props: TabsType['scholarships'][number] } & SearchItemBaseProps) {
+  const handleSelect = () => {
+    router.push(`/scholarships?id=${props.id}`)
+    setOpen(false)
+  }
+
+  return (
+    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+      <Banknote className='mr-2' />
+      <span>{props.title}</span>
+    </CommandItem>
+  )
+}
+
+function TryOutSearchItem({
+  props,
+  router,
+  setOpen,
+}: { props: TabsType['tryouts'][number] } & SearchItemBaseProps) {
+  const handleSelect = () => {
+    router.push(`/try-outs/${props.id}`)
+    setOpen(false)
+  }
+
+  return (
+    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+      <Tally5 className='mr-2' />
+      <span>{props.title}</span>
+      <p className='text-muted-foreground ml-auto'>{props.classCode}</p>
+    </CommandItem>
+  )
+}
+
+const tabsItems: {
+  [K in keyof TabsType]: (props: Record<"props", TabsType[K][number]> & SearchItemBaseProps) => JSX.Element
+} = {
+  courses: CourseSearchItem,
+  announcements: AnnouncementSearchItem,
+  events: EventSearchItem,
+  scholarships: ScholarshipSearchItem,
+  "tryouts": TryOutSearchItem
+}
+
+export default function SearchCMDK({ data }: { data: TabsType }) {
   const [open, setOpen] = useState(false)
   const pathName = usePathname();
-  const firstPath = pathName.split("/")[1] as keyof typeof tabs
-  const primaryData = tabs[firstPath]
+  const firstPath = pathName.split("/")[1] as keyof TabsType;
+  const primaryData = data[firstPath]
+  const SearchItem = tabsItems[firstPath]
+  const router = useRouter()
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -91,41 +205,59 @@ export default function SearchCMDK() {
   return (
     <>
       <div className='flex bg-card px-3 py-1.5 rounded-md text-sm items-center text-muted-foreground cursor-pointer' onClick={() => setOpen(true)}>
-        Search...
-        <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none ml-8">
-          <span className="text-xs">Ctrl K</span>
-        </kbd>
+        <span className="mr-8">Seacrh...</span>
+        <Kbd>Ctrl K</Kbd>
       </div>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+      <CommandDialog open={open} onOpenChange={setOpen} showCloseButton={false} className='border-4 border-b-0'>
+        <CommandInput placeholder='Search anything...' />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {primaryData && (
             <CommandGroup heading={firstPath} className='capitalize'>
-              {primaryData.items.map(item => (
-                <CommandItem key={firstPath + '-' + item.title} asChild>
-                  <Link href={`${firstPath}/${item.id}`}>
-                    <primaryData.icon />
-                    {item.title}
-                  </Link>
-                </CommandItem>
+              {primaryData.map(item => (
+                // @ts-expect-error this is perfectly fine but typescript isnt smart enough to handle
+                <SearchItem key={item.id + '-cmd-item-' + firstPath} props={item} router={router} setOpen={setOpen} />
               ))}
             </CommandGroup>
           )}
-          {sidebarTabs.map(group => (
+          {tabs.map(group => (
             <CommandGroup heading={group.group} key={group.group + group.items[0]?.label}>
               {group.items.map(item => (
-                <CommandItem key={item.label + '-cmd-item-' + group.group} asChild>
-                  <Link href={item.href}>
-                    <item.icon />
-                    {item.label}
-                    <span className="text-muted-foreground ml-auto">Tab</span>
-                  </Link>
+                <CommandItem
+                  key={item.label + '-cmd-item-' + group.group}
+                  // asChild
+                  onSelect={() => {
+                    // Close the dialog when user selects
+                    router.push(item.href)
+                    setOpen(false)
+                  }}
+                >
+                  <item.icon />
+                  {item.label}
+                  <span className="text-muted-foreground ml-auto">Tab</span>
                 </CommandItem>
               ))}
             </CommandGroup>
           ))}
+          {Object.entries(data).map(([label, items]) => {
+            if (label === firstPath) return null
+            const ListItem = tabsItems[label as keyof TabsType];
+            return (
+              <CommandGroup key={label + '-cmd-group'} heading={label} className='capitalize'>
+                {items.map((item) => (
+                  // @ts-expect-error this is perfectly fine but typescript isnt smart enough to handle
+                  <ListItem key={item.id + '-cmd-item-' + label} props={item} router={router} setOpen={setOpen} />
+                ))}
+              </CommandGroup>
+            )
+          })}
         </CommandList>
+        <div className="bg-border px-3 py-3 flex gap-2 items-center text-xs text-muted-foreground">
+          <Kbd className='bg-card'><CornerDownLeft className='w-3 h-3' /></Kbd>
+          <span className="">Go to page</span>
+          <Kbd className='bg-card ml-4'>Esc</Kbd>
+          <span className="">Close</span>
+        </div>
       </CommandDialog>
     </>
   )

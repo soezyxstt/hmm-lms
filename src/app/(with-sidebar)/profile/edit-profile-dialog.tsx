@@ -1,28 +1,57 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog"
-import { Button } from "~/components/ui/button"
-import { Input } from "~/components/ui/input"
-import { Label } from "~/components/ui/label"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form"
-import { ProfileAvatar } from './profile-avatar'
-import { editProfileSchema, type EditProfileInput } from '~/lib/schema/profile'
-import type { User } from "~/lib/types/user"
-import { Loader2, Save, X } from "lucide-react"
-import { toast } from 'sonner'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
+import { ProfileAvatar } from './profile-avatar';
+import { editProfileSchema, type EditProfileInput } from '~/lib/schema/profile';
+import { Loader2, Save, X } from "lucide-react";
+import { toast } from 'sonner';
+import { api } from '~/trpc/react';
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  nim: string | null;
+  faculty: string | null;
+  program: string | null;
+  position: string | null;
+  role: string;
+  image: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 interface EditProfileDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  user: User
-  onUpdate: (data: Partial<User>) => void
+  isOpen: boolean;
+  onClose: () => void;
+  user: User;
+  onUpdate: () => void;
 }
 
 export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfileDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
+
+  const updateProfileMutation = api.user.updateProfile.useMutation({
+    onSuccess: () => {
+      toast.success("Profile updated successfully!");
+      onUpdate();
+      onClose();
+      form.reset();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update profile. Please try again.");
+    },
+    onSettled: () => {
+      setIsLoading(false);
+    },
+  });
 
   const form = useForm<EditProfileInput>({
     resolver: zodResolver(editProfileSchema),
@@ -32,32 +61,26 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
       program: user.program ?? "",
       image: user.image ?? "",
     },
-  })
+  });
 
   const onSubmit = async (data: EditProfileInput) => {
-    setIsLoading(true)
-
-    try {
-      // Simulate API call - replace with actual tRPC mutation
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock success
-      onUpdate(data)
-      toast.success("Profile updated successfully!")
-      onClose()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    setIsLoading(true);
+    updateProfileMutation.mutate(data);
+  };
 
   const handleImageChange = (image: string) => {
-    form.setValue("image", image)
-  }
+    form.setValue("image", image);
+  };
+
+  const handleClose = () => {
+    if (!isLoading) {
+      form.reset();
+      onClose();
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
@@ -75,7 +98,9 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                 onImageChange={handleImageChange}
                 className="animate-in zoom-in-95 duration-300"
               />
-              <p className="text-sm text-gray-500 text-center">Click on the avatar to change your profile picture</p>
+              <p className="text-sm text-muted-foreground text-center">
+                Click on the avatar to change your profile picture
+              </p>
             </div>
 
             {/* Form Fields */}
@@ -90,7 +115,8 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                       <Input
                         {...field}
                         placeholder="Enter your full name"
-                        className=""
+                        autoFocus
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -102,23 +128,23 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
               <div className="space-y-4 opacity-60">
                 <div>
                   <Label>Email</Label>
-                  <Input value={user.email} disabled className="bg-gray-50" />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  <Input value={user.email} disabled className="bg-muted" />
+                  <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
                 </div>
 
                 {user.nim && (
                   <div>
                     <Label>NIM</Label>
-                    <Input value={user.nim} disabled className="bg-gray-50" />
-                    <p className="text-xs text-gray-500 mt-1">NIM cannot be changed</p>
+                    <Input value={user.nim} disabled className="bg-muted" />
+                    <p className="text-xs text-muted-foreground mt-1">NIM cannot be changed</p>
                   </div>
                 )}
 
                 {user.position && (
                   <div>
                     <Label>Position</Label>
-                    <Input value={user.position} disabled className="bg-gray-50" />
-                    <p className="text-xs text-gray-500 mt-1">Position cannot be changed</p>
+                    <Input value={user.position} disabled className="bg-muted" />
+                    <p className="text-xs text-muted-foreground mt-1">Position cannot be changed</p>
                   </div>
                 )}
               </div>
@@ -133,7 +159,7 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                       <Input
                         {...field}
                         placeholder="Enter your faculty"
-                        className=""
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -151,7 +177,7 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                       <Input
                         {...field}
                         placeholder="Enter your program"
-                        className=""
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -165,8 +191,8 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
-                className="flex-1 transition-all duration-200 hover:scale-[1.02] bg-transparent"
+                onClick={handleClose}
+                className="flex-1 transition-all duration-200 hover:scale-[1.02]"
                 disabled={isLoading}
               >
                 <X className="h-4 w-4 mr-2" />
@@ -177,7 +203,11 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
                 className="flex-1 transition-all duration-200 hover:scale-[1.02]"
                 disabled={isLoading}
               >
-                {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
                 Save Changes
               </Button>
             </div>
@@ -185,5 +215,5 @@ export function EditProfileDialog({ isOpen, onClose, user, onUpdate }: EditProfi
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
