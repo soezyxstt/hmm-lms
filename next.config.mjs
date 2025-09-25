@@ -73,7 +73,7 @@ const pwaConfig = withPWA({
    * @default true
    */
   aggressiveFrontEndNavCaching: true,
-  sw: '/public/sw.js',
+  sw: "/public/sw.js",
 });
 
 /** @type {import('next').NextConfig} */
@@ -81,7 +81,20 @@ const nextConfig = {
   images: {
     domains: ["hmm-lms.sgp1.digitaloceanspaces.com"],
   },
-  output: 'standalone',
+  output: "standalone",
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default pwaConfig(nextConfig);
