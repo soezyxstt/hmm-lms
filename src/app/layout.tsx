@@ -10,14 +10,47 @@ import { DisplaySettingProvider } from '~/components/providers/display-provider'
 import Script from 'next/script';
 import { RegisterSW } from '~/components/register-sw';
 
+const APP_NAME = "HMM LMS";
+const APP_DEFAULT_TITLE = "HMM LMS";
+const APP_TITLE_TEMPLATE = "%s | HMM LMS";
+const APP_DESCRIPTION = "LMS for Himpunan Mahasiswa Mesin ITB";
+
+
 export const metadata: Metadata = {
+  applicationName: APP_NAME,
   title: {
-    default: "HMM LMS",
-    template: "%s | HMM LMS",
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
   },
-  description: "LMS for Himpunan Mahasiswa Mesin ITB",
+  description: APP_DESCRIPTION,
   icons: [{ rel: "icon", url: "/favicon.ico" }],
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_DEFAULT_TITLE,
+    // startUpImage: [],
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
+  },
 };
 
 const inter = Inter({
