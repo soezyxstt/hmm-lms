@@ -16,7 +16,7 @@ const pwaConfig = withPWA({
    * @desc The destination directory for the service worker file.
    * @default "public"
    */
-  dest: "public",
+  dest: "/",
 
   /**
    * @desc Disables PWA generation in development mode to avoid caching issues.
@@ -73,7 +73,7 @@ const pwaConfig = withPWA({
    * @default true
    */
   aggressiveFrontEndNavCaching: true,
-  sw: "/public/sw.js",
+  sw: "/sw.js",
 });
 
 /** @type {import('next').NextConfig} */
