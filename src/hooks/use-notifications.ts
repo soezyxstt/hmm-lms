@@ -1,7 +1,7 @@
 // src/hooks/useNotifications.ts
 import { useEffect, useState } from "react";
-import { api } from "~/trpc/react";
 import { toast } from "sonner";
+import { env } from "~/env";
 
 export function useNotifications() {
   const [isSupported, setIsSupported] = useState(false);
@@ -10,9 +10,7 @@ export function useNotifications() {
   );
   const [permission, setPermission] =
     useState<NotificationPermission>("default");
-
-  const subscribeMutation = api.notification.subscribe.useMutation();
-  const unsubscribeMutation = api.notification.unsubscribe.useMutation();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if ("Notification" in window && "serviceWorker" in navigator) {
@@ -60,30 +58,41 @@ export function useNotifications() {
   };
 
   const subscribe = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
     try {
       const registration = await navigator.serviceWorker.ready;
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+          env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
         ),
       });
 
       setSubscription(subscription);
 
-      // Save to database
-      await subscribeMutation.mutateAsync({
-        endpoint: subscription.endpoint,
-        p256dh: btoa(
-          String.fromCharCode(
-            ...new Uint8Array(subscription.getKey("p256dh")!),
+      const response = await fetch("/api/notifications/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          p256dh: btoa(
+            String.fromCharCode(
+              ...new Uint8Array(subscription.getKey("p256dh")!),
+            ),
           ),
-        ),
-        auth: btoa(
-          String.fromCharCode(...new Uint8Array(subscription.getKey("auth")!)),
-        ),
+          auth: btoa(
+            String.fromCharCode(
+              ...new Uint8Array(subscription.getKey("auth")!),
+            ),
+          ),
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to save subscription");
+      }
 
       toast.success("Notifications enabled successfully");
       return subscription;
@@ -91,22 +100,52 @@ export function useNotifications() {
       console.error("Failed to subscribe:", error);
       toast.error("Failed to enable notifications");
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const unsubscribe = async () => {
     if (!subscription) return;
+    setIsLoading(true);
 
     try {
       await subscription.unsubscribe();
-      await unsubscribeMutation.mutateAsync({
-        endpoint: subscription.endpoint,
-      });
+      await fetch(
+        `/api/notifications/subscribe?endpoint=${encodeURIComponent(subscription.endpoint)}`,
+        {
+          method: "DELETE",
+        },
+      );
       setSubscription(null);
       toast.success("Notifications disabled");
     } catch (error) {
       console.error("Failed to unsubscribe:", error);
       toast.error("Failed to disable notifications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testNotification = async () => {
+    try {
+      const response = await fetch("/api/notifications/test", {
+        method: "POST",
+      });
+
+      const data = await response.json() as {
+        success: boolean;
+        message?: string;
+      };
+
+      if (data.success) {
+        toast.success("Test notification sent!");
+      } else {
+        toast.error(data.message ?? "Failed to send test notification");
+      }
+    } catch (error) {
+      console.error("Failed to send test notification:", error);
+      toast.error("Failed to send test notification");
     }
   };
 
@@ -118,6 +157,9 @@ export function useNotifications() {
     subscribe,
     unsubscribe,
     isSubscribed: !!subscription,
+    isLoading,
+    setIsLoading,
+    testNotification,
   };
 }
 

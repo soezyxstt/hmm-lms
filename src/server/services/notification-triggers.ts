@@ -152,7 +152,7 @@ export class NotificationTriggers {
     const payload: NotificationPayload = {
       title: "📝 New Tryout Available",
       body: tryout.title,
-      url: `/courses/${tryout.course.classCode}/tryouts/${tryout.id}`,
+      url: `/tryouts/${tryout.id}`,
       type: "tryout",
       tag: `tryout-${tryout.id}`,
     };

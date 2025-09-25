@@ -2,9 +2,10 @@
 
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Send } from "lucide-react";
 import { useNotifications } from '~/hooks/use-notifications';
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import { LoadingSpinner } from '~/components/ui/loading-spinner';
 
 export default function NotificationSettings() {
   const {
@@ -13,6 +14,8 @@ export default function NotificationSettings() {
     permission,
     requestPermission,
     unsubscribe,
+    isLoading,
+    testNotification,
   } = useNotifications();
 
   if (!isSupported) {
@@ -46,20 +49,34 @@ export default function NotificationSettings() {
                 {isSubscribed ? 'Notifications Enabled' : 'Notifications Disabled'}
               </p>
               <p className="text-sm text-muted-foreground">
-                {isSubscribed 
-                  ? 'You will receive push notifications' 
+                {isSubscribed
+                  ? 'You will receive push notifications'
                   : 'Enable to receive important updates'}
               </p>
             </div>
           </div>
-          
+
           <Button
             variant={isSubscribed ? "destructive" : "default"}
             onClick={isSubscribed ? unsubscribe : requestPermission}
           >
-            {isSubscribed ? 'Disable' : 'Enable'}
+            {isLoading ? (<LoadingSpinner size='sm' />) : isSubscribed ? 'Disable' : 'Enable'}
           </Button>
         </div>
+
+        {isSubscribed && (
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={testNotification}
+              className="w-full"
+              disabled={isLoading}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send Test Notification
+            </Button>
+          </div>
+        )}
 
         {permission === 'denied' && (
           <Alert className="mt-4">

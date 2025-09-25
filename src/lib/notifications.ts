@@ -3,7 +3,7 @@ import { env } from "~/env";
 
 // Configure web-push
 webpush.setVapidDetails(
-  "mailto:soezyxst@gmail.com",
+  env.VAPID_SUBJECT,
   env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   env.VAPID_PRIVATE_KEY,
 );

@@ -1232,3 +1232,7 @@ html {
 .shape-oval {
   clip-path: ellipse(40% 50% at 50% 50%);
 }
+
+button {
+  cursor: pointer;
+}

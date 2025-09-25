@@ -19,12 +19,12 @@ import {
 import type { TabsType } from './main/cmdk-search';
 import { Fragment } from 'react';
 
-const definedDBItems = ['courses', 'tryouts', 'scholarships', 'events', 'announcements', 'loker']
+// const definedDBItems = ['courses', 'tryouts', 'scholarships', 'events', 'announcements', 'loker']
 
-export default function StudentBreadcrumb({ items, isMobile = false }: { items: TabsType, isMobile?: boolean }) {
+export default function StudentBreadcrumb({ isMobile = false }: { items: TabsType, isMobile?: boolean }) {
   const pathNames = usePathname()?.split("/") || []
   pathNames.shift()
-  const firstPath = pathNames[0]; 
+  // const firstPath = pathNames[0]; 
 
   if (pathNames.length === 0) return null
 
