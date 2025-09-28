@@ -82,7 +82,7 @@ export const courseRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const data = await ctx.db.course.create({
         data: input,
-      })
+      });
 
       if (data) {
         await NotificationTriggers.onCourseCreated(data.id);
@@ -582,16 +582,16 @@ export const courseRouter = createTRPCRouter({
       });
 
       // Get member growth stats (group by creation date)
-    //   const memberStats = await ctx.db.$queryRaw`
-    //   SELECT
-    //     DATE("T1"."createdAt") as date,
-    //     COUNT("T2"."id")::int as count
-    //   FROM "_CourseToUser" AS "T1"
-    //   JOIN "User" AS "T2" ON "T1"."B" = "T2"."id"
-    //   WHERE "T1"."A" = ${input.id}
-    //   GROUP BY 1
-    //   ORDER BY 1 ASC
-    // `;
+      //   const memberStats = await ctx.db.$queryRaw`
+      //   SELECT
+      //     DATE("T1"."createdAt") as date,
+      //     COUNT("T2"."id")::int as count
+      //   FROM "_CourseToUser" AS "T1"
+      //   JOIN "User" AS "T2" ON "T1"."B" = "T2"."id"
+      //   WHERE "T1"."A" = ${input.id}
+      //   GROUP BY 1
+      //   ORDER BY 1 ASC
+      // `;
 
       return {
         documentStats,
@@ -670,7 +670,7 @@ export const courseRouter = createTRPCRouter({
         removedCount: userIds.length,
       };
     }),
-  
+
   removeCourseMembers: adminProcedure
     .input(
       z.object({
@@ -684,7 +684,10 @@ export const courseRouter = createTRPCRouter({
         include: { members: true },
       });
       if (!course) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Course not found." });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Course not found.",
+        });
       }
       const memberIds = course.members.map((member) => member.id);
       await ctx.db.course.update({
@@ -697,4 +700,16 @@ export const courseRouter = createTRPCRouter({
       });
       return { success: true, removedCount: memberIds.length };
     }),
+
+  getCoursesForSelection: adminProcedure.query(async ({ ctx }) => {
+    return ctx.db.course.findMany({
+      select: {
+        id: true,
+        title: true,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+  }),
 });

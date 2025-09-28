@@ -9,6 +9,28 @@ export default async function EventsPage() {
   const allEvents = await api.event.getAllEvents();
   const courseEvents = await api.event.getCourseEvents();
 
+  const renderEventList = (events: RouterOutputs['event']['getAllEvents'], emptyMessage: string) => {
+    if (events.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium">{emptyMessage}</p>
+        </div>
+      );
+    }
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {events.map((event) => (
+          <EventItem
+            key={event.id}
+            event={event}
+            href={`/events/${event.id}`}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       <Tabs defaultValue="my-events" className="w-full">
@@ -33,74 +55,9 @@ export default async function EventsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-events">
-          <div className="w-full">
-            {myEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground font-medium">
-                  You don&apos;t have any personal events yet.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {myEvents.map((event: RouterOutputs['event']['getMyEvents'][number]) => (
-                  <EventItem
-                    key={event.id}
-                    event={event}
-                    href={`/events/${event.id}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="course-events">
-          <div className="w-full">
-            {courseEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground font-medium">
-                  No course events available.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {courseEvents.map((event: RouterOutputs['event']['getCourseEvents'][number]) => (
-                  <EventItem
-                    key={event.id}
-                    event={event}
-                    href={`/events/${event.id}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="all-events">
-          <div className="w-full">
-            {allEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground font-medium">
-                  No events available.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {allEvents.map((event: RouterOutputs['event']['getAllEvents'][number]) => (
-                  <EventItem
-                    key={event.id}
-                    event={event}
-                    href={`/events/${event.id}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
+        <TabsContent value="my-events">{renderEventList(myEvents, "You don't have any personal events yet.")}</TabsContent>
+        <TabsContent value="course-events">{renderEventList(courseEvents, "No course events available.")}</TabsContent>
+        <TabsContent value="all-events">{renderEventList(allEvents, "No public events available.")}</TabsContent>
       </Tabs>
     </div>
   );

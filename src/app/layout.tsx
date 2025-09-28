@@ -174,7 +174,7 @@ export default function RootLayout({
               </ThemeProvider>
             </DisplaySettingProvider>
           </TRPCReactProvider>
-          <Toaster richColors />
+          <Toaster richColors position='top-center' />
         </SessionProvider>
       </body>
     </html>
