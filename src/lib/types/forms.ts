@@ -1,315 +1,168 @@
-// types/form.ts
+import { z } from 'zod';
+import {
+  Type,
+  MessageSquare,
+  CheckSquare,
+  Star,
+  Upload,
+  User,
+  Hash,
+  BookOpen,
+  Calendar,
+  Clock,
+} from 'lucide-react';
 
-import type { JsonValue } from '@prisma/client/runtime/library';
-import { z } from "zod";
+// --- 1. CENTRAL CONFIGURATION FOR QUESTION TYPES ---
+// This object's keys MUST match the `FormQuestionType` enum in your Prisma schema.
+export const QUESTION_TYPE_CONFIG = {
+  SHORT_ANSWER: { type: 'SHORT_ANSWER', label: 'Short Answer', description: 'A short text response', icon: Type },
+  LONG_ANSWER: { type: 'LONG_ANSWER', label: 'Long Answer', description: 'A long text response', icon: Type },
+  MULTIPLE_CHOICE: { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', description: 'Select one option', icon: MessageSquare },
+  MULTIPLE_SELECT: { type: 'MULTIPLE_SELECT', label: 'Checkboxes', description: 'Select multiple options', icon: CheckSquare },
+  FILE_UPLOAD: { type: 'FILE_UPLOAD', label: 'File Upload', description: 'Upload one or more files', icon: Upload },
+  NAME_SELECT: { type: 'NAME_SELECT', label: 'Name Select', description: 'Select a user by name', icon: User },
+  NIM_SELECT: { type: 'NIM_SELECT', label: 'NIM Select', description: 'Select a student by NIM', icon: Hash },
+  RATING: { type: 'RATING', label: 'Rating', description: 'A scale of stars, hearts, etc.', icon: Star },
+  DATE: { type: 'DATE', label: 'Date', description: 'Pick a specific date', icon: Calendar },
+  TIME: { type: 'TIME', label: 'Time', description: 'Pick a specific time', icon: Clock },
+  COURSE_SELECT: { type: 'COURSE_SELECT', label: 'Course Select', description: 'Select a course from a list', icon: BookOpen },
+  EVENT_SELECT: { type: 'EVENT_SELECT', label: 'Event Select', description: 'Select an event from a list', icon: Calendar },
+} as const;
 
-export const FormQuestionType = z.enum([
-  "SHORT_ANSWER",
-  "LONG_ANSWER",
-  "MULTIPLE_CHOICE",
-  "MULTIPLE_SELECT",
-  "FILE_UPLOAD",
-  "NAME_SELECT",
-  "NIM_SELECT",
-  "RATING",
-  "DATE",
-  "TIME",
-  "COURSE_SELECT",
-  "EVENT_SELECT",
-]);
+// --- 2. DERIVED TYPES AND ZOD SCHEMas ---
+export type FormQuestionType = keyof typeof QUESTION_TYPE_CONFIG;
 
-export type FormQuestionType = z.infer<typeof FormQuestionType>;
+// --- 3. Schemas for the `settings` JSON object in the `FormQuestion` model ---
+export const TextSettingsSchema = z.object({ placeholder: z.string().optional() });
+export type TextSettings = z.infer<typeof TextSettingsSchema>;
 
-// Base question interface
-export interface BaseQuestionSettings {
-  placeholder?: string;
-  helperText?: string;
-}
-
-// Specific question settings
-export interface MultipleChoiceSettings extends BaseQuestionSettings {
-  options: Array<{
-    id: string;
-    text: string;
-    value: string;
-  }>;
-  allowOther?: boolean;
-}
-
-export interface MultipleSelectSettings extends BaseQuestionSettings {
-  options: Array<{
-    id: string;
-    text: string;
-    value: string;
-  }>;
-  minSelections?: number;
-  maxSelections?: number;
-  allowOther?: boolean;
-}
-
-export interface FileUploadSettings extends BaseQuestionSettings {
-  allowedFileTypes?: string[];
-  maxFileSize?: number; // in MB
-  maxFiles?: number;
-}
-
-export interface RatingSettings extends BaseQuestionSettings {
-  scale: number; // e.g., 5 for 1-5 scale
-  lowLabel?: string;
-  highLabel?: string;
-  icon?: "star" | "heart" | "thumbs" | "numbers";
-}
-
-export interface TextSettings extends BaseQuestionSettings {
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string; // regex pattern
-}
-
-export interface DateTimeSettings extends BaseQuestionSettings {
-  minDate?: string;
-  maxDate?: string;
-  includeTime?: boolean;
-}
-
-// Union type for all settings
-export type QuestionSettings =
-  | MultipleChoiceSettings
-  | MultipleSelectSettings
-  | FileUploadSettings
-  | RatingSettings
-  | TextSettings
-  | DateTimeSettings
-  | BaseQuestionSettings;
-
-// Zod schemas for validation
-export const baseQuestionSettingsSchema = z.object({
-  placeholder: z.string().optional(),
-  helperText: z.string().optional(),
+export const MultipleChoiceOptionSchema = z.object({
+  id: z.string().default(() => crypto.randomUUID()),
+  text: z.string().min(1, 'Option text cannot be empty'),
+  value: z.string(),
 });
+export type MultipleChoiceOption = z.infer<typeof MultipleChoiceOptionSchema>;
 
-export const multipleChoiceSettingsSchema = baseQuestionSettingsSchema.extend({
-  options: z
-    .array(
-      z.object({
-        id: z.string(),
-        text: z.string(),
-        value: z.string(),
-      }),
-    )
-    .min(1),
-  allowOther: z.boolean().optional(),
+export const MultipleChoiceSettingsSchema = z.object({
+  options: z.array(MultipleChoiceOptionSchema).min(1, 'Must have at least one option'),
+  allowOther: z.boolean().default(false),
 });
+export type MultipleChoiceSettings = z.infer<typeof MultipleChoiceSettingsSchema>;
 
-export const multipleSelectSettingsSchema = baseQuestionSettingsSchema.extend({
-  options: z
-    .array(
-      z.object({
-        id: z.string(),
-        text: z.string(),
-        value: z.string(),
-      }),
-    )
-    .min(1),
-  minSelections: z.number().min(0).optional(),
-  maxSelections: z.number().min(1).optional(),
-  allowOther: z.boolean().optional(),
-});
+export const MultipleSelectSettingsSchema = MultipleChoiceSettingsSchema;
+export type MultipleSelectSettings = z.infer<typeof MultipleSelectSettingsSchema>;
 
-export const fileUploadSettingsSchema = baseQuestionSettingsSchema.extend({
+export const FileUploadSettingsSchema = z.object({
+  maxFiles: z.number().min(1).max(10).default(1),
   allowedFileTypes: z.array(z.string()).optional(),
-  maxFileSize: z.number().min(1).optional(),
-  maxFiles: z.number().min(1).optional(),
 });
+export type FileUploadSettings = z.infer<typeof FileUploadSettingsSchema>;
 
-export const ratingSettingsSchema = baseQuestionSettingsSchema.extend({
-  scale: z.number().min(2).max(10),
+export const RatingSettingsSchema = z.object({
+  scale: z.number().min(3).max(10).default(5),
+  icon: z.enum(['star', 'heart', 'thumbs', 'numbers']).default('star'),
   lowLabel: z.string().optional(),
   highLabel: z.string().optional(),
-  icon: z.enum(["star", "heart", "thumbs", "numbers"]).optional(),
 });
+export type RatingSettings = z.infer<typeof RatingSettingsSchema>;
 
-export const textSettingsSchema = baseQuestionSettingsSchema.extend({
-  minLength: z.number().min(0).optional(),
-  maxLength: z.number().min(1).optional(),
-  pattern: z.string().optional(),
-});
-
-export const dateTimeSettingsSchema = baseQuestionSettingsSchema.extend({
+export const DateTimeSettingsSchema = z.object({
   minDate: z.string().optional(),
   maxDate: z.string().optional(),
-  includeTime: z.boolean().optional(),
+});
+export type DateTimeSettings = z.infer<typeof DateTimeSettingsSchema>;
+
+const NoSettingsSchema = z.null().optional();
+
+// --- 4. MASTER SCHEMAS FOR FRONTEND STATE MANAGEMENT ---
+const baseQuestionSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1, 'Question title is required'),
+  description: z.string().optional(),
+  required: z.boolean().default(false),
+  order: z.number().optional(),
 });
 
-// Form schemas
-export const createFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+export const QuestionSchema = z.discriminatedUnion('type', [
+  baseQuestionSchema.extend({ type: z.literal('SHORT_ANSWER'), settings: TextSettingsSchema.optional() }),
+  baseQuestionSchema.extend({ type: z.literal('LONG_ANSWER'), settings: TextSettingsSchema.optional() }),
+  baseQuestionSchema.extend({ type: z.literal('MULTIPLE_CHOICE'), settings: MultipleChoiceSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('MULTIPLE_SELECT'), settings: MultipleSelectSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('FILE_UPLOAD'), settings: FileUploadSettingsSchema.optional() }),
+  baseQuestionSchema.extend({ type: z.literal('RATING'), settings: RatingSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('DATE'), settings: DateTimeSettingsSchema.optional() }),
+  baseQuestionSchema.extend({ type: z.literal('TIME'), settings: NoSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('NAME_SELECT'), settings: NoSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('NIM_SELECT'), settings: NoSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('COURSE_SELECT'), settings: NoSettingsSchema }),
+  baseQuestionSchema.extend({ type: z.literal('EVENT_SELECT'), settings: NoSettingsSchema }),
+]);
+export type QuestionSchema = z.infer<typeof QuestionSchema>;
+
+// This schema is for the frontend builder's form state. It is NOT used directly in the `update` tRPC procedure.
+export const formBuilderSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, 'Form title is required'),
   description: z.string().optional(),
+  isPublished: z.boolean().default(false),
+  isActive: z.boolean().default(true),
   allowMultipleSubmissions: z.boolean().default(false),
   requireAuth: z.boolean().default(true),
   showProgressBar: z.boolean().default(true),
   collectEmail: z.boolean().default(true),
+  questions: z.array(QuestionSchema),
+});
+export type FormBuilderSchema = z.infer<typeof formBuilderSchema>;
+
+// --- 5. SCHEMAS FOR TRPC ROUTER ENDPOINTS (SYNCED WITH ROUTER LOGIC) ---
+
+// For the `form.create` procedure
+export const createFormSchema = formBuilderSchema.pick({
+    title: true,
+    description: true,
 });
 
-export const updateFormSchema = createFormSchema.partial().extend({
-  id: z.string(),
-  isPublished: z.boolean().optional(),
-  isActive: z.boolean().optional(),
+// For the `form.update` procedure. NOTE: It does not include `questions`.
+export const updateFormSchema = formBuilderSchema.pick({
+    title: true,
+    description: true,
+    isPublished: true,
+    isActive: true,
+    allowMultipleSubmissions: true,
+    requireAuth: true,
+    showProgressBar: true,
+    collectEmail: true,
+  }).extend({
+    id: z.string(), // ID is required for an update
 });
 
+// For the `form.createQuestion` procedure
 export const createQuestionSchema = z.object({
-  formId: z.string(),
-  title: z.string().min(1, "Question title is required"),
-  description: z.string().optional(),
-  type: FormQuestionType,
-  required: z.boolean().default(false),
-  order: z.number().int().min(0),
-  settings: z.any().optional(), // Will be validated based on type
+    formId: z.string(),
+    title: z.string().min(1, 'Question title is required'),
+    description: z.string().optional(),
+    type: z.enum(Object.keys(QUESTION_TYPE_CONFIG) as [FormQuestionType, ...FormQuestionType[]]),
+    required: z.boolean().default(false),
+    order: z.number(),
+    settings: z.any().optional(), // Prisma expects a JSON-compatible object for the `settings` field
 });
 
-export const updateQuestionSchema = createQuestionSchema.partial().extend({
-  id: z.string(),
+// For the `form.updateQuestion` procedure. Allows partial updates.
+export const updateQuestionSchema = createQuestionSchema.omit({ formId: true }).partial().extend({
+  id: z.string(), // ID is required to know which question to update
+});
+
+// For the `form.submit` procedure. Matches the sparse `FormAnswer` table structure.
+const submitAnswerSchema = z.object({
+  questionId: z.string(),
+  textValue: z.string().optional(),
+  numberValue: z.number().optional(),
+  dateValue: z.date().optional(),
+  jsonValue: z.any().optional(), // For arrays from MULTIPLE_SELECT, etc.
+  fileUrl: z.string().url().optional(),
 });
 
 export const submitFormSchema = z.object({
   formId: z.string(),
-  answers: z.array(
-    z.object({
-      questionId: z.string(),
-      textValue: z.string().optional(),
-      numberValue: z.number().optional(),
-      dateValue: z.date().optional(),
-      jsonValue: z.any().optional(),
-      fileUrl: z.string().optional(),
-    }),
-  ),
+  answers: z.array(submitAnswerSchema),
 });
-
-// Response types
-export interface FormWithQuestions {
-  id: string;
-  title: string;
-  description?: string;
-  isPublished: boolean;
-  isActive: boolean;
-  allowMultipleSubmissions: boolean;
-  requireAuth: boolean;
-  showProgressBar: boolean;
-  collectEmail: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  creator: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  questions: Array<{
-    id: string;
-    title: string;
-    description?: string;
-    type: FormQuestionType;
-    required: boolean;
-    order: number;
-    settings?: QuestionSettings;
-  }>;
-}
-
-export interface FormSubmissionWithAnswers {
-  id: string;
-  submittedAt: Date;
-  submitter?: {
-    id: string;
-    name: string;
-    email: string;
-    nim?: string;
-  };
-  answers: Array<{
-    id: string;
-    question: {
-      id: string;
-      title: string;
-      type: FormQuestionType;
-    };
-    textValue?: string;
-    numberValue?: number;
-    dateValue?: Date;
-    jsonValue?: JsonValue;
-    fileUrl?: string;
-  }>;
-}
-
-// Question type metadata
-export const QUESTION_TYPE_CONFIG = {
-  SHORT_ANSWER: {
-    label: "Short Answer",
-    description: "Brief text response",
-    icon: "Type",
-    category: "text",
-  },
-  LONG_ANSWER: {
-    label: "Long Answer",
-    description: "Paragraph text response",
-    icon: "AlignLeft",
-    category: "text",
-  },
-  MULTIPLE_CHOICE: {
-    label: "Multiple Choice",
-    description: "Select one option",
-    icon: "Circle",
-    category: "choice",
-  },
-  MULTIPLE_SELECT: {
-    label: "Multiple Select",
-    description: "Select multiple options",
-    icon: "Square",
-    category: "choice",
-  },
-  FILE_UPLOAD: {
-    label: "File Upload",
-    description: "Upload files",
-    icon: "Upload",
-    category: "media",
-  },
-  NAME_SELECT: {
-    label: "Name Select",
-    description: "Select from user names",
-    icon: "User",
-    category: "database",
-  },
-  NIM_SELECT: {
-    label: "NIM Select",
-    description: "Select from student IDs",
-    icon: "CreditCard",
-    category: "database",
-  },
-  RATING: {
-    label: "Rating",
-    description: "Rating scale response",
-    icon: "Star",
-    category: "scale",
-  },
-  DATE: {
-    label: "Date",
-    description: "Date picker",
-    icon: "Calendar",
-    category: "datetime",
-  },
-  TIME: {
-    label: "Time",
-    description: "Time picker",
-    icon: "Clock",
-    category: "datetime",
-  },
-  COURSE_SELECT: {
-    label: "Course Select",
-    description: "Select from courses",
-    icon: "BookOpen",
-    category: "database",
-  },
-  EVENT_SELECT: {
-    label: "Event Select",
-    description: "Select from events",
-    icon: "CalendarDays",
-    category: "database",
-  },
-} as const;

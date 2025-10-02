@@ -399,7 +399,7 @@ model UserAnswer {
   id         String      @id @default(cuid())
   attemptId  String
   questionId String
-  answer     Json
+  answer     String
   points     Float       @default(0)
   createdAt  DateTime    @default(now())
   attempt    UserAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)

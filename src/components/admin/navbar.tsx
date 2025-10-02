@@ -20,7 +20,8 @@ import {
   Database,
   BookOpen,
   Briefcase,
-  TestTube
+  TestTube,
+  FormInput
 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
@@ -37,10 +38,11 @@ const adminSidebarTabs: {
   }[]
 }[] = [
     {
-      group: 'Overview',
+      group: 'General',
       items: [
         { label: 'Dashboard', href: '/admin', icon: Home, tooltip: 'Admin Dashboard' },
         { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, tooltip: 'Analytics & Reports', dev: true },
+        { label: 'Forms', href: '/admin/forms', icon: FormInput, tooltip: 'Manage Forms', dev: true }
       ],
     },
     {

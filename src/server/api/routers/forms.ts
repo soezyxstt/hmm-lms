@@ -1,7 +1,10 @@
-// server/api/routers/form.ts
-
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "../trpc";
 import { TRPCError } from "@trpc/server";
 import {
   createFormSchema,
@@ -9,7 +12,7 @@ import {
   createQuestionSchema,
   updateQuestionSchema,
   submitFormSchema,
-} from '~/lib/types/forms'
+} from "~/lib/types/forms";
 
 export const formRouter = createTRPCRouter({
   // Form management
@@ -417,7 +420,7 @@ export const formRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.user.findMany({
         where: {
-          nim: { not: '' },
+          nim: { not: "" },
           ...(input.search
             ? {
                 OR: [
@@ -447,7 +450,9 @@ export const formRouter = createTRPCRouter({
             ? {
                 OR: [
                   { title: { contains: input.search, mode: "insensitive" } },
-                  { classCode: { contains: input.search, mode: "insensitive" } },
+                  {
+                    classCode: { contains: input.search, mode: "insensitive" },
+                  },
                 ],
               }
             : {}),
@@ -482,5 +487,80 @@ export const formRouter = createTRPCRouter({
         take: 50,
         orderBy: { start: "desc" },
       });
+    }),
+
+  getUserSubmissionStatus: protectedProcedure
+    .input(z.object({ formId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const existingSubmission = await ctx.db.formSubmission.findFirst({
+        where: {
+          formId: input.formId,
+          submittedBy: ctx.session.user.id,
+        },
+        select: {
+          id: true,
+          submittedAt: true,
+        },
+      });
+      return existingSubmission;
+    }),
+
+  updatePublish: adminProcedure
+    .input(z.object({ formId: z.string(), isPublished: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const published = await ctx.db.form.update({
+        where: {
+          id: input.formId,
+        },
+        data: {
+          isPublished: input.isPublished,
+        },
+      });
+
+      return published;
+    }),
+
+  duplicate: adminProcedure
+    .input(z.object({ formId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const existingForm = await ctx.db.form.findUnique({
+        where: { id: input.formId },
+        include: { questions: true },
+      });
+
+      if (!existingForm || existingForm.createdBy !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only duplicate your own forms",
+        });
+      }
+
+      // Create new form
+      const newForm = await ctx.db.form.create({
+        data: {
+          title: `${existingForm.title} (Copy)`,
+          description: existingForm.description,
+          isPublished: false, // reset publish state for safety
+          isActive: true,
+          createdBy: ctx.session.user.id,
+          allowMultipleSubmissions: existingForm.allowMultipleSubmissions,
+          requireAuth: existingForm.requireAuth,
+          showProgressBar: existingForm.showProgressBar,
+          collectEmail: existingForm.collectEmail,
+          questions: {
+            create: existingForm.questions.map((q) => ({
+              title: q.title,
+              description: q.description,
+              type: q.type,
+              required: q.required,
+              order: q.order,
+              settings: q.settings!,
+            })),
+          },
+        },
+        include: { questions: true },
+      });
+
+      return newForm;
     }),
 });
