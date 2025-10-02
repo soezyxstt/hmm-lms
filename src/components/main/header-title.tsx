@@ -14,13 +14,14 @@ export default function HeaderTitle() {
     events: 'Events',
     scholarship: 'Scholarship',
     schedule: 'Schedule',
-    "tryouts": 'Tryouts',
+    tryouts: 'Tryouts',
     loker: 'M-Opportunity',
-    users: 'User Management',
+    users: 'User',
     admin: 'Admin Panel',
     database: 'Database',
     logs: 'System Logs',
-    analytics: 'Analytics & Reports'
+    analytics: 'Analytics',
+    forms: 'Forms'
   };
 
   return (

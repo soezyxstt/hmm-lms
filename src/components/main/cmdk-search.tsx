@@ -205,7 +205,7 @@ export default function SearchCMDK({ data }: { data: TabsType }) {
   return (
     <>
       <div className='flex bg-card px-3 py-1.5 rounded-md text-sm items-center text-muted-foreground cursor-pointer' onClick={() => setOpen(true)}>
-        <span className="mr-8">Seacrh...</span>
+        <span className="mr-8">Search...</span>
         <Kbd>Ctrl K</Kbd>
       </div>
       <CommandDialog open={open} onOpenChange={setOpen} showCloseButton={false} className='border-4 border-b-0'>

@@ -54,21 +54,17 @@ import {
 } from '~/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Textarea } from '~/components/ui/textarea';
+import type { JsonValue } from '@prisma/client/runtime/library';
 
 // Define a more specific type for a form question
 interface FormQuestion {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   type: FormQuestionType;
   required: boolean;
   settings?:
-  | MultipleChoiceSettings
-  | MultipleSelectSettings
-  | FileUploadSettings
-  | RatingSettings
-  | TextSettings
-  | DateTimeSettings;
+  JsonValue
 }
 
 // Define the shape of the form data for better type safety
