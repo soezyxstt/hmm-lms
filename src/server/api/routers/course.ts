@@ -101,9 +101,40 @@ export const courseRouter = createTRPCRouter({
       });
     }),
 
+  // ADDED: Delete course procedure
+  delete: adminProcedure
+    .input(courseIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const course = await ctx.db.course.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!course) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Course not found",
+        });
+      }
+
+      return ctx.db.course.delete({
+        where: { id: input.id },
+      });
+    }),
+
   deleteCourse: adminProcedure
     .input(courseIdSchema)
     .mutation(async ({ ctx, input }) => {
+      const course = await ctx.db.course.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!course) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Course not found",
+        });
+      }
+
       return ctx.db.course.delete({
         where: { id: input.id },
       });
@@ -171,9 +202,6 @@ export const courseRouter = createTRPCRouter({
           await s3Client.send(deleteCommand);
         } catch (error) {
           console.error("Failed to delete from DigitalOcean Spaces:", error);
-          // Decide whether to throw an error or just log it.
-          // For a robust system, you might want to handle this gracefully
-          // to allow the DB entry to still be deleted.
         }
       }
 
@@ -328,8 +356,6 @@ export const courseRouter = createTRPCRouter({
       });
     }),
 
-  // ... (createResource, deleteResource, getMyCourses, etc. are the same)
-
   getCourseMaterials: protectedProcedure
     .input(courseIdSchema)
     .query(async ({ ctx, input }) => {
@@ -350,7 +376,7 @@ export const courseRouter = createTRPCRouter({
         where: {
           attachableId: input.id,
           attachableType: AttachableType.COURSE,
-          isActive: true, // This correctly filters for active resources
+          isActive: true,
         },
         include: {
           attachment: true,
@@ -541,7 +567,6 @@ export const courseRouter = createTRPCRouter({
   getCourseAnalytics: adminProcedure
     .input(courseIdSchema)
     .query(async ({ ctx, input }) => {
-      // Get detailed stats on resource views and downloads
       const documentStats = await ctx.db.resourceAccess.groupBy({
         by: ["action"],
         where: {
@@ -555,7 +580,6 @@ export const courseRouter = createTRPCRouter({
         },
       });
 
-      // Get stats on tryout attempts
       const tryoutStats = await ctx.db.userAttempt.groupBy({
         by: ["isCompleted"],
         where: { tryout: { courseId: input.id } },
@@ -563,7 +587,6 @@ export const courseRouter = createTRPCRouter({
         _avg: { score: true },
       });
 
-      // Get recent activity
       const recentActivity = await ctx.db.resourceAccess.findMany({
         where: {
           resource: {
@@ -581,26 +604,13 @@ export const courseRouter = createTRPCRouter({
         take: 10,
       });
 
-      // Get member growth stats (group by creation date)
-      //   const memberStats = await ctx.db.$queryRaw`
-      //   SELECT
-      //     DATE("T1"."createdAt") as date,
-      //     COUNT("T2"."id")::int as count
-      //   FROM "_CourseToUser" AS "T1"
-      //   JOIN "User" AS "T2" ON "T1"."B" = "T2"."id"
-      //   WHERE "T1"."A" = ${input.id}
-      //   GROUP BY 1
-      //   ORDER BY 1 ASC
-      // `;
-
       return {
         documentStats,
         tryoutStats,
         recentActivity,
-        // memberStats: memberStats as { date: string; count: number }[],
       };
     }),
-  // New procedure to remove a single member
+
   removeMember: adminProcedure
     .input(
       z.object({
@@ -634,7 +644,6 @@ export const courseRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  // New procedure to remove multiple members
   bulkRemoveMembers: adminProcedure
     .input(
       z.object({
