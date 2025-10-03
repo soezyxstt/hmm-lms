@@ -33,8 +33,14 @@ export default async function EventsPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <Tabs defaultValue="my-events" className="w-full">
+      <Tabs defaultValue="all-events" className="w-full">
         <TabsList className="text-foreground h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 mb-6">
+          <TabsTrigger
+            value="all-events"
+            className="hover:bg-accent hover:text-foreground data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent relative after:absolute after:inset-x-0 after:bottom-0 after:-mb-1 after:h-0.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+          >
+            All Events
+          </TabsTrigger>
           <TabsTrigger
             value="my-events"
             className="hover:bg-accent hover:text-foreground data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent relative after:absolute after:inset-x-0 after:bottom-0 after:-mb-1 after:h-0.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
@@ -46,12 +52,6 @@ export default async function EventsPage() {
             className="hover:bg-accent hover:text-foreground data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent relative after:absolute after:inset-x-0 after:bottom-0 after:-mb-1 after:h-0.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
             Course Events
-          </TabsTrigger>
-          <TabsTrigger
-            value="all-events"
-            className="hover:bg-accent hover:text-foreground data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent relative after:absolute after:inset-x-0 after:bottom-0 after:-mb-1 after:h-0.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-          >
-            All Events
           </TabsTrigger>
         </TabsList>
 

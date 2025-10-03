@@ -1,166 +1,347 @@
-// ~/components/admin/dashboard-content.tsx
+// ~/app/(admin)/admin/dashboard/dashboard-content.tsx
 "use client";
 
 import { useState } from "react";
-import { subDays } from "date-fns";
+import { format } from "date-fns";
 import {
+  Bell,
   Users,
   BookOpen,
-  FileText,
   Calendar,
-  Megaphone,
-  GraduationCap,
-  Briefcase,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  FileText,
+  Award,
+  MessageSquare,
   Activity,
-  Info,
+  ArrowRight,
+  BarChart3,
 } from "lucide-react";
 import { api } from "~/trpc/react";
-import { StatCard } from './analytics/stat-card';
-import { LineChartComponent } from "~/components/admin/line-chart";
-import { MultiLineChart } from "~/components/admin/multi-line-chart";
-import { TimeRangePicker } from "~/components/admin/time-range-picker";
-import { Card } from "~/components/ui/card";
-import type { TimeRange } from "~/lib/types/analytics";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import { Progress } from "~/components/ui/progress";
+import { Separator } from "~/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import Link from "next/link";
 
 export function DashboardContent() {
-  const [timeRange, setTimeRange] = useState<TimeRange>({
-    from: subDays(new Date(), 7),
-    to: new Date(),
+  // Quick stats queries
+  const { data: dashboardStats, isLoading } = api.dashboard.getQuickStats.useQuery(undefined, {
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Queries using Suspense for a cleaner loading experience
-  const { data: overviewStats } =
-    api.analytic.getOverviewStats.useQuery(timeRange, {
-      refetchInterval: 30000,
-    });
+  const { data: recentActivity } = api.dashboard.getRecentActivity.useQuery();
+  const { data: pendingActions } = api.dashboard.getPendingActions.useQuery();
+  const { data: upcomingEvents } = api.dashboard.getUpcomingEvents.useQuery({ limit: 5 });
+  const { data: systemAlerts } = api.dashboard.getSystemAlerts.useQuery();
 
-  const { data: userActivity } =
-    api.analytic.getUserActivity.useQuery(timeRange, {
-      refetchInterval: 30000,
-    });
-
-  const { data: tryoutPerformance } =
-    api.analytic.getTryoutPerformance.useQuery(timeRange, {
-      refetchInterval: 30000,
-    });
-
-  if (!overviewStats || !userActivity || !tryoutPerformance) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
-        <div className="text-muted-foreground">Loading analytics...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  // PERF: Memoize derived data to prevent re-computation on every render
-  const userRegistrationData =
-    userActivity.userRegistrations.map(item => ({
-      // FIX: Data from the API is already a string, no need for .toISOString()
-      date: item.createdAt,
-      value: item._count.id,
-    }))
-
-  const learningActivityData =
-    userActivity.learningSessions.map(item => ({
-      // FIX: Data from the API is already a string
-      date: item.date,
-      value: item._count.id,
-    }))
-
-  const tryoutAttemptsData =
-    tryoutPerformance.attemptsOverTime.map(item => ({
-      // FIX: Data from the API is already a string
-      date: item.startedAt,
-      value: item._count.id,
-    }))
-
-  const multiLineData = [
-    {
-      key: "registrations",
-      name: "New Users",
-      color: "#3b82f6",
-      data: userRegistrationData,
-    },
-    {
-      key: "sessions",
-      name: "Learning Sessions",
-      color: "#10b981",
-      data: learningActivityData,
-    },
-    {
-      key: "attempts",
-      name: "Tryout Attempts",
-      color: "#f59e0b",
-      data: tryoutAttemptsData,
-    },
-  ]
-
   return (
-    <div className="space-y-6">
-      {/* Header and Time Range Picker */}
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Platform Overview</h2>
-          <p className="text-sm text-muted-foreground">
-            Real-time insights into your platform&apos;s performance
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
+          <p className="text-muted-foreground mt-1">
+            Here's what's happening with your platform today, {format(new Date(), "MMMM dd, yyyy")}
           </p>
         </div>
-        <TimeRangePicker value={timeRange} onChange={setTimeRange} />
+        <Button asChild>
+          <Link href="/admin/analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            View Full Analytics
+          </Link>
+        </Button>
       </div>
 
-      {/* Stats Grid */}
+      {/* System Alerts */}
+      {systemAlerts && systemAlerts.length > 0 && (
+        <div className="space-y-3">
+          {systemAlerts.map((alert, index) => (
+            <Alert key={index} variant={alert.severity === "error" ? "destructive" : "default"}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{alert.title}</AlertTitle>
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
+
+      {/* Quick Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Users" value={overviewStats.totalUsers} description={`+${overviewStats.newUsers} new users`} icon={Users} />
-        <StatCard title="Active Courses" value={overviewStats.activeCourses} description={`${overviewStats.totalCourses} total courses`} icon={BookOpen} />
-        <StatCard title="Active Tryouts" value={overviewStats.activeTryouts} description={`${overviewStats.totalTryouts} total tryouts`} icon={FileText} />
-        <StatCard title="Documents" value={overviewStats.totalResources} description="Active documents" icon={FileText} />
-        <StatCard title="Events" value={overviewStats.totalEvents} description="In selected period" icon={Calendar} />
-        <StatCard title="Announcements" value={overviewStats.totalAnnouncements} description="In selected period" icon={Megaphone} />
-        <StatCard title="Scholarships" value={overviewStats.totalScholarships} description="In selected period" icon={GraduationCap} />
-        <StatCard title="Job Vacancies" value={overviewStats.totalJobVacancies} description="Active positions" icon={Briefcase} />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats?.totalUsers ?? 0}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">+{dashboardStats?.newUsersToday ?? 0}</span> today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats?.activeCourses ?? 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {dashboardStats?.totalCourses ?? 0} total courses
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Activity</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats?.todayActivity ?? 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Learning sessions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Actions</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingActions?.total ?? 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Requires attention
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <MultiLineChart
-          title="Platform Activity Overview"
-          series={multiLineData}
-          height={350}
-        />
-        <LineChartComponent
-          title="Learning Sessions"
-          data={learningActivityData}
-          color="#10b981"
-          height={350}
-        />
+        {/* Pending Actions Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Action Required
+            </CardTitle>
+            <CardDescription>Items that need your immediate attention</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingActions?.items.map((action, index) => (
+                <div key={index} className="flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={action.priority === "high" ? "destructive" : "secondary"}>
+                        {action.type}
+                      </Badge>
+                      <span className="text-sm font-medium">{action.title}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                    <p className="text-xs text-muted-foreground">{action.time}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" asChild>
+                    <Link href={action.link}>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+
+              {(!pendingActions?.items || pendingActions.items.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CheckCircle className="h-12 w-12 text-green-500 mb-3" />
+                  <p className="text-sm font-medium">All caught up!</p>
+                  <p className="text-xs text-muted-foreground">No pending actions at the moment</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Events Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Upcoming Events
+            </CardTitle>
+            <CardDescription>Events scheduled for the next 7 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {upcomingEvents?.map((event) => (
+                <div key={event.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{event.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(event.start), "MMM dd, yyyy • HH:mm")}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      {event.location && (
+                        <Badge variant="outline" className="text-xs">
+                          {event.location}
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="text-xs">
+                        {event.rsvpCount} RSVPs
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {(!upcomingEvents || upcomingEvents.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No upcoming events scheduled
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tryout Performance Summary */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium">Tryout Highlights</h3>
-        {tryoutPerformance.tryoutPerformance.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {tryoutPerformance.tryoutPerformance.slice(0, 6).map((tryout) => (
-              <StatCard
-                key={tryout.id}
-                title={tryout.title}
-                // UI: Format score to one decimal place for consistency
-                value={`${tryout.averageScore.toFixed(1)}%`}
-                description={`${tryout.totalAttempts} attempts`}
-                icon={Activity}
-              />
-            ))}
-          </div>
-        ) : (
-          // UI: Add an empty state for better user experience
-          <Card className="flex items-center justify-center p-6">
-            <div className="text-center text-muted-foreground">
-              <Info className="mx-auto h-8 w-8 mb-2" />
-              <p>No tryout data available for the selected period.</p>
+      {/* Recent Activity & Quick Links */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Activity */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>Latest actions across the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity?.slice(0, 8).map((activity, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{activity.description}</p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  </div>
+                  {activity.user && (
+                    <Badge variant="outline" className="text-xs">
+                      {activity.user}
+                    </Badge>
+                  )}
+                </div>
+              ))}
             </div>
-          </Card>
-        )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common administrative tasks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/users">
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Users
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/courses">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Manage Courses
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/events">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Manage Events
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/tryouts">
+                  <Award className="h-4 w-4 mr-2" />
+                  Manage Tryouts
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/resources">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Manage Resources
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/announcements">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Create Announcement
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* System Health Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>System Health</CardTitle>
+          <CardDescription>Quick overview of platform performance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">User Engagement</span>
+                <span className="text-sm text-muted-foreground">
+                  {dashboardStats?.userEngagement ?? 0}%
+                </span>
+              </div>
+              <Progress value={dashboardStats?.userEngagement ?? 0} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Course Completion</span>
+                <span className="text-sm text-muted-foreground">
+                  {dashboardStats?.courseCompletion ?? 0}%
+                </span>
+              </div>
+              <Progress value={dashboardStats?.courseCompletion ?? 0} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">System Uptime</span>
+                <span className="text-sm text-muted-foreground">
+                  {dashboardStats?.systemUptime ?? 0}%
+                </span>
+              </div>
+              <Progress value={dashboardStats?.systemUptime ?? 0} className="h-2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

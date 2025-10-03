@@ -13,6 +13,8 @@ import { databaseRouter } from './routers/database';
 import { analyticsRouter } from './routers/analytics';
 import { notificationsRouter } from './routers/notifications';
 import { formRouter } from './routers/forms';
+import { dashboardRouter } from './routers/dashboard';
+import { studentDashboardRouter } from './routers/student/dashboard';
 
 /**
  * This is the primary router for your server.
@@ -33,7 +35,9 @@ export const appRouter = createTRPCRouter({
   database: databaseRouter,
   analytic: analyticsRouter,
   notification: notificationsRouter,
-  form: formRouter
+  form: formRouter,
+  dashboard: dashboardRouter,
+  studentDashboard: studentDashboardRouter
 });
 
 // export type definition of API
