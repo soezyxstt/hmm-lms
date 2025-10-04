@@ -107,7 +107,7 @@ export function DashboardCalendar() {
               textDecorationColor: "hsl(var(--primary))",
             },
           }}
-          className="rounded-md border-0"
+          className="rounded-md border-0 mx-auto w-full"
         />
 
         <Separator className="my-4" />
@@ -126,7 +126,7 @@ export function DashboardCalendar() {
           ) : dayEvents && dayEvents.length > 0 ? (
             <div className="space-y-2">
               {dayEvents.map((event) => (
-                <Popover key={event.id}>
+                <Popover key={event.id} >
                   <PopoverTrigger asChild>
                     <button className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors">
                       <div className="flex items-start justify-between">
@@ -156,7 +156,7 @@ export function DashboardCalendar() {
                       </div>
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80" align="start">
+                  <PopoverContent className="w-80 **:text-xs" align="end">
                     <div className="space-y-3">
                       <div>
                         <h4 className="font-semibold">{event.title}</h4>

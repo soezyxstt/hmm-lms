@@ -1,17 +1,14 @@
-/* eslint-disable */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
 'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
-import * as z from "zod";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { CalendarIcon, Loader2, Trash, Plus, Clock } from "lucide-react";
-
-import { Button } from "~/components/ui/button";
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { api, type RouterOutputs } from '~/trpc/react';
+import { Button } from '~/components/ui/button';
 import {
   Form,
   FormControl,
@@ -20,166 +17,177 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
+} from '~/components/ui/form';
+import { Input } from '~/components/ui/input';
+import { Textarea } from '~/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
-import { Calendar } from "~/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { cn } from "~/lib/utils";
-import { api, type RouterOutputs } from "~/trpc/react";
-import { EventColor, EventMode } from "@prisma/client";
+} from '~/components/ui/select';
+import { Checkbox } from '~/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { EventMode, EventColor } from '@prisma/client';
+import { toast } from 'sonner';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
-// Simplified form schema
-const eventFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+type EventDetail = NonNullable<RouterOutputs['event']['getEventById']>;
+
+const timelineItemSchema = z.object({
+  time: z.string().min(1, 'Time is required'),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  start: z.date({
-    required_error: "Start date is required",
-  }),
-  end: z.date({
-    required_error: "End date is required",
-  }),
+  isCompleted: z.boolean().default(false),
+});
+
+const eventFormSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  start: z.string().min(1, 'Start date is required'),
+  end: z.string().min(1, 'End date is required'),
   allDay: z.boolean().default(false),
   location: z.string().optional(),
   color: z.nativeEnum(EventColor).default(EventColor.SKY),
-  scope: z.enum(['global', 'course', 'personal']),
+  hasTimeline: z.boolean().default(false),
+  timeline: z.array(timelineItemSchema).optional(),
+  scope: z.enum(['personal', 'course', 'global']),
   courseId: z.string().optional(),
   eventMode: z.nativeEnum(EventMode).default(EventMode.BASIC),
-  hasTimeline: z.boolean().default(false),
-  timeline: z.array(z.object({
-    time: z.string(),
-    title: z.string().min(1, "Timeline title is required"),
-    description: z.string().optional(),
-    isCompleted: z.boolean().default(false),
-  })).optional(),
-}).refine(data => data.end >= data.start, {
-  message: "End date must be after start date",
-  path: ["end"],
-}).refine(data => {
-  if (data.scope === 'course') {
-    return !!data.courseId;
-  }
-  return true;
-}, {
-  message: "Please select a course",
-  path: ["courseId"],
+  rsvpDeadline: z.string().optional().nullable(),
+  rsvpRequiresApproval: z.boolean().default(false),
+  rsvpAllowMaybe: z.boolean().default(true),
+  rsvpMaxAttendees: z.number().optional().nullable(),
+  rsvpPublic: z.boolean().default(false),
+  presenceCheckInRadius: z.number().optional().nullable(),
+  presenceAutoCheckOut: z.boolean().default(true),
+  presenceRequiresApproval: z.boolean().default(false),
+  presenceAllowLateCheckIn: z.boolean().default(true),
+  presenceCheckInBuffer: z.number().optional().nullable(),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
-type EventData = NonNullable<RouterOutputs['event']['getEventById']>;
-type CourseData = RouterOutputs['course']['getCoursesForSelection'];
 
 interface EventFormProps {
-  existingEvent?: EventData;
-  courses: CourseData;
+  event?: EventDetail;
+  mode: 'create' | 'edit';
 }
 
-export default function EventForm({ existingEvent, courses }: EventFormProps) {
+export default function EventForm({ event, mode }: EventFormProps) {
   const router = useRouter();
-  const utils = api.useUtils();
+  const [timelineItems, setTimelineItems] = useState<z.infer<typeof timelineItemSchema>[]>(
+    event?.timeline ? (event.timeline as z.infer<typeof timelineItemSchema>[]) : []
+  );
 
-  // Parse existing timeline data safely
-  const parseTimeline = (timeline: unknown) => {
-    if (!Array.isArray(timeline)) return [];
-
-    return timeline.map((item: any) => ({
-      time: typeof item.time === 'string'
-        ? item.time
-        : new Date(item.time).toISOString(),
-      title: item.title ?? '',
-      description: item.description ?? '',
-      isCompleted: item.isCompleted ?? false,
-    }));
-  };
+  const { data: courses } = api.course.getAllCourses.useQuery();
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: {
-      title: existingEvent?.title ?? "",
-      description: existingEvent?.description ?? "",
-      start: existingEvent ? new Date(existingEvent.start) : new Date(),
-      end: existingEvent ? new Date(existingEvent.end) : (() => {
-        const date = new Date();
-        date.setHours(date.getHours() + 1);
-        return date;
-      })(),
-      allDay: existingEvent?.allDay ?? false,
-      location: existingEvent?.location ?? "",
-      color: existingEvent?.color ?? EventColor.SKY,
-      scope: existingEvent?.courseId
-        ? 'course'
-        : existingEvent?.userId
-          ? 'personal'
-          : 'global',
-      courseId: existingEvent?.courseId ?? undefined,
-      eventMode: existingEvent?.eventMode ?? EventMode.BASIC,
-      hasTimeline: existingEvent?.hasTimeline ?? false,
-      timeline: existingEvent?.timeline
-        ? parseTimeline(existingEvent.timeline)
-        : [],
+    defaultValues: event
+      ? {
+        title: event.title,
+        description: event.description ?? '',
+        start: new Date(event.start).toISOString().slice(0, 16),
+        end: new Date(event.end).toISOString().slice(0, 16),
+        allDay: event.allDay,
+        location: event.location ?? '',
+        color: event.color,
+        hasTimeline: event.hasTimeline,
+        timeline: event.timeline as z.infer<typeof timelineItemSchema>[] | undefined,
+        scope: event.courseId ? 'course' : event.userId ? 'personal' : 'global',
+        courseId: event.courseId ?? undefined,
+        eventMode: event.eventMode,
+        rsvpDeadline: event.rsvpDeadline
+          ? new Date(event.rsvpDeadline).toISOString().slice(0, 16)
+          : null,
+        rsvpRequiresApproval: event.rsvpRequiresApproval,
+        rsvpAllowMaybe: event.rsvpAllowMaybe,
+        rsvpMaxAttendees: event.rsvpMaxAttendees,
+        rsvpPublic: event.rsvpPublic,
+        presenceCheckInRadius: event.presenceCheckInRadius,
+        presenceAutoCheckOut: event.presenceAutoCheckOut,
+        presenceRequiresApproval: event.presenceRequiresApproval,
+        presenceAllowLateCheckIn: event.presenceAllowLateCheckIn,
+        presenceCheckInBuffer: event.presenceCheckInBuffer,
+      }
+      : {
+        title: '',
+        description: '',
+        start: '',
+        end: '',
+        allDay: false,
+        location: '',
+        color: EventColor.SKY,
+        hasTimeline: false,
+        timeline: [],
+        scope: 'global',
+        eventMode: EventMode.BASIC,
+        rsvpRequiresApproval: false,
+        rsvpAllowMaybe: true,
+        rsvpPublic: false,
+        presenceAutoCheckOut: true,
+        presenceRequiresApproval: false,
+        presenceAllowLateCheckIn: true,
+      },
+  });
+
+  const createEvent = api.event.createEvent.useMutation({
+    onSuccess: () => {
+      toast.success('Event created successfully!');
+      router.push('/admin/events');
+      router.refresh();
     },
+    onError: (err) => toast.error(err.message),
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "timeline",
-  });
-
-  const createEventMutation = api.event.createEvent.useMutation({
-    onSuccess: (data) => {
-      toast.success("Event created successfully!");
-      void utils.event.getAllEventsAdmin.invalidate();
-      router.push(`/admin/events/${data.id}`);
+  const updateEvent = api.event.updateEvent.useMutation({
+    onSuccess: () => {
+      toast.success('Event updated successfully!');
+      router.push('/admin/events');
+      router.refresh();
     },
-    onError: (error) => {
-      toast.error(error.message);
-    }
+    onError: (err) => toast.error(err.message),
   });
 
-  const updateEventMutation = api.event.updateEvent.useMutation({
-    onSuccess: (data) => {
-      toast.success("Event updated successfully!");
-      void utils.event.getAllEventsAdmin.invalidate();
-      void utils.event.getEventById.invalidate({ id: data.id });
-      router.push(`/admin/events/${data.id}`);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  function onSubmit(data: EventFormValues) {
-    // Prepare submission data
-    const submitData = {
+  const onSubmit = (data: EventFormValues) => {
+    const payload = {
       ...data,
-      courseId: data.scope === 'course' ? data.courseId : undefined,
-      userId: data.scope === 'personal' ? undefined : undefined, // Will be set on server
-      timeline: data.hasTimeline && data.timeline ? data.timeline : undefined,
+      start: new Date(data.start),
+      end: new Date(data.end),
+      rsvpDeadline: data.rsvpDeadline ? new Date(data.rsvpDeadline) : undefined,
+      timeline: data.hasTimeline ? timelineItems : undefined,
     };
 
-    if (existingEvent) {
-      updateEventMutation.mutate({
-        ...submitData,
-        id: existingEvent.id
-      });
-    } else {
-      createEventMutation.mutate(submitData);
+    if (mode === 'create') {
+      createEvent.mutate(payload);
+    } else if (event) {
+      updateEvent.mutate({ ...payload, id: event.id });
     }
-  }
+  };
 
-  const scope = form.watch("scope");
-  const eventMode = form.watch("eventMode");
-  const hasTimeline = form.watch("hasTimeline");
-  const isLoading = createEventMutation.isPending || updateEventMutation.isPending;
+  const scope = form.watch('scope');
+  const eventMode = form.watch('eventMode');
+  const hasTimeline = form.watch('hasTimeline');
+
+  const showRsvpOptions = eventMode === EventMode.RSVP_ONLY || eventMode === EventMode.RSVP_AND_ATTENDANCE;
+  const showPresenceOptions =
+    eventMode === EventMode.ATTENDANCE_ONLY || eventMode === EventMode.RSVP_AND_ATTENDANCE;
+
+  const addTimelineItem = () => {
+    setTimelineItems([...timelineItems, { time: '', title: '', description: '', isCompleted: false }]);
+  };
+
+  const removeTimelineItem = (index: number) => {
+    setTimelineItems(timelineItems.filter((_, i) => i !== index));
+  };
+
+  const updateTimelineItem = (index: number, field: keyof z.infer<typeof timelineItemSchema>, value: string | boolean) => {
+    const updated = [...timelineItems];
+    updated[index] = { ...updated[index]!, [field]: value };
+    setTimelineItems(updated);
+  };
 
   return (
     <Form {...form}>
@@ -188,20 +196,16 @@ export default function EventForm({ existingEvent, courses }: EventFormProps) {
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Essential details about your event</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
-              name="title"
               control={form.control}
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Event Title *</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g., Final Project Showcase"
-                      {...field}
-                    />
+                    <Input placeholder="Event title" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -209,322 +213,191 @@ export default function EventForm({ existingEvent, courses }: EventFormProps) {
             />
 
             <FormField
-              name="description"
               control={form.control}
+              name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Provide a brief summary of the event..."
-                      rows={4}
-                      {...field}
-                    />
+                    <Textarea placeholder="Event description" {...field} rows={4} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Event location" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="start"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date & Time</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="end"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date & Time</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="allDay"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="!mt-0">All day event</FormLabel>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select color" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(EventColor).map((color) => (
+                        <SelectItem key={color} value={color}>
+                          {color}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Scope Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Scope</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="scope"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Scope</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select scope" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="global">Global</SelectItem>
+                      <SelectItem value="course">Course</SelectItem>
+                      <SelectItem value="personal">Personal</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
-                    Give attendees a clear understanding of what to expect
+                    Global events are visible to everyone, course events are visible to course members only
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              name="location"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Campus Auditorium, Room 301"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Date and Time */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Schedule</CardTitle>
-            <CardDescription>When will this event take place?</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                name="start"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Start Date & Time *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP HH:mm")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Input
-                            type="time"
-                            value={field.value ? format(field.value, "HH:mm") : ""}
-                            onChange={(e) => {
-                              const [hours, minutes] = e.target.value.split(':');
-                              const newDate = new Date(field.value ?? new Date());
-                              newDate.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'));
-                              field.onChange(newDate);
-                            }}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                name="end"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>End Date & Time *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP HH:mm")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Input
-                            type="time"
-                            value={field.value ? format(field.value, "HH:mm") : ""}
-                            onChange={(e) => {
-                              const [hours, minutes] = e.target.value.split(':');
-                              const newDate = new Date(field.value ?? new Date());
-                              newDate.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'));
-                              field.onChange(newDate);
-                            }}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              name="allDay"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>All Day Event</FormLabel>
-                    <FormDescription>
-                      This event lasts for the entire day(s)
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Event Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Event Configuration</CardTitle>
-            <CardDescription>Define who can see this event and how they interact with it</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                name="color"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Calendar Color</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a color" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(EventColor).map(color => (
-                          <SelectItem key={color} value={color}>
-                            <div className="flex items-center gap-2">
-                              <div className={cn(
-                                "h-4 w-4 rounded-full",
-                                color === EventColor.SKY && "bg-sky-500",
-                                color === EventColor.AMBER && "bg-amber-500",
-                                color === EventColor.VIOLET && "bg-violet-500",
-                                color === EventColor.ROSE && "bg-rose-500",
-                                color === EventColor.EMERALD && "bg-emerald-500",
-                                color === EventColor.ORANGE && "bg-orange-500",
-                              )} />
-                              {color}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                name="scope"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Visibility Scope *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select scope" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="global">
-                          Global - All users
-                        </SelectItem>
-                        <SelectItem value="course">
-                          Course - Specific course members
-                        </SelectItem>
-                        <SelectItem value="personal">
-                          Personal - Admin only
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {scope === 'course' && (
               <FormField
-                name="courseId"
                 control={form.control}
+                name="courseId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Select Course *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <FormLabel>Course</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose a course" />
+                          <SelectValue placeholder="Select course" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {courses.map(course => (
+                        {courses?.map((course) => (
                           <SelectItem key={course.id} value={course.id}>
                             {course.title} ({course.classCode})
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      Only members of this course will see the event
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
+          </CardContent>
+        </Card>
 
+        {/* Event Mode */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Mode</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <FormField
-              name="eventMode"
               control={form.control}
+              name="eventMode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Interaction Mode</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <FormLabel>Mode</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select mode" />
+                        <SelectValue placeholder="Select event mode" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.values(EventMode).map(mode => (
-                        <SelectItem key={mode} value={mode}>
-                          {mode.replace(/_/g, " ")}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value={EventMode.BASIC}>Basic (No tracking)</SelectItem>
+                      <SelectItem value={EventMode.RSVP_ONLY}>RSVP Only</SelectItem>
+                      <SelectItem value={EventMode.ATTENDANCE_ONLY}>Attendance Only</SelectItem>
+                      <SelectItem value={EventMode.RSVP_AND_ATTENDANCE}>RSVP & Attendance</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    {eventMode === EventMode.BASIC && "Simple event without RSVP or attendance"}
-                    {eventMode === EventMode.RSVP_ONLY && "Users can RSVP to the event"}
-                    {eventMode === EventMode.ATTENDANCE_ONLY && "Track attendance with check-ins"}
-                    {eventMode === EventMode.RSVP_AND_ATTENDANCE && "Full RSVP and attendance tracking"}
+                    Choose how participants interact with this event
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -533,139 +406,268 @@ export default function EventForm({ existingEvent, courses }: EventFormProps) {
           </CardContent>
         </Card>
 
-        {/* Timeline */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Event Timeline</CardTitle>
-                <CardDescription>Add a detailed schedule for the event</CardDescription>
-              </div>
+        {/* RSVP Settings */}
+        {showRsvpOptions && (
+          <Card>
+            <CardHeader>
+              <CardTitle>RSVP Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormField
-                name="hasTimeline"
                 control={form.control}
+                name="rsvpDeadline"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
+                  <FormItem>
+                    <FormLabel>RSVP Deadline</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input
+                        type="datetime-local"
+                        {...field}
+                        value={field.value ?? ''}
                       />
                     </FormControl>
-                    <FormLabel className="!mt-0">Enable Timeline</FormLabel>
+                    <FormDescription>Leave empty for no deadline</FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-          </CardHeader>
 
-          {hasTimeline && (
-            <CardContent className="space-y-4">
-              {fields.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">No timeline items yet. Add your first item below.</p>
-                </div>
-              )}
+              <FormField
+                control={form.control}
+                name="rsvpMaxAttendees"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Attendees</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="No limit"
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {fields.map((field, index) => (
-                <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={() => remove(index)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+              <FormField
+                control={form.control}
+                name="rsvpRequiresApproval"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Require approval for RSVPs</FormLabel>
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name={`timeline.${index}.time`}
-                    render={({ field: timeField }) => (
-                      <FormItem>
-                        <FormLabel>Time</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            value={timeField.value ?? ''}
-                            onChange={(e) => timeField.onChange(e.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="rsvpAllowMaybe"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Allow &quot;Maybe&quot; response</FormLabel>
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name={`timeline.${index}.title`}
-                    render={({ field: titleField }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Opening Remarks"
-                            {...titleField}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`timeline.${index}.description`}
-                    render={({ field: descField }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Details about this timeline item..."
-                            rows={2}
-                            {...descField}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => append({
-                  time: "09:00",
-                  title: "",
-                  description: "",
-                  isCompleted: false
-                })}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Timeline Item
-              </Button>
+              <FormField
+                control={form.control}
+                name="rsvpPublic"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Make RSVP list public</FormLabel>
+                  </FormItem>
+                )}
+              />
             </CardContent>
-          )}
+          </Card>
+        )}
+
+        {/* Presence Settings */}
+        {showPresenceOptions && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Attendance Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="presenceCheckInRadius"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Check-in Radius (meters)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="No location restriction"
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Maximum distance from event location to allow check-in
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="presenceCheckInBuffer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Check-in Buffer (minutes)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="15"
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Allow check-in this many minutes before event starts
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="presenceAutoCheckOut"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Auto check-out when event ends</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="presenceRequiresApproval"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Require approval for attendance</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="presenceAllowLateCheckIn"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Allow late check-in</FormLabel>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Timeline */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Timeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="hasTimeline"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Enable timeline</FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {hasTimeline && (
+              <div className="space-y-4">
+                {timelineItems.map((item, index) => (
+                  <Card key={index}>
+                    <CardContent className="space-y-3 pt-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Item {index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTimelineItem(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-3">
+                        <Input
+                          placeholder="Time (e.g., 09:00)"
+                          value={item.time}
+                          onChange={(e) => updateTimelineItem(index, 'time', e.target.value)}
+                        />
+                        <Input
+                          placeholder="Title"
+                          value={item.title}
+                          onChange={(e) => updateTimelineItem(index, 'title', e.target.value)}
+                        />
+                        <Textarea
+                          placeholder="Description"
+                          value={item.description ?? ''}
+                          onChange={(e) => updateTimelineItem(index, 'description', e.target.value)}
+                          rows={2}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                <Button type="button" variant="outline" onClick={addTimelineItem} className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Timeline Item
+                </Button>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
         {/* Submit Buttons */}
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex justify-end gap-2">
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
-            disabled={isLoading}
+            onClick={() => router.push('/admin/events')}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {existingEvent ? 'Save Changes' : 'Create Event'}
+          <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
+            {(createEvent.isPending || updateEvent.isPending) && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {mode === 'create' ? 'Create Event' : 'Update Event'}
           </Button>
         </div>
       </form>

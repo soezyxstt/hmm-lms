@@ -29,7 +29,7 @@ export default async function DetailedCoursePage({ params }: CoursePageProps) {
       notFound();
     }
 
-    const canAccessContent = course.isEnrolled || course.isAdmin;
+    const canAccessContent = course.isEnrolled;
 
     if (!canAccessContent) {
       return (

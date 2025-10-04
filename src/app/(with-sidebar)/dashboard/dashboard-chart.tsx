@@ -24,7 +24,7 @@ export function DashboardChart() {
           <CardTitle>Activity Minutes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 w-full animate-pulse bg-muted rounded" />
+          <div className="h-54 w-full animate-pulse bg-muted rounded" />
         </CardContent>
       </Card>
     );
@@ -46,7 +46,7 @@ export function DashboardChart() {
         <CardTitle>Activity Minutes</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer className="h-64 w-full" config={chartConfig}>
+        <ChartContainer className="h-54 md:w-full w-[calc(100vw-6rem)]" config={chartConfig}>
           <BarChart
             accessibilityLayer
             data={chartData}

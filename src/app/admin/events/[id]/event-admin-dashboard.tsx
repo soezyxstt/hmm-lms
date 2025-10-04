@@ -29,7 +29,7 @@ import {
 } from "~/components/ui/table";
 
 export default function EventAdminDashboard({ eventId }: { eventId: string }) {
-  const { data, isLoading, refetch } = api.event.getEventManagementData.useQuery({ eventId });
+  const { data, refetch } = api.event.getEventManagementData.useQuery({ eventId });
 
   const { mutate: updatePresence, isPending: isUpdatingPresence } =
     api.event.updatePresenceStatus.useMutation({
@@ -310,7 +310,7 @@ export default function EventAdminDashboard({ eventId }: { eventId: string }) {
                             ) : r.status === 'MAYBE' ? (
                               <><Clock className="h-3 w-3 mr-1" /> Maybe</>
                             ) : (
-                              <><XCircle className="h-3 w-3 mr-1" /> Can't Go</>
+                              <><XCircle className="h-3 w-3 mr-1" /> Can&apos;t Go</>
                             )}
                           </Badge>
                         </TableCell>

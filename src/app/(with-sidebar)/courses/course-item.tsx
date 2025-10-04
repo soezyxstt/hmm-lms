@@ -32,7 +32,7 @@ export default function CoursesItem({
       href={`/courses/${id}`}
       className={cn(
         'rounded-md shadow flex flex-col justify-end overflow-hidden cursor-pointer aspect-[4/5] md:aspect-[7/10] group lg:aspect-[8/10] bg-card transition-colors border',
-        orientation === 'horizontal' && 'md:flex-row md:aspect-[16/9] lg:aspect-[16/10]',
+        orientation === 'horizontal' && 'flex-row aspect-[16/9] lg:aspect-[16/10]',
         className
       )}
     >
@@ -41,9 +41,9 @@ export default function CoursesItem({
         alt='item'
         width={300}
         height={200}
-        className={cn('object-cover aspect-16/9 transition-all', orientation === 'horizontal' && 'md:h-full md:w-2/5 h-3/10')}
+        className={cn('object-cover aspect-16/9 transition-all', orientation === 'horizontal' && 'h-full w-2/5')}
       />
-      <div className={cn('py-2 md:pt-4 px-2 md:px-4 relative transition-all overflow-hidden flex flex-col justify-between h-full', orientation === 'horizontal' && 'md:w-3/5 md:h-full h-7/10')}>
+      <div className={cn('py-2 md:pt-4 px-2 md:px-4 relative transition-all overflow-hidden flex flex-col justify-between h-full', orientation === 'horizontal' && 'w-3/5 h-full')}>
         <div className='space-y-2'>
           <div className="flex gap-4 items-center justify-between">
             <h6 className='text-muted-foreground text-2xs md:text-xs'>{subject}</h6>

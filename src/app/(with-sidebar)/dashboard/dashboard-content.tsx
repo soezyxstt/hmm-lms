@@ -5,11 +5,18 @@ import { api } from "~/trpc/react";
 import { DashboardChart } from "./dashboard-chart";
 import { DashboardCalendar } from './dashboard-calendar'
 import CoursesItem from "../courses/course-item";
-import { Card, CardContent, CardHeader } from "~/components/ui/card";
+import { Card, CardContent, CardTitle } from "~/components/ui/card";
 import { BookOpen } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem
+} from "~/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { useRef } from 'react';
 
 export function DashboardContent() {
   const { data: courses, isLoading: coursesLoading } =
@@ -18,37 +25,58 @@ export function DashboardContent() {
   const { data: stats, isLoading: statsLoading } =
     api.studentDashboard.getDashboardStats.useQuery();
 
+  const plugin = useRef(
+    Autoplay({ delay: 3000, stopOnInteraction: true })
+  );
+
   if (coursesLoading || statsLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-screen">
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 w-full">
         {/* Courses Section - Takes 2 columns */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* <div className="flex items-center justify-between">
+        <div className="lg:col-span-2 space-y-4 w-full">
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Course</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/courses">View All</Link>
             </Button>
-          </div> */}
+          </div>
 
           {courses && courses.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {courses.map((course, index) => (
-                <CoursesItem
-                  key={course.id}
-                  id={course.id}
-                  title={course.title}
-                  numberOfMaterials={course.totalMinutes}
-                  numberOfVideos={course.totalSessions} // You can adjust this based on your schema
-                  image={`/images/course-${(index % 4) + 1}.png`} // Placeholder
-                  subject={course.classCode}
-                  href={'/courses/' + course.id}
-                />
-              ))}
-            </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[plugin.current]}
+              onMouseEnter={plugin.current.stop}
+              onMouseLeave={plugin.current.reset}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {courses.map((course, index) => (
+                  <CarouselItem
+                    key={course.id}
+                    className="pl-2 md:pl-4 basis-2/3 md:basis-2/5"
+                  >
+                    <CoursesItem
+                      id={course.id}
+                      title={course.title}
+                      numberOfMaterials={course.totalMinutes}
+                      numberOfVideos={course.totalSessions}
+                      image={`/course/${(index % 4) + 1}.png`}
+                      subject={course.classCode}
+                      href={'/courses/' + course.id}
+                      orientation='horizontal'
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
           ) : (
             <Card className="p-8">
               <div className="text-center space-y-2">
@@ -63,7 +91,9 @@ export function DashboardContent() {
               </div>
             </Card>
           )}
-
+          <div className="space-y-4 md:hidden">
+            <DashboardCalendar />
+          </div>
           {/* Activity Chart */}
           <div className="mt-6">
             <DashboardChart />
@@ -71,7 +101,7 @@ export function DashboardContent() {
         </div>
 
         {/* Calendar Section - Takes 1 column */}
-        <div className="space-y-4">
+        <div className="space-y-4 max-sm:hidden">
           <DashboardCalendar />
         </div>
       </div>
@@ -90,11 +120,9 @@ function DashboardSkeleton() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
-            <CardHeader>
+            <CardContent className="pt-6">
               <Skeleton className="h-4 w-[100px]" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-[60px]" />
+              <Skeleton className="h-8 w-[60px] mt-2" />
               <Skeleton className="h-3 w-[80px] mt-2" />
             </CardContent>
           </Card>
