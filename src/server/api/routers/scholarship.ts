@@ -10,6 +10,25 @@ import {
 } from "~/lib/schema/scholarship";
 
 export const scholarshipRouter = createTRPCRouter({
+  createDraft: adminProcedure.mutation(async ({ ctx }) => {
+    const oneMonthLater = new Date();
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    
+    const data = await ctx.db.scholarship.create({
+      data: {
+        title: "Untitled Scholarship",
+        description: "",
+        provider: "",
+        deadline: oneMonthLater,
+        link: "",
+        createdById: ctx.session.user.id,
+      },
+    });
+    
+    return data;
+  }),
+
+
   getAll: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.scholarship.findMany({
       orderBy: { deadline: "asc" },

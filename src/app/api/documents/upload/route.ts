@@ -1,14 +1,24 @@
 // app/api/upload/route.ts
 import { NextResponse } from "next/server";
 import { Upload } from "@aws-sdk/lib-storage";
-import s3Client from "~/lib/s3-client"; // Your S3 client config
+import s3Client from "~/lib/s3-client";
 import { randomUUID } from "crypto";
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const key = `resources/${randomUUID()}-${file.name.replace(/\s/g, "_")}`;
+    const entityType = formData.get("entityType") as string; // e.g., "tryout", "course"
+    const entityId = formData.get("entityId") as string;
+    const questionNumber = formData.get("questionNumber") as string | null;
+
+    // Build systematic path
+    let key: string;
+    if (questionNumber) {
+      key = `${entityType}/${entityId}/${questionNumber}/${randomUUID()}-${file.name.replace(/\s/g, "_")}`;
+    } else {
+      key = `${entityType}/${entityId}/${randomUUID()}-${file.name.replace(/\s/g, "_")}`;
+    }
 
     const upload = new Upload({
       client: s3Client,
@@ -23,7 +33,6 @@ export async function POST(request: Request) {
 
     const uploadResult = await upload.done();
 
-    // Return key, filename, size, and mimeType to the client
     return NextResponse.json({
       key: uploadResult.Key,
       filename: file.name,

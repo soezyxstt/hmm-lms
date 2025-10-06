@@ -152,15 +152,27 @@ export function TryoutAttemptClient({
       className="space-y-2"
     >
       {question.options.map((option: QuestionOption) => (
-        <Label key={option.id} htmlFor={option.id} className="p-4 flex-col items-start border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary">
-          <div className="space-x-3">
+        <Label
+          key={option.id}
+          htmlFor={option.id}
+          className="p-4 flex flex-col items-start border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary"
+        >
+          <div className="flex items-center space-x-3 w-full">
             <RadioGroupItem value={option.id} id={option.id} />
             <span className="flex-1">{option.text}</span>
           </div>
           {option.images && option.images.length > 0 && (
-            <div className="pl-8 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {option.images.map(imgUrl => (
-                <MotionImageDialog key={imgUrl} layoutId={imgUrl + option.id} width={1000} height={1000} src={imgUrl} alt="Option image" className="h-20 w-20 rounded-md border object-cover" />
+                <MotionImageDialog
+                  key={imgUrl}
+                  layoutId={imgUrl + option.id}
+                  width={1000}
+                  height={1000}
+                  src={imgUrl}
+                  alt="Option image"
+                  className="h-20 w-20 rounded-md border object-cover"
+                />
               ))}
             </div>
           )}
@@ -173,10 +185,14 @@ export function TryoutAttemptClient({
     const selectedOptions: string[] = questionAnswer ? JSON.parse(questionAnswer) as string[] : [];
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-2">
         {question.options.map((option: QuestionOption) => (
-          <Label key={option.id} htmlFor={option.id} className="p-4 border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary flex-col items-start">
-            <div className="flex space-x-3">
+          <Label
+            key={option.id}
+            htmlFor={option.id}
+            className="p-4 border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary flex flex-col items-start"
+          >
+            <div className="flex items-center space-x-3 w-full">
               <Checkbox
                 id={option.id}
                 checked={selectedOptions.includes(option.id)}
@@ -190,9 +206,17 @@ export function TryoutAttemptClient({
               <span className="flex-1">{option.text}</span>
             </div>
             {option.images && option.images.length > 0 && (
-              <div className="pl-8 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {option.images.map(imgUrl => (
-                  <MotionImageDialog key={imgUrl} layoutId={imgUrl + option.id} width={1000} height={1000} src={imgUrl} alt="Option image" className="h-20 w-20 rounded-md border object-cover" />
+                  <MotionImageDialog
+                    key={imgUrl}
+                    layoutId={imgUrl + option.id}
+                    width={1000}
+                    height={1000}
+                    src={imgUrl}
+                    alt="Option image"
+                    className="h-20 w-20 rounded-md border object-cover"
+                  />
                 ))}
               </div>
             )}

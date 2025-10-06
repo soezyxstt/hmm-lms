@@ -5,6 +5,7 @@ export const announcementSchema_ = z.object({
   title: z.string().min(3, "Title is required"),
   content: z.string().min(10, "Content is required"),
   scope: z.nativeEnum(AnnouncementScope),
+  images: z.array(z.string()).default([]),
   // courseId is only required if the scope is 'COURSE'
   courseId: z.string().cuid().optional(),
 });

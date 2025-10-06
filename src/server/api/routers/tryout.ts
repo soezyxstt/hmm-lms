@@ -14,12 +14,38 @@ import z from "zod";
 import { NotificationTriggers } from "~/server/services/notification-triggers";
 
 export const tryoutRouter = createTRPCRouter({
-  create: adminProcedure
-    .input(createTryoutSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { questions, ...tryoutData } = input;
+  createDraft: adminProcedure
+  .mutation(async ({ ctx }) => {
+    const course = await ctx.db.course.findFirst({});
 
-      const newTryout = await ctx.db.tryout.create({
+    if (!course) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Course not found",
+      });
+    }
+
+    const newTryout = await ctx.db.tryout.create({
+      data: {
+        title: "Untitled Tryout",
+        description: "",
+        duration: 60, // Default 60 minutes
+        courseId: course.id,
+        isActive: true,
+      },
+    });
+
+    return newTryout;
+  }),
+
+create: adminProcedure
+  .input(createTryoutSchema)
+  .mutation(async ({ ctx, input }) => {
+    const { questions, ...tryoutData } = input;
+    
+    // Wrap in explicit transaction with 30s timeout
+    const newTryout = await ctx.db.$transaction(async (tx) => {
+      return await tx.tryout.create({
         data: {
           ...tryoutData,
           questions: {
@@ -31,8 +57,8 @@ export const tryoutRouter = createTRPCRouter({
               required: question.required,
               order: index + 1,
               explanation: question.explanation,
-              shortAnswers:
-                question.shortAnswers?.map((ans) => ans.value) ?? [],
+              explanationImages: question.explanationImages ?? [],
+              shortAnswers: question.shortAnswers?.map((ans) => ans.value) ?? [],
               options: question.options
                 ? {
                     create: question.options.map((option, optionIndex) => ({
@@ -59,11 +85,77 @@ export const tryoutRouter = createTRPCRouter({
           },
         },
       });
+    }, {
+      timeout: 30000, // 30 seconds
+    });
 
-      await NotificationTriggers.onTryoutCreated(newTryout.id);
+    await NotificationTriggers.onTryoutCreated(newTryout.id);
+    return newTryout;
+  }),
 
-      return newTryout;
-    }),
+update: adminProcedure
+  .input(updateTryoutSchema)
+  .mutation(async ({ ctx, input }) => {
+    const { id, questions, ...updateData } = input;
+    return ctx.db.$transaction(async (tx) => {
+      await tx.tryout.update({
+        where: { id },
+        data: updateData,
+      });
+
+      if (questions) {
+        await tx.question.deleteMany({
+          where: { tryoutId: id },
+        });
+        
+        for (let i = 0; i < questions.length; i++) {
+          const question = questions[i]!;
+          await tx.question.create({
+            data: {
+              tryoutId: id,
+              type: question.type,
+              question: question.question,
+              images: question.images,
+              points: question.points,
+              required: question.required,
+              order: i + 1,
+              explanation: question.explanation,
+              explanationImages: question.explanationImages ?? [],
+              shortAnswers: question.shortAnswers?.map((ans) => ans.value),
+              options: question.options
+                ? {
+                    create: question.options.map((option, optionIndex) => ({
+                      text: option.text,
+                      isCorrect: option.isCorrect,
+                      explanation: option.explanation,
+                      order: optionIndex + 1,
+                      images: option.images,
+                    })),
+                  }
+                : undefined,
+            },
+          });
+        }
+      }
+
+      return tx.tryout.findUnique({
+        where: { id },
+        include: {
+          questions: {
+            include: {
+              options: true,
+            },
+            orderBy: { order: "asc" },
+          },
+          course: {
+            select: { title: true, classCode: true },
+          },
+        },
+      });
+    }, {
+      timeout: 30000, // 30 seconds
+    });
+  }),
 
   getMyTryouts: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -107,68 +199,6 @@ export const tryoutRouter = createTRPCRouter({
     });
     return coursesWithTryouts.filter((course) => course.tryout.length > 0);
   }),
-
-  update: adminProcedure
-    .input(updateTryoutSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { id, questions, ...updateData } = input;
-
-      return ctx.db.$transaction(async (tx) => {
-        await tx.tryout.update({
-          where: { id },
-          data: updateData,
-        });
-
-        if (questions) {
-          await tx.question.deleteMany({
-            where: { tryoutId: id },
-          });
-
-          for (let i = 0; i < questions.length; i++) {
-            const question = questions[i]!;
-            await tx.question.create({
-              data: {
-                tryoutId: id,
-                type: question.type,
-                question: question.question,
-                images: question.images,
-                points: question.points,
-                required: question.required,
-                order: i + 1,
-                explanation: question.explanation,
-                shortAnswers: question.shortAnswers?.map((ans) => ans.value),
-                options: question.options
-                  ? {
-                      create: question.options.map((option, optionIndex) => ({
-                        text: option.text,
-                        isCorrect: option.isCorrect,
-                        explanation: option.explanation,
-                        order: optionIndex + 1,
-                        images: option.images,
-                      })),
-                    }
-                  : undefined,
-              },
-            });
-          }
-        }
-
-        return tx.tryout.findUnique({
-          where: { id },
-          include: {
-            questions: {
-              include: {
-                options: true,
-              },
-              orderBy: { order: "asc" },
-            },
-            course: {
-              select: { title: true, classCode: true },
-            },
-          },
-        });
-      });
-    }),
 
   getById: protectedProcedure
     .input(tryoutIdSchema)

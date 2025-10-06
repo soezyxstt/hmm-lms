@@ -34,7 +34,7 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="space-y-6 max-w-screen">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3 w-full">
         {/* Courses Section - Takes 2 columns */}

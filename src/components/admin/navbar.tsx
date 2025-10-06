@@ -21,11 +21,13 @@ import {
   BookOpen,
   Briefcase,
   TestTube,
-  FormInput
+  FormInput,
+  Link2
 } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
+import StudentBreadcrumb from '../student-breadcrumb';
 
 const adminSidebarTabs: {
   group: string,
@@ -42,7 +44,8 @@ const adminSidebarTabs: {
       items: [
         { label: 'Dashboard', href: '/admin', icon: Home, tooltip: 'Admin Dashboard' },
         { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, tooltip: 'Analytics & Reports', dev: true },
-        { label: 'Forms', href: '/admin/forms', icon: FormInput, tooltip: 'Manage Forms', dev: true }
+        { label: 'Forms', href: '/admin/forms', icon: FormInput, tooltip: 'Manage Forms', dev: true },
+        { label: 'Short Links', href: '/admin/shortlinks', icon: Link2, tooltip: 'Shorten Links' }
       ],
     },
     {
@@ -212,10 +215,7 @@ function AdminSiteHeader({ data }: { data: TabsType }) {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <HeaderTitle />
-        <Badge variant="outline" className="ml-2 text-orange-600 border-orange-300">
-          Admin
-        </Badge>
+        <StudentBreadcrumb />
         <div className="ml-auto flex gap-4 items-center">
           <SearchCMDK data={data} />
           <ThemeSwitch />

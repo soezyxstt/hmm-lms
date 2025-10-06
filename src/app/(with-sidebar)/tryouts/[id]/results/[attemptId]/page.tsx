@@ -14,12 +14,12 @@ import {
   XCircle,
   AlertCircle,
   RotateCcw,
-  Lightbulb,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { ResultsUserAnswer } from "~/lib/types/tryout";
 import type { JSX } from 'react';
 import type { QuestionOption } from '@prisma/client';
+import MotionImageDialog from '~/components/motion/dialog';
 
 type ScoreBadgeVariant = "default" | "secondary" | "destructive";
 
@@ -300,18 +300,29 @@ export default async function TryoutResultsPage({ params }: TryoutResultsPagePro
                   </div>
 
                   {question.explanation && (
-                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm text-blue-800 dark:text-blue-300">Explanation</h4>
-                          <p className="text-sm text-blue-700 dark:text-blue-300/80 mt-1 whitespace-pre-wrap">
-                            {question.explanation}
-                          </p>
+                    <div className="mt-3 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r">
+                      <p className="text-sm font-medium text-blue-900 mb-2">Explanation:</p>
+                      <p className="text-sm text-blue-800">{question.explanation}</p>
+
+                      {/* Add this section for explanation images */}
+                      {question.explanationImages && question.explanationImages.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {question.explanationImages.map((imgUrl) => (
+                            <MotionImageDialog
+                              key={imgUrl}
+                              layoutId={imgUrl + 'explanation'}
+                              width={1000}
+                              height={1000}
+                              src={imgUrl}
+                              alt="Explanation image"
+                              className="h-20 w-20 rounded-md border object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            />
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
+
                 </div>
               );
             })}

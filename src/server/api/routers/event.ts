@@ -44,6 +44,25 @@ export const eventInputSchema = z.object({
 });
 
 export const eventRouter = createTRPCRouter({
+  createDraft: adminProcedure.mutation(async ({ ctx }) => {
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    
+    const data = await ctx.db.event.create({
+      data: {
+        title: "Untitled Event",
+        description: "",
+        start: now,
+        end: oneHourLater,
+        allDay: false,
+        createdById: ctx.session.user.id,
+        eventMode: EventMode.BASIC,
+      },
+    });
+    
+    return data;
+  }),
+
   getMyEvents: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.event.findMany({
       where: {
@@ -245,7 +264,7 @@ export const eventRouter = createTRPCRouter({
   createEvent: protectedProcedure
     .input(eventInputSchema)
     .mutation(async ({ ctx, input }) => {
-      if (input.scope !== "personal" && ctx.session.user.role !== Role.ADMIN) {
+      if (input.scope !== "personal" && ctx.session.user.role !== Role.ADMIN && ctx.session.user.role !== Role.SUPERADMIN) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Only admins can create course or global events",
@@ -272,7 +291,7 @@ export const eventRouter = createTRPCRouter({
       return ctx.db.event.create({ data });
     }),
 
-  updateEvent: protectedProcedure
+  updateEvent: adminProcedure
     .input(eventInputSchema.partial().extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { id, scope, courseId, ...updateData } = input;
@@ -280,13 +299,6 @@ export const eventRouter = createTRPCRouter({
       const existingEvent = await ctx.db.event.findUnique({ where: { id } });
       if (!existingEvent) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
-      }
-
-      const canEdit =
-        existingEvent.createdById === ctx.session.user.id ||
-        ctx.session.user.role === Role.ADMIN;
-      if (!canEdit) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
       const eventUpdateData: Record<string, unknown> = { ...updateData };
@@ -300,16 +312,11 @@ export const eventRouter = createTRPCRouter({
       return ctx.db.event.update({ where: { id }, data: eventUpdateData });
     }),
 
-  deleteEvent: protectedProcedure
+  deleteEvent: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const event = await ctx.db.event.findUnique({ where: { id: input.id } });
       if (!event) throw new TRPCError({ code: "NOT_FOUND" });
-
-      const canDelete =
-        event.createdById === ctx.session.user.id ||
-        ctx.session.user.role === Role.ADMIN;
-      if (!canDelete) throw new TRPCError({ code: "FORBIDDEN" });
 
       return ctx.db.event.delete({ where: { id: input.id } });
     }),

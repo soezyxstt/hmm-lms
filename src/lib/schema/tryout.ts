@@ -73,6 +73,7 @@ export const questionSchema = z
     images: z.array(z.string().url()).optional(), // Added .url()
     options: z.array(questionOptionSchema).optional(),
     shortAnswers: z.array(z.object({ value: z.string() })).optional(),
+    explanationImages: z.array(z.string()).default([]), // Add this
     explanation: z.string().nullable().optional(),
   })
   .superRefine(questionRefinement);

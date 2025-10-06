@@ -24,16 +24,22 @@ import {
   FormLabel,
   FormMessage,
 } from "~/components/ui/form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Alert, AlertDescription } from "~/components/ui/alert";
-import { Plus, Trash2, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, AlertCircle, MoreVertical, FileImage, Newspaper } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import type { CreateTryoutInput } from "~/lib/schema/tryout";
 import { toast } from 'sonner';
 import { cn } from "~/lib/utils";
+import { uploadImages } from '~/server/action';
 
-// Reusable ImageUploader component
 const ImageUploader = ({
   onUpload,
   isUploading,
@@ -64,9 +70,10 @@ const ImageUploader = ({
 interface QuestionBuilderProps {
   form: UseFormReturn<CreateTryoutInput>;
   questionIndex: number;
+  tryoutId: string;
 }
 
-export default function QuestionBuilder({ form, questionIndex }: QuestionBuilderProps) {
+export default function QuestionBuilder({ form, questionIndex, tryoutId }: QuestionBuilderProps) {
   const { formState: { errors } } = form;
 
   // Get errors for this specific question object
@@ -74,8 +81,19 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
 
   const questionType = form.watch(`questions.${questionIndex}.type`);
   const questionImages = form.watch(`questions.${questionIndex}.images`);
+  const questionExplanationImages = form.watch(`questions.${questionIndex}.explanationImages`);
+
+  // State for showing/hiding optional sections
+  const [showQuestionImages, setShowQuestionImages] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [showExplanationImages, setShowExplanationImages] = useState(false);
+
   const [isUploadingQuestionImage, setIsUploadingQuestionImage] = useState(false);
   const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
+  const [isUploadingExplanationImage, setIsUploadingExplanationImage] = useState(false);
+
+  // State for showing images per option
+  const [optionImageVisibility, setOptionImageVisibility] = useState<Record<number, boolean>>({});
 
   const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
     control: form.control,
@@ -87,23 +105,73 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
     name: `questions.${questionIndex}.shortAnswers`,
   });
 
-  const uploadImages = async (files: FileList) => {
-    const uploadPromises = Array.from(files).map(async (file) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/documents/upload", { method: "POST", body: formData });
-      if (!response.ok) throw new Error(`Upload failed for ${file.name}`);
-      return response.json() as Promise<{ CDNurl: string }>;
+  // Remove the old useEffect and add these watch subscriptions instead:
+  const explanation = form.watch(`questions.${questionIndex}.explanation`);
+
+  useEffect(() => {
+    if (questionImages && questionImages.length > 0) {
+      setShowQuestionImages(true);
+    }
+  }, [questionImages]);
+
+  useEffect(() => {
+    if (explanation && explanation.length > 0) {
+      setShowExplanation(true);
+    }
+  }, [explanation]);
+
+  useEffect(() => {
+    if (questionExplanationImages && questionExplanationImages.length > 0) {
+      setShowExplanationImages(true);
+    }
+  }, [questionExplanationImages]);
+
+  // Auto-show option images if they have content on mount
+  useEffect(() => {
+    optionFields.forEach((_, optionIndex) => {
+      const images = form.watch(`questions.${questionIndex}.options.${optionIndex}.images`);
+      if (images && images.length > 0) {
+        setOptionImageVisibility(prev => ({
+          ...prev,
+          [optionIndex]: true
+        }));
+      }
     });
-    return Promise.all(uploadPromises);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optionFields.length]);
+
+  const handleExplanationImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+
+    setIsUploadingExplanationImage(true);
+    try {
+      const results = await uploadImages(files, 'tryout', tryoutId, questionIndex + 1);
+      const newImageUrls = results.map(result => result.CDNurl);
+      const currentImages = form.getValues(`questions.${questionIndex}.explanationImages`) ?? [];
+      form.setValue(`questions.${questionIndex}.explanationImages`, [...currentImages, ...newImageUrls]);
+      toast.success(`${results.length} explanation image(s) uploaded!`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload explanation images.");
+    } finally {
+      setIsUploadingExplanationImage(false);
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  const handleRemoveExplanationImage = (imageUrl: string) => {
+    const currentImages = form.getValues(`questions.${questionIndex}.explanationImages`) ?? [];
+    form.setValue(`questions.${questionIndex}.explanationImages`, currentImages.filter((img) => img !== imageUrl));
+    toast.success("Explanation image removed.");
   };
 
   const handleQuestionImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files?.length) return;
+
     setIsUploadingQuestionImage(true);
     try {
-      const results = await uploadImages(files);
+      const results = await uploadImages(files, 'tryout', tryoutId, questionIndex + 1);
       const newImageUrls = results.map(result => result.CDNurl);
       const currentImages = form.getValues(`questions.${questionIndex}.images`) ?? [];
       form.setValue(`questions.${questionIndex}.images`, [...currentImages, ...newImageUrls]);
@@ -119,9 +187,10 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
   const handleOptionImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, optionIndex: number) => {
     const files = event.target.files;
     if (!files?.length) return;
+
     setUploadingOptionImage(optionIndex);
     try {
-      const results = await uploadImages(files);
+      const results = await uploadImages(files, 'tryout', tryoutId, questionIndex + 1);
       const newImageUrls = results.map(result => result.CDNurl);
       const currentImages = form.getValues(`questions.${questionIndex}.options.${optionIndex}.images`) ?? [];
       form.setValue(`questions.${questionIndex}.options.${optionIndex}.images`, [...currentImages, ...newImageUrls]);
@@ -143,6 +212,13 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
     // @ts-expect-error - Same as above
     form.setValue(path, currentImages.filter((img: string) => img !== imageUrl));
     toast.success("Image removed.");
+  };
+
+  const toggleOptionImageVisibility = (optionIndex: number) => {
+    setOptionImageVisibility(prev => ({
+      ...prev,
+      [optionIndex]: !prev[optionIndex]
+    }));
   };
 
   useEffect(() => {
@@ -224,39 +300,126 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
           )} />
         </div>
 
-        {/* Question Text */}
-        <FormField control={form.control} name={`questions.${questionIndex}.question`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Question</FormLabel>
-            <FormControl><Textarea placeholder="Enter your question here..." className="min-h-[75px]" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        {/* Overall Question Explanation */}
-        <FormField control={form.control} name={`questions.${questionIndex}.explanation`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Overall Explanation (Optional)</FormLabel>
-            <FormControl><Textarea placeholder="Explain the correct answer after the user completes the question..." {...field} value={field.value ?? ''} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        {/* Question Image Upload and Display */}
+        {/* Question Text with Dropdown Menu for Optional Fields */}
         <div className="space-y-2">
-          <Label>Question Images (Optional)</Label>
-          <div className="flex flex-wrap gap-3">
-            {questionImages?.map((imageUrl) => (
-              <div key={imageUrl} className="relative w-24 h-24 rounded-md overflow-hidden group">
-                <Image src={imageUrl} alt="Question image" fill style={{ objectFit: 'cover' }} className="transition-transform duration-200 group-hover:scale-105" />
-                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(imageUrl)}>
+          <div className="flex items-center justify-between">
+            <FormLabel>Question</FormLabel>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Optional Fields
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowQuestionImages(true)} disabled={showQuestionImages}>
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Add Question Images
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowExplanation(true)} disabled={showExplanation}>
+                  <Newspaper className="w-4 h-4 mr-2" />
+                  Add Explanation
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowExplanationImages(true)} disabled={showExplanationImages}>
+                  <FileImage className="w-4 h-4 mr-2" />
+                  Add Explanation Images
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <FormField control={form.control} name={`questions.${questionIndex}.question`} render={({ field }) => (
+            <FormItem>
+              <FormControl><Textarea placeholder="Enter your question here..." className="min-h-[75px]" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
+        {/* Question Image Upload and Display - Conditionally Shown */}
+        {showQuestionImages && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Question Images (Optional)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowQuestionImages(false);
+                  form.setValue(`questions.${questionIndex}.images`, []);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {questionImages?.map((imageUrl) => (
+                <div key={imageUrl} className="relative w-24 h-24 rounded-md overflow-hidden group">
+                  <Image src={imageUrl} alt="Question image" fill style={{ objectFit: 'cover' }} className="transition-transform duration-200 group-hover:scale-105" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(imageUrl)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <ImageUploader onUpload={handleQuestionImageUpload} isUploading={isUploadingQuestionImage} />
+            </div>
+          </div>
+        )}
+
+        {/* Overall Question Explanation - Conditionally Shown */}
+        {showExplanation && (
+          <FormField control={form.control} name={`questions.${questionIndex}.explanation`} render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Overall Explanation (Optional)</FormLabel>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowExplanation(false);
+                    form.setValue(`questions.${questionIndex}.explanation`, '');
+                  }}
+                >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-            ))}
-            <ImageUploader onUpload={handleQuestionImageUpload} isUploading={isUploadingQuestionImage} />
+              <FormControl><Textarea placeholder="Explain the correct answer after the user completes the question..." {...field} value={field.value ?? ''} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {/* Explanation Images - Conditionally Shown */}
+        {showExplanationImages && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Explanation Images (Optional)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowExplanationImages(false);
+                  form.setValue(`questions.${questionIndex}.explanationImages`, []);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {questionExplanationImages?.map((imageUrl) => (
+                <div key={imageUrl} className="relative w-24 h-24 rounded-md overflow-hidden group">
+                  <Image src={imageUrl} alt="Explanation image" fill style={{ objectFit: 'cover' }} className="transition-transform duration-200 group-hover:scale-105" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveExplanationImage(imageUrl)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <ImageUploader onUpload={handleExplanationImageUpload} isUploading={isUploadingExplanationImage} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Options for Multiple Choice Questions */}
         {(questionType === QuestionType.MULTIPLE_CHOICE_SINGLE || questionType === QuestionType.MULTIPLE_CHOICE_MULTIPLE) && (
@@ -268,6 +431,8 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
             <div className="space-y-3">
               {optionFields?.map((option, optionIndex) => {
                 const optionImages = form.watch(`questions.${questionIndex}.options.${optionIndex}.images`);
+                const showImages = optionImageVisibility[optionIndex] ?? (optionImages && optionImages.length > 0);
+
                 return (
                   <div key={option.id} className="flex items-start gap-3 p-4 border rounded-lg bg-background">
                     <div className="flex-1 space-y-3">
@@ -286,21 +451,51 @@ export default function QuestionBuilder({ form, questionIndex }: QuestionBuilder
                             </FormItem>
                           )} />
                         </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => toggleOptionImageVisibility(optionIndex)} disabled={showImages}>
+                              <ImageIcon className="w-4 h-4 mr-2" />
+                              Add Images
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <div className="pl-12">
-                        <Label className="text-xs text-muted-foreground">Option Images</Label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {optionImages?.map((imageUrl) => (
-                            <div key={imageUrl} className="relative w-24 h-24 rounded-md overflow-hidden group">
-                              <Image src={imageUrl} alt="Option image" fill style={{ objectFit: 'cover' }} className="transition-transform duration-200 group-hover:scale-105" />
-                              <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(imageUrl, optionIndex)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <ImageUploader onUpload={(e) => handleOptionImageUpload(e, optionIndex)} isUploading={uploadingOptionImage === optionIndex} />
+
+                      {showImages && (
+                        <div className="pl-12">
+                          <div className="flex items-center justify-between mb-1">
+                            <Label className="text-xs text-muted-foreground">Option Images</Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                toggleOptionImageVisibility(optionIndex);
+                                form.setValue(`questions.${questionIndex}.options.${optionIndex}.images`, []);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {optionImages?.map((imageUrl) => (
+                              <div key={imageUrl} className="relative w-24 h-24 rounded-md overflow-hidden group">
+                                <Image src={imageUrl} alt="Option image" fill style={{ objectFit: 'cover' }} className="transition-transform duration-200 group-hover:scale-105" />
+                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(imageUrl, optionIndex)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            <ImageUploader onUpload={(e) => handleOptionImageUpload(e, optionIndex)} isUploading={uploadingOptionImage === optionIndex} />
+                          </div>
                         </div>
-                      </div>
+                      )}
+
                       {form.watch(`questions.${questionIndex}.options.${optionIndex}.isCorrect`) && (
                         <FormField control={form.control} name={`questions.${questionIndex}.options.${optionIndex}.explanation`} render={({ field }) => (
                           <FormItem>

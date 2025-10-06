@@ -2,6 +2,9 @@
 
 import { unstable_cache } from "next/cache";
 import { db } from "../db";
+import { env } from '~/env';
+import { redirect } from 'next/navigation';
+import { api } from '~/trpc/server';
 
 export const getUserCourses = unstable_cache(
   async (userId: string) => {
@@ -133,3 +136,56 @@ export const getTryouts = unstable_cache(
     tags: ["tryouts"],
   },
 );
+
+export const uploadImages = async (
+  files: FileList,
+  entityType: 'course' | 'tryout' | 'announcement' | 'profile' | 'event' | 'scholarship',
+  entityId: string,
+  questionNumber?: number
+) => {
+  const uploadPromises = Array.from(files).map(async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("entityType", entityType);
+    formData.append("entityId", entityId);
+    
+    // If questionNumber is provided, entityType MUST be 'tryout'
+    if (questionNumber !== undefined) {
+      if (entityType !== 'tryout') {
+        throw new Error("questionNumber can only be provided when entityType is 'tryout'");
+      }
+      formData.append("questionNumber", questionNumber.toString());
+    }
+    
+    const response = await fetch(
+      env.NEXT_PUBLIC_APP_URL + "/api/documents/upload",
+      { method: "POST", body: formData }
+    );
+    
+    if (!response.ok) throw new Error(`Upload failed for ${file.name}`);
+    return response.json() as Promise<{ CDNurl: string; key: string }>;
+  });
+  
+  return Promise.all(uploadPromises);
+};
+
+export async function startTryoutAttempt(formData: FormData) {
+  const tryoutId = formData.get("tryoutId") as string;
+  
+  let attempt;
+  let errorOccurred = false;
+
+  try {
+    attempt = await api.tryout.startAttempt({ id: tryoutId });
+  } catch (error) {
+    console.error("Failed to start attempt:", error);
+    errorOccurred = true;
+  }
+
+  // Call redirect OUTSIDE of try/catch block
+  if (errorOccurred) {
+    redirect(`/tryouts/${tryoutId}?error=failed-to-start`);
+  }
+
+  redirect(`/tryouts/${tryoutId}/attempt/${attempt?.id}`);
+}

@@ -15,6 +15,7 @@ import { notificationsRouter } from './routers/notifications';
 import { formRouter } from './routers/forms';
 import { dashboardRouter } from './routers/dashboard';
 import { studentDashboardRouter } from './routers/student/dashboard';
+import { shortLinkRouter } from './routers/short-link';
 
 /**
  * This is the primary router for your server.
@@ -37,7 +38,8 @@ export const appRouter = createTRPCRouter({
   notification: notificationsRouter,
   form: formRouter,
   dashboard: dashboardRouter,
-  studentDashboard: studentDashboardRouter
+  studentDashboard: studentDashboardRouter,
+  shortLink: shortLinkRouter
 });
 
 // export type definition of API

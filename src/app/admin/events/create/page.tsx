@@ -1,10 +1,7 @@
-// app/admin/events/create/page.tsx
-import EventForm from '../event-form';
+import { redirect } from "next/navigation";
+import { api } from "~/trpc/server";
 
-export default function CreateEventPage() {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <EventForm mode="create" />
-    </div>
-  );
+export default async function EventCreatePage() {
+  const draft = await api.event.createDraft();
+  redirect(`/admin/events/${draft.id}/edit`);
 }

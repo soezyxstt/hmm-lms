@@ -35,8 +35,8 @@ const sidebarTabs: {
     {
       group: 'Himpunan',
       items: [
-        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events', dev: true },
-        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements', dev: true },
+        { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events', dev: false },
+        { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements', dev: false },
         { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity", dev: true },
       ],
     },
@@ -187,7 +187,7 @@ function SiteHeader({ data }: { data: TabsType }) {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <StudentBreadcrumb items={data} />
+        <StudentBreadcrumb />
         <div className="ml-auto flex gap-4 items-center">
           <SearchCMDK data={data} />
           <ThemeSwitch />

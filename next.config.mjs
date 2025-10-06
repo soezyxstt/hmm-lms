@@ -81,6 +81,11 @@ const nextConfig = {
   images: {
     domains: ["hmm-lms.sgp1.digitaloceanspaces.com"],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '1024mb'
+    }
+  }
 };
 
 export default pwaConfig(nextConfig);

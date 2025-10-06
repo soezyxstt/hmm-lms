@@ -32,7 +32,6 @@ import {
 import { toast } from "sonner";
 import {
   MoreHorizontal,
-  Edit,
   Trash2,
   Eye,
   Users,
@@ -116,7 +115,7 @@ export default function CoursesList({ courses: initialCourses }: CoursesListProp
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/admin/courses/${course.id}`}>
+                      <Link href={`/admin/courses/${course.id}/edit`}>
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </Link>

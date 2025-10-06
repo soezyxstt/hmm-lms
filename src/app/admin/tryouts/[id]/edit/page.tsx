@@ -30,6 +30,8 @@ export default async function EditTryoutPage({ params }: EditTryoutPageProps) {
       question: q.question,
       points: q.points,
       required: q.required,
+      explanation: q.explanation,
+      explanationImages: q.explanationImages,
       options: q.options?.map(opt => ({
         id: opt.id,
         text: opt.text,

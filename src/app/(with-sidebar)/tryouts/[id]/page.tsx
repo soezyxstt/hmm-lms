@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { startTryoutAttempt } from '~/server/action';
 
 interface TryoutDetailPageProps {
   params: Promise<{
@@ -265,10 +266,11 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
 
 function StartNewAttemptButton({ tryoutId }: { tryoutId: string }) {
   return (
-    <form action={`/tryouts/${tryoutId}/start`} method="POST">
-      <Button type="submit" className="w-full sm:w-auto">
-        <PlayCircle className="h-4 w-4 mr-2" />
-        Start New Attempt
+    <form action={startTryoutAttempt}>
+      <input type="hidden" name="tryoutId" value={tryoutId} />
+      <Button type="submit">
+      <PlayCircle className="h-4 w-4 mr-2" />
+      Start New Attempt
       </Button>
     </form>
   );

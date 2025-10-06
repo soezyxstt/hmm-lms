@@ -1,18 +1,8 @@
-
+import { redirect } from "next/navigation";
 import { api } from "~/trpc/server";
-import TryoutForm from './form';
 
-export default async function CreateTryoutPage() {
+export default async function TryoutCreatePage() {
 
-  const courses = await api.course.getAllCourses();
-
-  return (
-    <div className="max-w-5xl relative mx-auto">
-      <TryoutForm courses={courses} />
-    </div>
-  );
+  const draft = await api.tryout.createDraft();
+  redirect(`/admin/tryouts/${draft.id}/edit`);
 }
-
-export const metadata = {
-  title: "Create Tryout - Admin",
-};

@@ -171,49 +171,48 @@ model LearningSession {
 }
 
 model Event {
-  id                       String              @id @default(cuid())
+  id                       String     @id @default(cuid())
   title                    String
   description              String?
   start                    DateTime
   end                      DateTime
-  allDay                   Boolean             @default(false)
+  allDay                   Boolean    @default(false)
   location                 String?
-  color                    EventColor          @default(SKY)
+  color                    EventColor @default(SKY)
   timeline                 Json?
-  hasTimeline              Boolean             @default(false)
-  eventMode                EventMode           @default(BASIC)
+  hasTimeline              Boolean    @default(false)
+  eventMode                EventMode  @default(BASIC)
   rsvpDeadline             DateTime?
-  rsvpRequiresApproval     Boolean             @default(false)
-  rsvpAllowMaybe           Boolean             @default(true)
+  rsvpRequiresApproval     Boolean    @default(false)
+  rsvpAllowMaybe           Boolean    @default(true)
   rsvpMaxAttendees         Int?
-  rsvpPublic               Boolean             @default(false)
+  rsvpPublic               Boolean    @default(false)
   presenceCheckInRadius    Float?
-  presenceAutoCheckOut     Boolean             @default(true)
-  presenceRequiresApproval Boolean             @default(false)
-  presenceAllowLateCheckIn Boolean             @default(true)
+  presenceAutoCheckOut     Boolean    @default(true)
+  presenceRequiresApproval Boolean    @default(false)
+  presenceAllowLateCheckIn Boolean    @default(true)
   presenceCheckInBuffer    Int?
-  
+
   // Google Sheets integration
-  rsvpSheetUrl             String?
-  rsvpSheetId              String?
-  attendanceSheetUrl       String?
-  attendanceSheetId        String?
-  
-  createdById              String
-  createdBy                User                @relation("CreatedBy", fields: [createdById], references: [id])
-  userId                   String?
-  user                     User?               @relation("UserEvents", fields: [userId], references: [id])
-  courseId                 String?
-  course                   Course?             @relation("CourseEvents", fields: [courseId], references: [id])
-  rsvpForm                 EventRSVPForm?
-  rsvpResponses            EventRSVPResponse[]
-  presenceRecords          EventPresence[]
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @updatedAt
+  rsvpSheetUrl       String?
+  rsvpSheetId        String?
+  attendanceSheetUrl String?
+  attendanceSheetId  String?
+
+  createdById     String
+  createdBy       User                @relation("CreatedBy", fields: [createdById], references: [id])
+  userId          String?
+  user            User?               @relation("UserEvents", fields: [userId], references: [id])
+  courseId        String?
+  course          Course?             @relation("CourseEvents", fields: [courseId], references: [id])
+  rsvpForm        EventRSVPForm?
+  rsvpResponses   EventRSVPResponse[]
+  presenceRecords EventPresence[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@map("events")
 }
-
 
 model EventRSVPForm {
   id                  String   @id @default(cuid())
@@ -287,18 +286,36 @@ model EventPresence {
 }
 
 model Announcement {
-  id          String            @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
-  content     String            @db.Text
-  scope       AnnouncementScope @default(GLOBAL)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  content     String              @db.Text
+  images      String[]
+  scope       AnnouncementScope   @default(GLOBAL)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   createdById String
-  createdBy   User              @relation("CreatedAnnouncements", fields: [createdById], references: [id])
+  createdBy   User                @relation("CreatedAnnouncements", fields: [createdById], references: [id])
   courseId    String?
-  course      Course?           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  replies     AnnouncementReply[]
 
   @@map("announcements")
+}
+
+model AnnouncementReply {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@index([announcementId])
+  @@index([userId])
 }
 
 model Scholarship {
@@ -357,19 +374,20 @@ model Tryout {
 }
 
 model Question {
-  id           String           @id @default(cuid())
-  tryoutId     String
-  type         QuestionType
-  question     String
-  points       Int              @default(1)
-  order        Int
-  required     Boolean          @default(true)
-  images       String[]         @default([])
-  explanation  String?          @db.Text
-  shortAnswers String[]         @default([])
-  tryout       Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
-  options      QuestionOption[]
-  answers      UserAnswer[]
+  id                String           @id @default(cuid())
+  tryoutId          String
+  type              QuestionType
+  question          String
+  points            Int              @default(1)
+  order             Int
+  required          Boolean          @default(true)
+  images            String[]         @default([])
+  explanation       String?          @db.Text
+  explanationImages String[]
+  shortAnswers      String[]         @default([])
+  tryout            Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  options           QuestionOption[]
+  answers           UserAnswer[]
 
   @@map("questions")
 }
@@ -475,21 +493,20 @@ model ResourceAccess {
 }
 
 model User {
-  id                   String              @id @default(cuid())
-  email                String              @unique
-  name                 String
-  password             String
-  nim                  String              @unique
-  faculty              String?
-  program              String?
-  position             String?
-  role                 Role                @default(STUDENT)
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  emailVerified        DateTime?
-  image                String?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  nim           String    @unique
+  faculty       String?
+  program       String?
+  position      String?
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime?
+  image         String?
 
-  
   sessions             Session[]
   courses              Course[]
   learningSessions     LearningSession[]
@@ -509,6 +526,8 @@ model User {
   presenceApprovals    EventPresence[]     @relation("PresenceApprover")
   form                 Form[]
   formSubmission       FormSubmission[]
+  shortLink            ShortLink[]         @relation("CreatedShortLinks")
+  announcementReplies  AnnouncementReply[]
 }
 
 model Session {
@@ -613,4 +632,45 @@ model FormAnswer {
   createdAt DateTime @default(now())
 
   @@map("form_answers")
+}
+
+// Link shortener model
+model ShortLink {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  originalUrl String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+
+  // Analytics
+  clicks Int @default(0)
+
+  // Relations
+  createdById String
+  createdBy   User   @relation("CreatedShortLinks", fields: [createdById], references: [id], onDelete: Cascade)
+
+  clickLogs ShortLinkClick[]
+
+  @@index([slug])
+  @@index([createdById])
+  @@map("short_links")
+}
+
+model ShortLinkClick {
+  id          String    @id @default(cuid())
+  shortLinkId String
+  shortLink   ShortLink @relation(fields: [shortLinkId], references: [id], onDelete: Cascade)
+
+  clickedAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+  referer   String?
+  country   String?
+  city      String?
+
+  @@index([shortLinkId])
+  @@map("short_link_clicks")
 }

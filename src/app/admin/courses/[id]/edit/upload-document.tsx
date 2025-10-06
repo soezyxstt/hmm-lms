@@ -46,6 +46,7 @@ import { formatBytes, useFileUpload } from '~/hooks/use-file-upload';
 import { Card } from '~/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useRouter } from 'next/navigation';
+import { uploadImages } from '~/server/action'; // Import the uploadImages action
 
 // Helper function to get the appropriate icon for a file
 const getFileIcon = (file: { file: File | { type: string; name: string } }) => {
@@ -99,11 +100,11 @@ interface UploadDocumentProps {
 
 // Define types for files and links with their editable data
 interface EditableFile {
-  id: string; // The unique ID from the hook
-  file: File; // The actual native File object
-  fileName: string; // File name for display
-  fileSize: number; // File size for display
-  fileType: string; // File type for icon/display
+  id: string;
+  file: File;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
   title: string;
   category: ResourceCategory;
   description?: string;
@@ -156,7 +157,7 @@ export default function UploadDocument({ courseId }: UploadDocumentProps) {
         ...prev,
         ...addedFiles.map(f => ({
           id: f.id,
-          file: f.file as File, // The native File object
+          file: f.file as File,
           fileName: f.file.name,
           fileSize: f.file.size,
           fileType: f.file.type,
@@ -169,7 +170,7 @@ export default function UploadDocument({ courseId }: UploadDocumentProps) {
 
   const removeFileFromList = (idToRemove: string) => {
     setFilesToUpload(prev => prev.filter(file => file.id !== idToRemove));
-    removeFile(idToRemove); // Use the hook's removeFile action to clean up state
+    removeFile(idToRemove);
   };
 
   const addLink = () => {
@@ -221,23 +222,24 @@ export default function UploadDocument({ courseId }: UploadDocumentProps) {
 
     try {
       const uploadPromises = filesToUpload.map(async (fileObj) => {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', fileObj.file);
-        const response = await fetch('/api/documents/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        });
+        // Create a FileList-like object from single file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(fileObj.file);
+        const fileList = dataTransfer.files;
 
-        if (!response.ok) {
+        // Upload using the uploadImages action with proper entity type and ID
+        const uploadResults = await uploadImages(
+          fileList,
+          'course',
+          courseId
+        );
+
+        const uploadedFile = uploadResults[0];
+        if (!uploadedFile) {
           throw new Error(`File upload failed for ${fileObj.fileName}.`);
         }
-        const fileData = (await response.json()) as {
-          key: string;
-          filename: string;
-          size: number;
-          mimeType: string;
-        };
 
+        // Create resource with the uploaded file info
         await createResource.mutateAsync({
           type: ResourceType.FILE,
           title: fileObj.title,
@@ -246,10 +248,10 @@ export default function UploadDocument({ courseId }: UploadDocumentProps) {
           attachableType: AttachableType.COURSE,
           category: fileObj.category,
           file: {
-            key: fileData.key,
-            name: fileData.filename,
-            type: fileData.mimeType,
-            size: fileData.size,
+            key: uploadedFile.key,
+            name: fileObj.fileName,
+            type: fileObj.fileType,
+            size: fileObj.fileSize,
           },
         });
       });

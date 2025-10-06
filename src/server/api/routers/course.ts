@@ -90,6 +90,19 @@ export const courseRouter = createTRPCRouter({
 
       return data;
     }),
+  
+  createDraft: adminProcedure.mutation(async ({ ctx }) => {
+    const data = await ctx.db.course.create({
+      data: {
+        title: "Untitled Course",
+        description: "",
+        classCode: `DRAFT-${Date.now()}`, // Temporary unique code
+      },
+    });
+    
+    return data;
+  }),
+
 
   updateCourse: adminProcedure
     .input(updateCourseSchema)
