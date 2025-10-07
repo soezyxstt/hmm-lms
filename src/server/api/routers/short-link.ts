@@ -5,48 +5,62 @@ import QRCode from "qrcode";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { env } from '~/env';
 
-const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+const urlSchema = z
+  .string()
+  .transform((s) => s.trim())
+  .refine((s) => {
+    try {
+      // Prepend https:// if missing scheme, to match existing logic
+      const candidate = s.startsWith("http") ? s : `https://${s}`;
+      const u = new URL(candidate);
+      // Optional: restrict to http/https only
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, { message: "Invalid URL format" });
 
 export const shortLinkRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(
-      z.object({
-        originalUrl: z.string().regex(urlRegex, "Invalid URL format"),
-        slug: z.string().min(3).max(50).optional(),
-        description: z.string().max(500).optional(),
-        expiresAt: z.date().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const slug = input.slug ?? nanoid(8);
+  .input(
+    z.object({
+      originalUrl: urlSchema,
+      slug: z.string().min(3).max(50).optional(),
+      description: z.string().max(500).optional(),
+      expiresAt: z.date().optional(),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const slug = input.slug ?? nanoid(8);
 
-      const existing = await ctx.db.shortLink.findUnique({
-        where: { slug },
+    const existing = await ctx.db.shortLink.findUnique({
+      where: { slug },
+    });
+
+    if (existing) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "This slug is already taken",
       });
+    }
 
-      if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "This slug is already taken",
-        });
-      }
+    // Preserve the same normalization as before
+    const originalUrl = input.originalUrl.startsWith("http")
+      ? input.originalUrl
+      : `https://${input.originalUrl}`;
 
-      const originalUrl = input.originalUrl.startsWith("http")
-        ? input.originalUrl
-        : `https://${input.originalUrl}`;
+    const shortLink = await ctx.db.shortLink.create({
+      data: {
+        slug,
+        originalUrl,
+        description: input.description,
+        expiresAt: input.expiresAt,
+        createdById: ctx.session.user.id,
+      },
+    });
 
-      const shortLink = await ctx.db.shortLink.create({
-        data: {
-          slug,
-          originalUrl,
-          description: input.description,
-          expiresAt: input.expiresAt,
-          createdById: ctx.session.user.id,
-        },
-      });
-
-      return shortLink;
-    }),
+    return shortLink;
+  }),
 
   generateQRCode: protectedProcedure
     .input(
