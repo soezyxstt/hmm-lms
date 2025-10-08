@@ -6,7 +6,7 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { api, type RouterOutputs } from '~/trpc/react';
 import { Button } from '~/components/ui/button';
 import {
@@ -29,50 +29,43 @@ import {
 } from '~/components/ui/select';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-import { EventMode, EventColor } from '@prisma/client';
+import { EventMode } from '@prisma/client';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { eventInputSchema, type timelineItemSchema } from '~/lib/schema/event';
+import type { JsonArray } from '@prisma/client/runtime/library';
 
 type EventDetail = NonNullable<RouterOutputs['event']['getEventById']>;
 
-const timelineItemSchema = z.object({
-  time: z.string().min(1, 'Time is required'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  isCompleted: z.boolean().default(false),
-});
-
-const eventFormSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  start: z.string().min(1, 'Start date is required'),
-  end: z.string().min(1, 'End date is required'),
-  allDay: z.boolean().default(false),
-  location: z.string().optional(),
-  color: z.nativeEnum(EventColor).default(EventColor.SKY),
-  hasTimeline: z.boolean().default(false),
-  timeline: z.array(timelineItemSchema).optional(),
-  scope: z.enum(['personal', 'course', 'global']),
-  courseId: z.string().optional(),
-  eventMode: z.nativeEnum(EventMode).default(EventMode.BASIC),
-  rsvpDeadline: z.string().optional().nullable(),
-  rsvpRequiresApproval: z.boolean().default(false),
-  rsvpAllowMaybe: z.boolean().default(true),
-  rsvpMaxAttendees: z.number().optional().nullable(),
-  rsvpPublic: z.boolean().default(false),
-  presenceCheckInRadius: z.number().optional().nullable(),
-  presenceAutoCheckOut: z.boolean().default(true),
-  presenceRequiresApproval: z.boolean().default(false),
-  presenceAllowLateCheckIn: z.boolean().default(true),
-  presenceCheckInBuffer: z.number().optional().nullable(),
-});
-
-type EventFormValues = z.infer<typeof eventFormSchema>;
+type EventFormValues = z.infer<typeof eventInputSchema>;
 
 interface EventFormProps {
   event?: EventDetail;
   mode: 'create' | 'edit';
+}
+
+// helper: format Date to 'YYYY-MM-DDTHH:mm' for datetime-local
+function toDateTimeLocalValue(d?: Date | null) {
+  if (!d) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// helper: parse input value from datetime-local back to Date
+function fromDateTimeLocalValue(v: string): Date {
+  // value is local time; construct Date respecting local components
+  const [datePart, timePart] = v.split('T');
+
+  if (!datePart) return (new Date(v))
+
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [hh, mm] = (timePart ?? '00:00').split(':').map(Number);
+  return new Date(y ?? 0, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0, 0);
 }
 
 export default function EventForm({ event, mode }: EventFormProps) {
@@ -84,52 +77,39 @@ export default function EventForm({ event, mode }: EventFormProps) {
   const { data: courses } = api.course.getAllCourses.useQuery();
 
   const form = useForm<EventFormValues>({
-    resolver: zodResolver(eventFormSchema),
+    resolver: zodResolver(eventInputSchema),
     defaultValues: event
       ? {
         title: event.title,
         description: event.description ?? '',
-        start: new Date(event.start).toISOString().slice(0, 16),
-        end: new Date(event.end).toISOString().slice(0, 16),
-        allDay: event.allDay,
+        start: new Date(event.start),
+        end: new Date(event.end),
+        allDay: event.allDay ?? false,
         location: event.location ?? '',
-        color: event.color,
-        hasTimeline: event.hasTimeline,
-        timeline: event.timeline as z.infer<typeof timelineItemSchema>[] | undefined,
+        hasTimeline: Boolean(event.timeline && (event.timeline as JsonArray).length > 0),
+        timeline: (event.timeline as z.infer<typeof timelineItemSchema>[]) ?? [],
         scope: event.courseId ? 'course' : event.userId ? 'personal' : 'global',
         courseId: event.courseId ?? undefined,
-        eventMode: event.eventMode,
-        rsvpDeadline: event.rsvpDeadline
-          ? new Date(event.rsvpDeadline).toISOString().slice(0, 16)
-          : null,
-        rsvpRequiresApproval: event.rsvpRequiresApproval,
-        rsvpAllowMaybe: event.rsvpAllowMaybe,
-        rsvpMaxAttendees: event.rsvpMaxAttendees,
-        rsvpPublic: event.rsvpPublic,
-        presenceCheckInRadius: event.presenceCheckInRadius,
-        presenceAutoCheckOut: event.presenceAutoCheckOut,
-        presenceRequiresApproval: event.presenceRequiresApproval,
-        presenceAllowLateCheckIn: event.presenceAllowLateCheckIn,
-        presenceCheckInBuffer: event.presenceCheckInBuffer,
+        eventMode: event.eventMode ?? EventMode.ATTENDANCE_ONLY,
+        rsvpDeadline: event.rsvpDeadline ? new Date(event.rsvpDeadline) : null,
+        rsvpRequiresApproval: event.rsvpRequiresApproval ?? false,
+        presenceRequiresApproval: event.presenceRequiresApproval ?? false,
       }
       : {
         title: '',
         description: '',
-        start: '',
-        end: '',
+        start: undefined as unknown as Date, // will be required
+        end: undefined as unknown as Date,   // will be required
         allDay: false,
         location: '',
-        color: EventColor.SKY,
         hasTimeline: false,
         timeline: [],
         scope: 'global',
-        eventMode: EventMode.BASIC,
+        courseId: undefined,
+        eventMode: EventMode.ATTENDANCE_ONLY,
+        rsvpDeadline: null,
         rsvpRequiresApproval: false,
-        rsvpAllowMaybe: true,
-        rsvpPublic: false,
-        presenceAutoCheckOut: true,
         presenceRequiresApproval: false,
-        presenceAllowLateCheckIn: true,
       },
   });
 
@@ -152,18 +132,19 @@ export default function EventForm({ event, mode }: EventFormProps) {
   });
 
   const onSubmit = (data: EventFormValues) => {
-    const payload = {
+    const payload: EventFormValues = {
       ...data,
       start: new Date(data.start),
       end: new Date(data.end),
-      rsvpDeadline: data.rsvpDeadline ? new Date(data.rsvpDeadline) : undefined,
-      timeline: data.hasTimeline ? timelineItems : undefined,
+      rsvpDeadline: data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
+      timeline: data.hasTimeline ? (timelineItems ?? []) : undefined,
     };
 
     if (mode === 'create') {
       createEvent.mutate(payload);
     } else if (event) {
-      updateEvent.mutate({ ...payload, id: event.id });
+      // update accepts partial plus id, but keeping full payload is fine
+      updateEvent.mutate({ ...(payload), id: event.id });
     }
   };
 
@@ -171,19 +152,26 @@ export default function EventForm({ event, mode }: EventFormProps) {
   const eventMode = form.watch('eventMode');
   const hasTimeline = form.watch('hasTimeline');
 
-  const showRsvpOptions = eventMode === EventMode.RSVP_ONLY || eventMode === EventMode.RSVP_AND_ATTENDANCE;
-  const showPresenceOptions =
-    eventMode === EventMode.ATTENDANCE_ONLY || eventMode === EventMode.RSVP_AND_ATTENDANCE;
+  // RSVP section is only meaningful if eventMode is RSVP_ONLY or RSVP_AND_ATTENDANCE
+  const showRsvpOptions =
+    eventMode === EventMode.RSVP_ONLY || eventMode === EventMode.RSVP_AND_ATTENDANCE;
 
   const addTimelineItem = () => {
-    setTimelineItems([...timelineItems, { time: '', title: '', description: '', isCompleted: false }]);
+    setTimelineItems([
+      ...timelineItems,
+      { time: '', title: '', description: '', isCompleted: false },
+    ]);
   };
 
   const removeTimelineItem = (index: number) => {
     setTimelineItems(timelineItems.filter((_, i) => i !== index));
   };
 
-  const updateTimelineItem = (index: number, field: keyof z.infer<typeof timelineItemSchema>, value: string | boolean) => {
+  const updateTimelineItem = (
+    index: number,
+    field: keyof z.infer<typeof timelineItemSchema>,
+    value: string | boolean
+  ) => {
     const updated = [...timelineItems];
     updated[index] = { ...updated[index]!, [field]: value };
     setTimelineItems(updated);
@@ -248,7 +236,11 @@ export default function EventForm({ event, mode }: EventFormProps) {
                   <FormItem>
                     <FormLabel>Start Date & Time</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input
+                        type="datetime-local"
+                        value={toDateTimeLocalValue(field.value as unknown as Date)}
+                        onChange={(e) => field.onChange(fromDateTimeLocalValue(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -262,7 +254,11 @@ export default function EventForm({ event, mode }: EventFormProps) {
                   <FormItem>
                     <FormLabel>End Date & Time</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input
+                        type="datetime-local"
+                        value={toDateTimeLocalValue(field.value as unknown as Date)}
+                        onChange={(e) => field.onChange(fromDateTimeLocalValue(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -282,31 +278,6 @@ export default function EventForm({ event, mode }: EventFormProps) {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select color" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.values(EventColor).map((color) => (
-                        <SelectItem key={color} value={color}>
-                          {color}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -322,7 +293,7 @@ export default function EventForm({ event, mode }: EventFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Scope</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select scope" />
@@ -349,7 +320,7 @@ export default function EventForm({ event, mode }: EventFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Course</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select course" />
@@ -383,7 +354,7 @@ export default function EventForm({ event, mode }: EventFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Mode</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select event mode" />
@@ -396,9 +367,7 @@ export default function EventForm({ event, mode }: EventFormProps) {
                       <SelectItem value={EventMode.RSVP_AND_ATTENDANCE}>RSVP & Attendance</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Choose how participants interact with this event
-                  </FormDescription>
+                  <FormDescription>Choose how participants interact with this event</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -422,31 +391,13 @@ export default function EventForm({ event, mode }: EventFormProps) {
                     <FormControl>
                       <Input
                         type="datetime-local"
-                        {...field}
-                        value={field.value ?? ''}
+                        value={field.value ? toDateTimeLocalValue(field.value as unknown as Date) : ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? fromDateTimeLocalValue(e.target.value) : null)
+                        }
                       />
                     </FormControl>
                     <FormDescription>Leave empty for no deadline</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="rsvpMaxAttendees"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max Attendees</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="No limit"
-                        {...field}
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -464,130 +415,30 @@ export default function EventForm({ event, mode }: EventFormProps) {
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="rsvpAllowMaybe"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Allow &quot;Maybe&quot; response</FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="rsvpPublic"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Make RSVP list public</FormLabel>
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
         )}
 
-        {/* Presence Settings */}
-        {showPresenceOptions && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Attendance Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="presenceCheckInRadius"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Check-in Radius (meters)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="No location restriction"
-                        {...field}
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Maximum distance from event location to allow check-in
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="presenceCheckInBuffer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Check-in Buffer (minutes)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="15"
-                        {...field}
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Allow check-in this many minutes before event starts
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="presenceAutoCheckOut"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Auto check-out when event ends</FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="presenceRequiresApproval"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Require approval for attendance</FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="presenceAllowLateCheckIn"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Allow late check-in</FormLabel>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        )}
+        {/* Presence (approval only, per schema) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="presenceRequiresApproval"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Require approval for attendance</FormLabel>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
 
         {/* Timeline */}
         <Card>
@@ -601,7 +452,10 @@ export default function EventForm({ event, mode }: EventFormProps) {
               render={({ field }) => (
                 <FormItem className="flex items-center gap-2 space-y-0">
                   <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox checked={field.value} onCheckedChange={(v) => {
+                      field.onChange(v);
+                      if (!v) setTimelineItems([]);
+                    }} />
                   </FormControl>
                   <FormLabel className="!mt-0">Enable timeline</FormLabel>
                 </FormItem>

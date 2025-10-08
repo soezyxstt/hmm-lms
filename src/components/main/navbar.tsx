@@ -23,13 +23,17 @@ const sidebarTabs: {
   }[]
 }[] = [
     {
+      group: 'General', items: [
+        { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
+        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
+      ]
+    },
+    {
       group: 'Academics',
       items: [
-        { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
         { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
         { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Tryouts' },
         { label: 'Scholarships', href: '/scholarships', icon: Banknote, tooltip: 'Scholarships' },
-        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
       ],
     },
     {

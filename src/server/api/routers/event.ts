@@ -13,35 +13,11 @@ import {
   PresenceStatus,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { eventInputSchema } from '~/lib/schema/event';
 
-const eventModeSchema = z.nativeEnum(EventMode);
 const rsvpStatusSchema = z.nativeEnum(RSVPStatus);
 const approvalStatusSchema = z.nativeEnum(ApprovalStatus);
 const presenceStatusSchema = z.nativeEnum(PresenceStatus);
-
-const timelineItemSchema = z.object({
-  time: z.string(),
-  title: z.string(),
-  description: z.string().optional(),
-  isCompleted: z.boolean().optional().default(false),
-});
-
-export const eventInputSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  start: z.date(),
-  end: z.date(),
-  allDay: z.boolean().default(false),
-  location: z.string().optional(),
-  hasTimeline: z.boolean().default(false),
-  timeline: z.array(timelineItemSchema).optional(),
-  scope: z.enum(["personal", "course", "global"]),
-  courseId: z.string().optional(),
-  eventMode: eventModeSchema.default(EventMode.BASIC),
-  rsvpDeadline: z.date().optional().nullable(),
-  rsvpRequiresApproval: z.boolean().default(false),
-  presenceRequiresApproval: z.boolean().default(false),
-});
 
 export const eventRouter = createTRPCRouter({
   createDraft: adminProcedure.mutation(async ({ ctx }) => {

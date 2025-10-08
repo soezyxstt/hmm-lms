@@ -66,8 +66,8 @@ export function DashboardContent() {
                     <CoursesItem
                       id={course.id}
                       title={course.title}
-                      numberOfMaterials={course.totalMinutes}
-                      numberOfVideos={course.totalSessions}
+                      numberOfMaterials={course.attachmentsCount}
+                      numberOfVideos={course.videoCount}
                       image={`/course/${(index % 4) + 1}.png`}
                       subject={course.classCode}
                       href={'/courses/' + course.id}

@@ -42,8 +42,8 @@ export default async function CoursesPage() {
                 title={course.title}
                 image={images[i % 4]!}
                 subject={course.classCode}
-                numberOfMaterials={course._count.members}
-                numberOfVideos={course._count.tryout}
+                numberOfMaterials={course._count.attachments}
+                numberOfVideos={course._count.videos}
               />
             ))}
           </div>
