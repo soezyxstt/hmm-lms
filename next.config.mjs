@@ -4,25 +4,22 @@ const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
-  reloadOnOnline: true,
-  cacheStartUrl: false, // CHANGE THIS - don't precache the start URL
-  dynamicStartUrl: true,
-  dynamicStartUrlRedirect: "/dashboard",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
 
-  // Exclude routes from precaching
-  publicExcludes: [
-    "!noprecache/**/*",
-  ],
-
+  // Custom worker with push handlers
   customWorkerSrc: "worker",
+
+  // Disable all the automatic caching features
+  cacheStartUrl: false,
+  dynamicStartUrl: false,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
 
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
-    // Exclude problematic patterns from precaching
-    exclude: [/\.map$/, /^\/api\//],
+
+    // CRITICAL: Disable precaching completely
+    disablePrecacheManifest: true,
   },
 });
 
