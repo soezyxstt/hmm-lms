@@ -4,22 +4,21 @@ const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
-
-  // Custom worker with push handlers
   customWorkerSrc: "worker",
 
-  // Disable all the automatic caching features
+  // These are fine to keep disabled
   cacheStartUrl: false,
   dynamicStartUrl: false,
-  cacheOnFrontEndNav: false,
-  aggressiveFrontEndNavCaching: false,
 
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
 
-    // CRITICAL: Disable precaching completely
-    disablePrecacheManifest: true,
+    // Exclude everything from precaching that might cause issues
+    exclude: [/\.map$/, /^manifest.*\.js$/, /dashboard/, /\/api\//],
+
+    // Only include specific file types in precache
+    include: [/\.(?:js|css|png|jpg|jpeg|svg|woff2|woff|ttf|ico)$/],
   },
 });
 
