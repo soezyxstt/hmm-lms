@@ -8,7 +8,8 @@ import { Toaster } from '~/components/ui/sonner';
 import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
 import Script from 'next/script';
-import { RegisterSW } from '~/components/register-sw';
+import { ServiceWorkerUpdate } from '~/components/sw-update';
+// import { RegisterSW } from '~/components/register-sw';
 
 const APP_NAME = "HMM LMS";
 const APP_DEFAULT_TITLE = "HMM LMS";
@@ -169,7 +170,8 @@ export default function RootLayout({
           <TRPCReactProvider>
             <DisplaySettingProvider>
               <ThemeProvider attribute="class" defaultTheme="light">
-                <RegisterSW />
+                {/* <RegisterSW /> */}
+                <ServiceWorkerUpdate />
                 {children}
               </ThemeProvider>
             </DisplaySettingProvider>

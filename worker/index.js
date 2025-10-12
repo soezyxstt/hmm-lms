@@ -1,10 +1,15 @@
+// worker/index.js
 import { precacheAndRoute } from "workbox-precaching";
 
-// This line is the placeholder next-pwa needs to inject the precache manifest.
-// Make sure this is at the top of your file.
+// Precache manifest injection
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Your existing push notification and click handling code goes below.
+// Claim clients immediately
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Push notification handler
 self.addEventListener("push", function (event) {
   if (!event.data) return;
 
@@ -50,23 +55,29 @@ self.addEventListener("push", function (event) {
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
+// Notification click handler
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
   const urlToOpen = new URL(
     event.notification.data?.url || "/",
     self.location.origin,
   ).href;
 
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === urlToOpen && "focus" in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus existing window if found
+        for (const client of clientList) {
+          if (client.url === urlToOpen && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    }),
+        // Open new window if no match found
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      }),
   );
 });
