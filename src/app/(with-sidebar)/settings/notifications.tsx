@@ -2,10 +2,11 @@
 
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Bell, BellOff, Send } from "lucide-react";
+import { Bell, BellOff, Send, Info } from "lucide-react";
 import { useNotifications } from '~/hooks/use-notifications';
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { LoadingSpinner } from '~/components/ui/loading-spinner';
+import { useState } from "react";
 
 export default function NotificationSettings() {
   const {
@@ -16,27 +17,89 @@ export default function NotificationSettings() {
     unsubscribe,
     isLoading,
     testNotification,
+    debugInfo,
   } = useNotifications();
+
+  const [showDebug, setShowDebug] = useState(false);
 
   if (!isSupported) {
     return (
-      <Alert>
-        <AlertDescription>
-          Push notifications are not supported in your browser.
-        </AlertDescription>
-      </Alert>
+      <Card>
+        <CardHeader>
+          <CardTitle>Push Notifications</CardTitle>
+          <CardDescription>Not Available</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertDescription>
+              Push notifications are not supported in your browser.
+              {debugInfo && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    View Details
+                  </summary>
+                  <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto">
+                    {debugInfo}
+                  </pre>
+                </details>
+              )}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Push Notifications</CardTitle>
-        <CardDescription>
-          Get notified about announcements, events, tryouts, and more
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Push Notifications</CardTitle>
+            <CardDescription>
+              Get notified about announcements, events, tryouts, and more
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowDebug(!showDebug)}
+            title="Toggle debug info"
+          >
+            <Info className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        {showDebug && debugInfo && (
+          <Alert className="mb-4">
+            <AlertDescription>
+              <div className="text-xs font-mono whitespace-pre-wrap">
+                {debugInfo}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  console.log("📋 Full diagnostic info:");
+                  console.table({
+                    supported: isSupported,
+                    subscribed: isSubscribed,
+                    permission,
+                    hasNotification: "Notification" in window,
+                    hasServiceWorker: "serviceWorker" in navigator,
+                    hasPushManager: "PushManager" in window,
+                    userAgent: navigator.userAgent,
+                  });
+                }}
+              >
+                Log Full Details to Console
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {isSubscribed ? (
@@ -59,13 +122,14 @@ export default function NotificationSettings() {
           <Button
             variant={isSubscribed ? "destructive" : "default"}
             onClick={isSubscribed ? unsubscribe : requestPermission}
+            disabled={isLoading}
           >
             {isLoading ? (<LoadingSpinner size='sm' />) : isSubscribed ? 'Disable' : 'Enable'}
           </Button>
         </div>
 
         {isSubscribed && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t mt-4">
             <Button
               variant="outline"
               onClick={testNotification}
