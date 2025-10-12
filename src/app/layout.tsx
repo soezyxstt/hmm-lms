@@ -9,6 +9,7 @@ import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
 import Script from 'next/script';
 import { ServiceWorkerUpdate } from '~/components/sw-update';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 // import { RegisterSW } from '~/components/register-sw';
 
 const APP_NAME = "HMM LMS";
@@ -171,6 +172,7 @@ export default function RootLayout({
             <DisplaySettingProvider>
               <ThemeProvider attribute="class" defaultTheme="light">
                 {/* <RegisterSW /> */}
+                <SpeedInsights />
                 <ServiceWorkerUpdate />
                 {children}
               </ThemeProvider>

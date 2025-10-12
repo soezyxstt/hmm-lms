@@ -38,7 +38,8 @@ export async function sendNotification(
       subscription,
       JSON.stringify(payload),
       {
-        TTL: options?.ttl ?? 86400, // Default 24 hours
+        TTL: options?.ttl ?? 60 * 60, // Default to 1 hour
+        urgency: 'high',
       }
     );
     return { success: true, shouldDelete: false };
@@ -58,7 +59,7 @@ export async function sendNotification(
 export async function sendNotificationToMultiple(
   subscriptions: PushSubscription[],
   payload: NotificationPayload,
-  options?: { ttl?: number }
+  options: { ttl?: number } = { ttl: 60 } // Default to 1 minute
 ) {
   const results = await Promise.allSettled(
     subscriptions.map((sub) => sendNotification(sub, payload, options)),
