@@ -1,9 +1,3 @@
-// worker/index.js
-import { precacheAndRoute } from "workbox-precaching";
-
-// Precache manifest injection
-precacheAndRoute(self.__WB_MANIFEST);
-
 // Claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
