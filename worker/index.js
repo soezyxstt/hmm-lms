@@ -5,30 +5,46 @@ import { precacheAndRoute } from "workbox-precaching";
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Your existing push notification and click handling code goes below.
-self.addEventListener("push", (event) => {
-  // Provide default data for tests like the DevTools push button
-  let data = {
-    title: "Test Notification",
-    body: "This is a test push message from the service worker.",
-    url: "/",
-  };
+self.addEventListener("push", function (event) {
+  if (!event.data) return;
 
-  // If the push event has data, try to parse it
-  if (event.data) {
-    try {
-      data = event.data.json();
-    } catch (e) {
-      console.error("Push event data is not valid JSON:", e);
-    }
+  let data;
+  try {
+    data = event.data.json();
+  } catch (e) {
+    // Fallback for plain text messages
+    data = {
+      title: "Notification",
+      body: event.data.text(),
+      url: "/",
+    };
   }
 
   const options = {
     body: data.body,
-    icon: "/icon.png",
-    badge: "/icon.png",
+    icon: "/icons/icon-512x512.png",
+    badge: "/icons/icon-192x192.png",
+    vibrate: [100, 50, 100],
     data: {
-      url: data.url, // Pass the URL for click handling
+      dateOfArrival: Date.now(),
+      primaryKey: 1,
+      url: data.url || "/",
+      type: data.type,
     },
+    actions: [
+      {
+        action: "view",
+        title: "View",
+        icon: "/icons/checkmark.png",
+      },
+      {
+        action: "close",
+        title: "Close",
+        icon: "/icons/xmark.png",
+      },
+    ],
+    tag: data.tag || "default",
+    renotify: true,
   };
 
   event.waitUntil(self.registration.showNotification(data.title, options));
