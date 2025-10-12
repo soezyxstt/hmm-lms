@@ -3,22 +3,26 @@ import withPWA from "@ducanh2912/next-pwa";
 const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true, // Let next-pwa handle registration
+  register: true,
   reloadOnOnline: true,
-  cacheStartUrl: true,
+  cacheStartUrl: false, // CHANGE THIS - don't precache the start URL
   dynamicStartUrl: true,
   dynamicStartUrlRedirect: "/dashboard",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  publicExcludes: ["!noprecache/**/*"],
 
-  // Custom worker configuration - IMPORTANT: no leading slash
-  customWorkerSrc: "worker", // This points to /worker/index.js in your project root
+  // Exclude routes from precaching
+  publicExcludes: [
+    "!noprecache/**/*",
+  ],
 
-  // Add these to force updates
+  customWorkerSrc: "worker",
+
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
+    // Exclude problematic patterns from precaching
+    exclude: [/\.map$/, /^\/api\//],
   },
 });
 
