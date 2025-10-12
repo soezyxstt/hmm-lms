@@ -6,19 +6,73 @@ const pwaConfig = withPWA({
   register: true,
   customWorkerSrc: "worker",
 
-  // These are fine to keep disabled
   cacheStartUrl: false,
   dynamicStartUrl: false,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
 
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
 
-    // Exclude everything from precaching that might cause issues
-    exclude: [/\.map$/, /^manifest.*\.js$/, /dashboard/, /\/api\//],
+    // Exclude problematic files
+    exclude: [
+      /\.map$/,
+      /^manifest.*\.js$/,
+      /favicon\.ico$/,
+      /workbox-.*\.js$/,
+      /worker-.*\.js$/,
+      /icon-.*\.png$/,
+    ],
 
-    // Only include specific file types in precache
-    include: [/\.(?:js|css|png|jpg|jpeg|svg|woff2|woff|ttf|ico)$/],
+    // Don't precache at all - use runtime caching only
+    // This completely avoids the 304 issue
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "google-fonts",
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 60 * 60 * 24 * 365,
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "images",
+          expiration: {
+            maxEntries: 60,
+            maxAgeSeconds: 60 * 60 * 24 * 30,
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/static\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-static",
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 60 * 60 * 24 * 365,
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:js|css)$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-resources",
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 60 * 60 * 24,
+          },
+        },
+      },
+    ],
   },
 });
 
