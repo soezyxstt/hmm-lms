@@ -1,6 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { hashPassword } from "~/lib/utils";
+import { randomBytes } from "crypto";
+import { hashPassword, verifyPassword } from "~/lib/utils";
 import { signUpSchema } from "~/lib/schema/auth";
+import { sendPasswordResetEmail } from "~/server/services/email";
+import { env } from "~/env";
 
 import {
   createTRPCRouter,
@@ -8,7 +11,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import z from 'zod';
+import z from "zod";
 
 export const authRouter = createTRPCRouter({
   signUp: publicProcedure.input(signUpSchema).mutation(async ({ input }) => {
@@ -52,7 +55,7 @@ export const authRouter = createTRPCRouter({
     };
   }),
 
-   resetPasswordByAdmin: protectedProcedure
+  resetPasswordByAdmin: protectedProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -75,7 +78,7 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      const newPassword = 'TempPass123';
+      const newPassword = "TempPass123";
       const hashedPassword = await hashPassword(newPassword);
 
       await db.user.update({
@@ -85,7 +88,251 @@ export const authRouter = createTRPCRouter({
 
       return {
         success: true,
-        newPassword, 
+        newPassword,
       };
     }),
+
+  // Request password reset - sends email to user's alternative email
+  requestPasswordReset: publicProcedure
+    .input(
+      z.object({
+        email: z
+          .string()
+          .email()
+          .endsWith(
+            "@mahasiswa.itb.ac.id",
+            "Only ITB student emails are allowed.",
+          ),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const user = await db.user.findUnique({
+        where: { email: input.email.toLowerCase() },
+      });
+
+      // Always return success to prevent email enumeration
+      if (!user?.alternativeEmail) {
+        return {
+          success: true,
+          message:
+            "If an account with that email exists and has a recovery email set, you will receive a password reset link.",
+        };
+      }
+
+      // Check user last password reset attempt
+      console.log(
+        "Last password reset attempt:",
+        user.lastPasswordResetAttempt,
+      );
+      if (user.lastPasswordResetAttempt !== null) {
+        const cooldownMs = 2 * 60 * 1000; // 2 minutes (calculated in miliseconds)
+        const now = new Date().getTime();
+        const last = user.lastPasswordResetAttempt
+          ? new Date(user.lastPasswordResetAttempt as Date).getTime()
+          : 0;
+        const diff = now - last;
+        if (diff < cooldownMs) {
+          const secondsLeft = Math.ceil((cooldownMs - diff) / 1000);
+          const minutesLeft = Math.floor(secondsLeft / 60);
+
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Please wait ${minutesLeft} minutes and ${secondsLeft} seconds before requesting another password reset.`,
+          });
+        }
+      }
+
+      // Delete any existing reset tokens for this user
+      await db.passwordResetToken.deleteMany({
+        where: { userId: user.id },
+      });
+
+      // Create a new reset token
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+      await db.user.update({
+        where: { id: user.id },
+        data: { lastPasswordResetAttempt: new Date() },
+      });
+
+      await db.passwordResetToken.create({
+        data: {
+          token,
+          userId: user.id,
+          expiresAt,
+        },
+      });
+
+      // Send password reset email
+      const resetLink = `${env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`;
+
+      await sendPasswordResetEmail({
+        to: user.alternativeEmail,
+        userName: user.name,
+        resetLink,
+      });
+
+      return {
+        success: true,
+        message:
+          "If an account with that email exists and has a recovery email set, you will receive a password reset link.",
+      };
+    }),
+
+  // Verify reset token
+  verifyResetToken: publicProcedure
+    .input(
+      z.object({
+        token: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const resetToken = await db.passwordResetToken.findUnique({
+        where: { token: input.token },
+        include: { user: true },
+      });
+
+      if (!resetToken) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invalid or expired reset token.",
+        });
+      }
+
+      if (resetToken.expiresAt < new Date()) {
+        // Clean up expired token
+        await db.passwordResetToken.delete({
+          where: { id: resetToken.id },
+        });
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Reset token has expired. Please request a new one.",
+        });
+      }
+
+      return {
+        valid: true,
+        email: resetToken.user.email,
+        userName: resetToken.user.name,
+      };
+    }),
+
+  // Reset password with token
+  resetPassword: publicProcedure
+    .input(
+      z
+        .object({
+          token: z.string(),
+          password: z
+            .string()
+            .min(8, "Password must be at least 8 characters long."),
+          confirmPassword: z.string(),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: "Passwords must match",
+          path: ["confirmPassword"],
+        }),
+    )
+    .mutation(async ({ input }) => {
+      const resetToken = await db.passwordResetToken.findUnique({
+        where: { token: input.token },
+        include: { user: true },
+      });
+
+      if (!resetToken) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invalid or expired reset token.",
+        });
+      }
+
+      if (resetToken.expiresAt < new Date()) {
+        // Clean up expired token
+        await db.passwordResetToken.delete({
+          where: { id: resetToken.id },
+        });
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Reset token has expired. Please request a new one.",
+        });
+      }
+
+      // Check if new password is the same as the current password
+      const currentHashedPassword = resetToken.user.password;
+      const isSamePassword = await verifyPassword(
+        input.password,
+        currentHashedPassword,
+      );
+
+      if (isSamePassword) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "New password cannot be the same as your previous password.",
+        });
+      }
+
+      // Hash new password and update user
+      const hashedPassword = await hashPassword(input.password);
+
+      await db.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      });
+
+      // Delete the used token
+      await db.passwordResetToken.delete({
+        where: { id: resetToken.id },
+      });
+
+      return {
+        success: true,
+        message:
+          "Password has been reset successfully. You can now sign in with your new password.",
+      };
+    }),
+
+  // Update alternative email (for logged-in users)
+  updateAlternativeEmail: protectedProcedure
+    .input(
+      z.object({
+        alternativeEmail: z
+          .string()
+          .email("Invalid email address.")
+          .refine(
+            (email) =>
+              !email.endsWith("@itb.ac.id") &&
+              !email.endsWith("@mahasiswa.itb.ac.id"),
+            {
+              message:
+                "Please use a personal email (Gmail, etc.), not an ITB email.",
+            },
+          ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { alternativeEmail: input.alternativeEmail },
+      });
+
+      return {
+        success: true,
+        message: "Recovery email has been updated successfully.",
+      };
+    }),
+
+  // Get current user's alternative email
+  getAlternativeEmail: protectedProcedure.query(async ({ ctx }) => {
+    const user = await db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: { alternativeEmail: true },
+    });
+
+    return {
+      alternativeEmail: user?.alternativeEmail ?? null,
+    };
+  }),
 });

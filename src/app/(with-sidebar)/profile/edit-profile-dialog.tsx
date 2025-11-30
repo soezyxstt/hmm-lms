@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -27,6 +32,7 @@ type User = {
   id: string;
   name: string;
   email: string;
+  alternativeEmail: string | null;
   nim: string | null;
   faculty: string | null;
   program: string | null;
@@ -64,7 +70,9 @@ export function EditProfileDialog({
     },
     onError: (error) => {
       console.error("Update error:", error);
-      toast.error(error.message || "Failed to update profile. Please try again.");
+      toast.error(
+        error.message || "Failed to update profile. Please try again.",
+      );
     },
   });
 
@@ -74,6 +82,7 @@ export function EditProfileDialog({
       name: user.name,
       position: user.position ?? "",
       image: user.image ?? "",
+      alternativeEmail: user.alternativeEmail ?? "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
@@ -87,18 +96,20 @@ export function EditProfileDialog({
         name: user.name,
         position: user.position ?? "",
         image: user.image ?? "",
+        alternativeEmail: user.alternativeEmail ?? "",
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, form]);
 
   const onSubmit = (data: EditProfileInput) => {
     updateProfileMutation.mutate({
       name: data.name,
       position: data.position ?? undefined,
       image: data.image ?? undefined,
+      alternativeEmail: data.alternativeEmail ?? undefined,
       currentPassword: data.currentPassword ?? undefined,
       newPassword: data.newPassword ?? undefined,
     });
@@ -123,7 +134,7 @@ export function EditProfileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
@@ -139,7 +150,7 @@ export function EditProfileDialog({
                 editable
                 onImageChange={handleImageChange}
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Click on the avatar to change your profile picture
               </p>
             </div>
@@ -191,7 +202,7 @@ export function EditProfileDialog({
               <div>
                 <Label>Email</Label>
                 <Input value={user.email} disabled className="bg-muted" />
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-sm">
                   Email cannot be changed
                 </p>
               </div>
@@ -200,7 +211,7 @@ export function EditProfileDialog({
                 <div>
                   <Label>NIM</Label>
                   <Input value={user.nim} disabled className="bg-muted" />
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     NIM cannot be changed
                   </p>
                 </div>
@@ -223,11 +234,46 @@ export function EditProfileDialog({
 
             <Separator />
 
+            {/* Recovery Email Section */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Recovery Email</h3>
+                <p className="text-muted-foreground text-sm">
+                  Add a personal email (Gmail, etc.) for password recovery
+                </p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="alternativeEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recovery Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="youremailname@gmail.com"
+                        {...field}
+                        disabled={updateProfileMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Used for password reset. Must be a personal email, not ITB
+                      email.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator />
+
             {/* Password Change Section */}
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium">Change Password</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Leave blank if you don't want to change your password
                 </p>
               </div>
@@ -250,7 +296,7 @@ export function EditProfileDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() =>
                             setShowCurrentPassword(!showCurrentPassword)
                           }
@@ -287,7 +333,7 @@ export function EditProfileDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowNewPassword(!showNewPassword)}
                           disabled={updateProfileMutation.isPending}
                         >
@@ -326,7 +372,7 @@ export function EditProfileDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
