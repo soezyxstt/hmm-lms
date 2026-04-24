@@ -83,6 +83,9 @@ const pwaConfig = withPWA({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Next 16 defaults to Turbopack; keep an explicit config
+  // so custom webpack settings don't hard-fail `next build`.
+  turbopack: {},
   images: {
     domains: ["hmm-lms.sgp1.digitaloceanspaces.com"],
   },
