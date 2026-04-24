@@ -1,15 +1,16 @@
-import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from "typescript-eslint";
-
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
+import nextVitals from "eslint-config-next/core-web-vitals";
 
 export default tseslint.config(
   {
-    ignores: [".next"],
+    ignores: [
+      ".next",
+      // Webpack/Next build artifacts in public (no-assign-module-variable, etc.)
+      "public/worker*.js",
+      "public/workbox*.js",
+    ],
   },
-  ...compat.extends("next/core-web-vitals"),
+  ...nextVitals,
   {
     files: ["**/*.ts", "**/*.tsx"],
     extends: [
@@ -33,7 +34,7 @@ export default tseslint.config(
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
-      "react/no-unescaped-entities": "warn"
+      "react/no-unescaped-entities": "warn",
     },
   },
   {

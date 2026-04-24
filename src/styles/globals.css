@@ -1501,6 +1501,30 @@ html {
   scrollbar-color: var(--border) var(--card);
 }
 
+@layer components {
+  /* M-Opportunity: thinner scrollbar for stream filter list */
+  .loker-streams-scroll {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--primary) 28%, var(--border)) color-mix(in oklab, var(--muted) 35%, transparent);
+  }
+  .loker-streams-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .loker-streams-scroll::-webkit-scrollbar-track {
+    margin-block: 2px;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--muted) 40%, transparent);
+  }
+  .loker-streams-scroll::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--primary) 25%, var(--border));
+  }
+  .loker-streams-scroll::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--primary) 45%, var(--border));
+  }
+}
+
 .shape-triangle {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
 }

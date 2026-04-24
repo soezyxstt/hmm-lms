@@ -27,9 +27,11 @@ import { toast } from "sonner";
 const TIMEZONE = "Asia/Jakarta"; // UTC+7 (WIB)
 
 export function DashboardCalendar() {
-  const [date, setDate] = React.useState<Date>(toZonedTime(new Date(), TIMEZONE));
+  const [date, setDate] = React.useState<Date>(
+    toZonedTime(new Date(), TIMEZONE),
+  );
   const [selectedDate, setSelectedDate] = React.useState<Date>(
-    toZonedTime(new Date(), TIMEZONE)
+    toZonedTime(new Date(), TIMEZONE),
   );
 
   const utils = api.useUtils();
@@ -74,7 +76,9 @@ export function DashboardCalendar() {
   // Get dates that have events
   const eventDates = React.useMemo(() => {
     if (!calendarEvents) return [];
-    return calendarEvents.map((event) => toZonedTime(new Date(event.start), TIMEZONE));
+    return calendarEvents.map((event) =>
+      toZonedTime(new Date(event.start), TIMEZONE),
+    );
   }, [calendarEvents]);
 
   const handleDateSelect = (newDate: Date | undefined) => {
@@ -109,7 +113,7 @@ export function DashboardCalendar() {
               textDecorationColor: "hsl(var(--primary))",
             },
           }}
-          className="rounded-md border-0 mx-auto w-full"
+          className="mx-auto w-full rounded-md border-0"
         />
 
         <Separator className="my-4" />
@@ -120,7 +124,7 @@ export function DashboardCalendar() {
           </h3>
 
           {dayEventsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading events...</p>
+            <p className="text-muted-foreground text-sm">Loading events...</p>
           ) : dayEvents && dayEvents.length > 0 ? (
             <div className="space-y-2">
               {dayEvents.map((event) => {
@@ -130,15 +134,15 @@ export function DashboardCalendar() {
                 return (
                   <Popover key={event.id}>
                     <PopoverTrigger asChild>
-                      <button className="w-full rounded-lg border border-border/70 bg-background/70 p-3 text-left transition-all hover:-translate-y-0.5 hover:bg-accent/40">
+                      <button className="border-border/70 bg-background/70 hover:bg-accent/40 w-full rounded-lg border p-3 text-left transition-all hover:-translate-y-0.5">
                         <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate text-sm font-semibold leading-5">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm leading-5 font-semibold">
                               {event.title}
                             </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {formatInTimeZone(eventStart, TIMEZONE, "HH:mm")} -{" "}
-                              {formatInTimeZone(eventEnd, TIMEZONE, "HH:mm")}
+                            <p className="text-muted-foreground text-[11px]">
+                              {formatInTimeZone(eventStart, TIMEZONE, "HH:mm")}{" "}
+                              - {formatInTimeZone(eventEnd, TIMEZONE, "HH:mm")}
                             </p>
                           </div>
                           {event.userRsvp && (
@@ -156,7 +160,10 @@ export function DashboardCalendar() {
                         </div>
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 **:text-xs" align="end">
+                    <PopoverContent
+                      className="w-[min(20rem,calc(100vw-2rem))] **:text-xs"
+                      align="end"
+                    >
                       <div className="space-y-3">
                         <div>
                           <h4 className="font-semibold">{event.title}</h4>
@@ -168,14 +175,14 @@ export function DashboardCalendar() {
                         </div>
 
                         {event.description && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {event.description}
                           </p>
                         )}
 
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <CalendarIcon className="text-muted-foreground h-4 w-4" />
                             <span>
                               {formatInTimeZone(eventStart, TIMEZONE, "PPp")} -{" "}
                               {formatInTimeZone(eventEnd, TIMEZONE, "p")}
@@ -184,14 +191,14 @@ export function DashboardCalendar() {
 
                           {event.location && (
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <MapPin className="text-muted-foreground h-4 w-4" />
                               <span>{event.location}</span>
                             </div>
                           )}
 
                           {event.rsvpCount > 0 && (
                             <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <Users className="text-muted-foreground h-4 w-4" />
                               <span>{event.rsvpCount} attending</span>
                             </div>
                           )}
@@ -214,7 +221,9 @@ export function DashboardCalendar() {
                         {event.eventMode !== "BASIC" &&
                           event.eventMode !== "ATTENDANCE_ONLY" && (
                             <div className="space-y-2">
-                              <p className="text-sm font-medium">RSVP Status:</p>
+                              <p className="text-sm font-medium">
+                                RSVP Status:
+                              </p>
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -253,7 +262,7 @@ export function DashboardCalendar() {
                                   disabled={rsvpMutation.isPending}
                                   className="flex-1"
                                 >
-                                Can&apos;t Go
+                                  Can&apos;t Go
                                 </Button>
                               </div>
                             </div>
@@ -271,18 +280,23 @@ export function DashboardCalendar() {
                                 onClick={() => handleCheckIn(event.id)}
                                 disabled={attendanceMutation.isPending}
                               >
-                                <Clock className="h-4 w-4 mr-2" />
+                                <Clock className="mr-2 h-4 w-4" />
                                 Check In
                               </Button>
-                              <p className="text-xs text-muted-foreground text-center">
+                              <p className="text-muted-foreground text-center text-xs">
                                 Available 15 minutes before start
                               </p>
                             </div>
                           )}
 
-                        <Button variant="ghost" size="sm" className="w-full" asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          asChild
+                        >
                           <Link href={`/events/${event.id}`}>
-                            <ExternalLink className="h-4 w-4 mr-2" />
+                            <ExternalLink className="mr-2 h-4 w-4" />
                             View Details
                           </Link>
                         </Button>
@@ -293,7 +307,7 @@ export function DashboardCalendar() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No events today</p>
+            <p className="text-muted-foreground text-sm">No events today</p>
           )}
         </div>
       </CardContent>
@@ -302,7 +316,7 @@ export function DashboardCalendar() {
         <Button variant="ghost" size="sm" className="w-full" asChild>
           <Link href="/events">
             View all events
-            <ExternalLink className="h-4 w-4 ml-2" />
+            <ExternalLink className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

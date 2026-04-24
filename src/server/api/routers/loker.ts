@@ -16,6 +16,9 @@ const createJobVacancySchema = z.object({
   overview: z.string().min(1, "Overview is required"),
   timeline: z.string().min(1, "Timeline is required"),
   applyLink: z.string().url("Valid URL is required"),
+  salaryLabel: z.string().max(120).optional(),
+  seniority: z.string().max(64).optional(),
+  employmentType: z.string().max(64).optional(),
 });
 
 const updateJobVacancySchema = createJobVacancySchema.partial().extend({
@@ -31,10 +34,21 @@ export const jobVacancyRouter = createTRPCRouter({
         cursor: z.string().nullish(),
         search: z.string().optional(),
         streams: z.array(z.string()).optional(),
+        location: z.string().optional(),
+        seniority: z.string().optional(),
+        employmentType: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { limit, cursor, search, streams } = input;
+      const {
+        limit,
+        cursor,
+        search,
+        streams,
+        location,
+        seniority,
+        employmentType,
+      } = input;
 
       const where = {
         isActive: true,
@@ -51,6 +65,18 @@ export const jobVacancyRouter = createTRPCRouter({
               hasSome: streams,
             },
           }),
+        ...(location && {
+          position: { contains: location, mode: "insensitive" as const },
+        }),
+        ...(seniority && {
+          seniority: { equals: seniority, mode: "insensitive" as const },
+        }),
+        ...(employmentType && {
+          employmentType: {
+            equals: employmentType,
+            mode: "insensitive" as const,
+          },
+        }),
       };
 
       const jobVacancies = await ctx.db.jobVacancy.findMany({

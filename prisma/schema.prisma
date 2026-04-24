@@ -354,6 +354,12 @@ model JobVacancy {
   overview    String   @db.Text
   timeline    String   @db.Text
   applyLink   String
+  /// Display e.g. "Competitive" or "IDR 8–12M / month"
+  salaryLabel   String?
+  /// e.g. Intern, Junior, Mid, Senior
+  seniority     String?
+  /// e.g. Internship, Full-time, Contract
+  employmentType String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

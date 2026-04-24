@@ -25,8 +25,8 @@ import { Textarea } from "~/components/ui/textarea";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { toast } from "sonner";
-import type { JobVacancyWithCreator } from '~/lib/types/loker';
-import { AVAILABLE_STREAMS } from '~/app/(with-sidebar)/loker/loker-filter';
+import type { JobVacancyWithCreator } from "~/lib/types/loker";
+import { AVAILABLE_STREAMS } from "~/app/(with-sidebar)/loker/loker-filter";
 
 const updateJobVacancySchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -37,6 +37,9 @@ const updateJobVacancySchema = z.object({
   overview: z.string().min(1, "Overview is required"),
   timeline: z.string().min(1, "Timeline is required"),
   applyLink: z.string().url("Valid URL is required"),
+  salaryLabel: z.string().max(120).optional(),
+  seniority: z.string().max(64).optional(),
+  employmentType: z.string().max(64).optional(),
 });
 
 type UpdateJobVacancyForm = z.infer<typeof updateJobVacancySchema>;
@@ -67,6 +70,9 @@ export function EditJobVacancyDialog({
       overview: "",
       timeline: "",
       applyLink: "",
+      salaryLabel: "",
+      seniority: "",
+      employmentType: "",
     },
   });
 
@@ -81,6 +87,9 @@ export function EditJobVacancyDialog({
         overview: jobVacancy.overview,
         timeline: jobVacancy.timeline,
         applyLink: jobVacancy.applyLink,
+        salaryLabel: jobVacancy.salaryLabel ?? "",
+        seniority: jobVacancy.seniority ?? "",
+        employmentType: jobVacancy.employmentType ?? "",
       });
     }
   }, [jobVacancy, form]);
@@ -100,15 +109,22 @@ export function EditJobVacancyDialog({
 
   const onSubmit = (data: UpdateJobVacancyForm) => {
     setIsSubmitting(true);
+    const opt = (s: string | undefined) => {
+      const t = s?.trim();
+      return t === "" || t === undefined ? undefined : t;
+    };
     updateMutation.mutate({
       id: jobVacancy.id,
       ...data,
+      salaryLabel: opt(data.salaryLabel),
+      seniority: opt(data.seniority),
+      employmentType: opt(data.employmentType),
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Job Vacancy</DialogTitle>
         </DialogHeader>
@@ -159,6 +175,57 @@ export function EditJobVacancyDialog({
               )}
             />
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="salaryLabel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Salary (display)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Competitive, IDR 8–12M / month"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="seniority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seniority</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Junior, Mid, Senior"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="employmentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employment type</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Internship, Full-time"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="eligibility"
@@ -189,7 +256,7 @@ export function EditJobVacancyDialog({
                         control={form.control}
                         name="streams"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormItem className="flex flex-row items-start space-y-0 space-x-3">
                             <FormControl>
                               <Checkbox
                                 checked={field.value?.includes(stream)}
@@ -197,10 +264,10 @@ export function EditJobVacancyDialog({
                                   return checked
                                     ? field.onChange([...field.value, stream])
                                     : field.onChange(
-                                      field.value?.filter(
-                                        (value) => value !== stream
-                                      )
-                                    );
+                                        field.value?.filter(
+                                          (value) => value !== stream,
+                                        ),
+                                      );
                                 }}
                               />
                             </FormControl>

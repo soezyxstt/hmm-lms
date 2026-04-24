@@ -1,16 +1,14 @@
-import { api } from '~/trpc/server';
-import { AnnouncementCard } from './annoucement-card';
-import { Card } from '~/components/ui/card';
+import { api } from "~/trpc/server";
+import { AnnouncementCard } from "./annoucement-card";
+import { Card } from "~/components/ui/card";
 
 export default async function AnnouncementsPage() {
   const announcements = await api.announcement.getAll();
 
   return (
-      <div className="max-w-5xl mx-auto">
-
-      {/* Announcements List */}
+    <div className="mx-auto w-full max-w-5xl">
       {announcements && announcements.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {announcements.map((announcement) => (
             <AnnouncementCard
               key={announcement.id}
@@ -25,6 +23,6 @@ export default async function AnnouncementsPage() {
           </p>
         </Card>
       )}
-      </div>
+    </div>
   );
 }
