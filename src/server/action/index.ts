@@ -26,7 +26,50 @@ export const getUserCourses = unstable_cache(
 
 export const getCourses = unstable_cache(
   async () => {
-    return db.course.findMany();
+    const courses = await db.course.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const courseIds = courses.map((course) => course.id);
+
+    if (courseIds.length === 0) {
+      return [];
+    }
+
+    const videoCounts = await db.resource.groupBy({
+      by: ["attachableId"],
+      where: {
+        attachableType: "COURSE",
+        attachableId: { in: courseIds },
+        category: "VIDEO",
+        isActive: true,
+      },
+      _count: { _all: true },
+    });
+
+    const lessonCounts = await db.resource.groupBy({
+      by: ["attachableId"],
+      where: {
+        attachableType: "COURSE",
+        attachableId: { in: courseIds },
+        category: {
+          not: "VIDEO",
+        },
+        isActive: true,
+      },
+      _count: { _all: true },
+    });
+
+    const videoMap = new Map(videoCounts.map((row) => [row.attachableId, row._count._all]));
+    const lessonMap = new Map(lessonCounts.map((row) => [row.attachableId, row._count._all]));
+
+    return courses.map((course) => ({
+      ...course,
+      totalLessons: lessonMap.get(course.id) ?? 0,
+      totalVideos: videoMap.get(course.id) ?? 0,
+    }));
   },
   ["courses"],
   {

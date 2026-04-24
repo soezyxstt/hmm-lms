@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { api } from "~/trpc/server";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -48,7 +47,7 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
       : 0;
 
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
@@ -61,11 +60,10 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
 
         <div className="space-y-6">
           {/* Tryout Info */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
+          <section className="rounded-xl border p-5">
+            <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <CardTitle className="text-2xl">{tryout.title}</CardTitle>
+                  <h1 className="text-2xl font-semibold">{tryout.title}</h1>
                   <p className="text-muted-foreground">
                     {tryout.course.title} ({tryout.course.classCode})
                   </p>
@@ -73,9 +71,8 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                 <Badge variant={tryout.isActive ? "default" : "secondary"}>
                   {tryout.isActive ? "Active" : "Inactive"}
                 </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="mt-4 space-y-4">
               {tryout.description && (
                 <p className="text-muted-foreground">{tryout.description}</p>
               )}
@@ -100,21 +97,19 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                   </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Active Attempt Alert */}
           {activeAttempt && (
-            <Card className="border-warning bg-secondary ">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
+            <section className="rounded-xl border border-warning/50 bg-warning/10 p-5">
+              <div className="flex items-center gap-2 pb-3">
                   <AlertCircle className="h-5 w-5 text-amber-600" />
-                  <CardTitle className="text-lg text-warning">
+                  <h2 className="text-lg font-semibold text-warning">
                     Attempt in Progress
-                  </CardTitle>
+                  </h2>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <div className="space-y-3">
                 <p className="text-warning">
                   You have an incomplete attempt started {formatDistanceToNow(activeAttempt.startedAt)} ago.
                   You can continue where you left off or start a new attempt.
@@ -128,17 +123,15 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                   </Button>
                   <StartNewAttemptButton tryoutId={id} />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           )}
 
           {/* Start New Attempt */}
           {!activeAttempt && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ready to Start?</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <section className="rounded-xl border p-5">
+              <h2 className="text-lg font-semibold">Ready to Start?</h2>
+              <div className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Make sure you have enough time to complete the tryout.
@@ -152,30 +145,27 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                   )}
                 </div>
                 <StartNewAttemptButton tryoutId={id} />
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           )}
 
           {/* Previous Attempts */}
           {userAttempts.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <section className="rounded-xl border p-5">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
                   <Users className="h-5 w-5" />
                   Your Attempts ({userAttempts.length})
-                </CardTitle>
+              </h2>
                 {bestScore > 0 && (
                   <p className="text-sm text-muted-foreground">
                     Best Score: {Math.round(bestScore * 100) / 100}%
                   </p>
                 )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <div className="mt-4 space-y-3">
                   {userAttempts.map((attempt, index) => (
                     <div
                       key={attempt.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -209,18 +199,14 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                       </div>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           )}
 
           {/* Question Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Question Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+          <section className="rounded-xl border p-5">
+            <h2 className="text-lg font-semibold">Question Overview</h2>
+            <div className="mt-4 space-y-3">
                 {tryout.questions.map((question, index) => (
                   <div key={question.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="space-y-1">
@@ -235,30 +221,27 @@ export default async function TryoutDetailPage({ params }: TryoutDetailPageProps
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
     );
   } catch {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Tryout Not Found</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              The tryout you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
-            </p>
-            <Button asChild>
-              <Link href="/tryouts">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Tryouts
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="mx-auto max-w-4xl p-6">
+        <section className="rounded-xl border border-dashed py-16 text-center">
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
+          <h3 className="mb-2 text-lg font-semibold">Tryout Not Found</h3>
+          <p className="mb-4 text-center text-muted-foreground">
+            The tryout you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+          </p>
+          <Button asChild>
+            <Link href="/tryouts">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Tryouts
+            </Link>
+          </Button>
+        </section>
       </div>
     );
   }

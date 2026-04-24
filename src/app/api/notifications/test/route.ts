@@ -12,7 +12,7 @@ webpush.setVapidDetails(
   env.VAPID_PRIVATE_KEY
 );
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const session = await auth()
     
@@ -23,9 +23,15 @@ export async function POST() {
       );
     }
 
-    // Get user's subscriptions
+    const body = (await request.json().catch(() => ({}))) as { endpoint?: string };
+    const endpoint = body.endpoint?.trim();
+
+    // If endpoint is passed, test exactly this device/browser subscription.
     const subscriptions = await db.pushSubscription.findMany({
-      where: { userId: session.user.id }
+      where: {
+        userId: session.user.id,
+        ...(endpoint ? { endpoint } : {}),
+      },
     });
 
     if (subscriptions.length === 0) {
@@ -40,6 +46,7 @@ export async function POST() {
       body: 'If you see this, notifications are working!',
       url: '/',
       type: 'test',
+      tag: `test-${Date.now()}`,
       timestamp: Date.now()
     });
 
@@ -59,10 +66,13 @@ export async function POST() {
     );
 
     const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failedCount = results.length - successCount;
 
     return NextResponse.json({
       success: successCount > 0,
       sent: successCount,
+      failed: failedCount,
+      target: endpoint ? 'current-device' : 'all-user-subscriptions',
       message: successCount > 0 
         ? 'Test notification sent successfully!' 
         : 'Failed to send test notification'

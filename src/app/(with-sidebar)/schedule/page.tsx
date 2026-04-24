@@ -1,9 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Loader2, Plus, Upload, Filter, RefreshCw } from "lucide-react"
 import { Button } from "~/components/ui/button"
@@ -23,56 +20,14 @@ import { IcsImportDialog } from '~/components/ics-import-dialog'
 import { CreateEventDialog } from './create-event-dialog'
 import { api } from "~/trpc/react"
 import { toast } from "sonner"
-import { sendNotification } from "~/lib/notifications"
-import type { CalendarEvent, EventScope } from '~/components/event-calendar/types'
-import type { EventColor } from '~/components/event-calendar/types'
-
-interface EventScopeFilter {
-  personal: boolean
-  course: boolean
-  global: boolean
-}
-
-// Type for the event query result from tRPC
-type EventQueryResult = {
-  id: string
-  title: string
-  description: string | null
-  start: Date
-  end: Date
-  allDay: boolean
-  color: EventColor
-  location: string | null
-  userId: string | null
-  courseId: string | null
-  course: {
-    id: string
-    title: string
-    classCode: string
-  } | null
-  createdBy: {
-    id: string
-    name: string | null
-    email: string
-  } | null
-}
-
-function mapEventToCalendarEvent(event: EventQueryResult): CalendarEvent {
-  return {
-    id: event.id,
-    title: event.title,
-    description: event.description ?? undefined,
-    start: new Date(event.start),
-    end: new Date(event.end),
-    allDay: event.allDay,
-    color: event.color.toLowerCase() as EventColor,
-    location: event.location ?? undefined,
-    scope: event.userId ? 'personal' : event.courseId ? 'course' : 'global',
-    courseId: event.courseId ?? undefined,
-    courseName: event.course?.title ?? undefined,
-    createdBy: event.createdBy?.name ?? 'Unknown'
-  }
-}
+import { getErrorMessage } from "~/lib/error-utils"
+import type { CalendarEvent } from '~/components/event-calendar/types'
+import {
+  type EventScopeFilter,
+  canManageEventScope,
+  getFilteredUniqueEvents,
+  resolveCreateScope,
+} from "./schedule-helpers"
 
 
 export default function SchedulePage() {
@@ -110,31 +65,13 @@ export default function SchedulePage() {
     enabled: !!session
   })
 
-  // Get user's push subscriptions for notifications
-  const { data: pushSubscriptions } = api.notification.getSubscriptions.useQuery(undefined, {
-    enabled: !!session
-  })
-
   const createEventMutation = api.event.createEvent.useMutation({
-    onSuccess: async (createdEvent) => {
+    onSuccess: async () => {
       toast.success("Event created successfully")
       await refetchAllEvents()
       await refetchMyEvents()
       await refetchCourseEvents()
 
-      // Send notification for course/global events
-      // if (!createdEvent.userId && pushSubscriptions?.length > 0) {
-      //   try {
-      //     await sendNotification(pushSubscriptions[0] ?? "", {
-      //       title: "New Event Created",
-      //       body: `${createdEvent.title} - ${new Date(createdEvent.start).toLocaleDateString()}`,
-      //       type: "event",
-      //       url: `/events/${createdEvent.id}`
-      //     })
-      //   } catch (error) {
-      //     console.error("Failed to send notification:", error)
-      //   }
-      // }
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to create event")
@@ -168,34 +105,14 @@ export default function SchedulePage() {
   const isLoading = allEventsLoading || myEventsLoading || courseEventsLoading
 
   // Combine and filter events based on scope
-  const events: CalendarEvent[] = (() => {
-    if (!allEventsData && !myEventsData && !courseEventsData) return []
-
-    const allEvents = [
-      ...(allEventsData ?? []).map(mapEventToCalendarEvent),
-      ...(myEventsData ?? []).map(mapEventToCalendarEvent),
-      ...(courseEventsData ?? []).map(mapEventToCalendarEvent)
-    ]
-
-    // Remove duplicates based on ID
-    const uniqueEvents = allEvents.filter((event, index, self) =>
-      index === self.findIndex(e => e.id === event.id)
-    )
-
-    // Filter by scope
-    return uniqueEvents.filter(event => {
-      if (event.scope === 'personal' && !scopeFilter.personal) return false
-      if (event.scope === 'course' && !scopeFilter.course) return false
-      if (event.scope === 'global' && !scopeFilter.global) return false
-      return true
-    })
-  })()
+  const events: CalendarEvent[] = useMemo(
+    () => getFilteredUniqueEvents(allEventsData, myEventsData, courseEventsData, scopeFilter),
+    [allEventsData, myEventsData, courseEventsData, scopeFilter],
+  )
 
   const handleEventAdd = async (event: CalendarEvent) => {
     // Only allow personal event creation for non-admin users
-    const eventScope: EventScope = session?.user.role === 'ADMIN' || session?.user.role === 'SUPERADMIN'
-      ? (event.scope ?? 'personal')
-      : 'personal'
+    const eventScope = resolveCreateScope(session ?? null, event.scope ?? "personal")
 
     try {
       await createEventMutation.mutateAsync({
@@ -214,14 +131,13 @@ export default function SchedulePage() {
         rsvpRequiresApproval: false,
       })
     } catch (error) {
-      console.error('Failed to create event:', error)
+      toast.error(getErrorMessage(error, "Failed to create event"))
     }
   }
 
   const handleEventUpdate = async (updatedEvent: CalendarEvent) => {
     // Only admins can edit course/global events, users can only edit their personal events
-    const canEdit = session?.user.role === 'ADMIN' || session?.user.role === 'SUPERADMIN' ||
-      updatedEvent.scope === 'personal'
+    const canEdit = canManageEventScope(session ?? null, updatedEvent.scope)
 
     if (!canEdit) {
       toast.error("You don't have permission to edit this event")
@@ -241,7 +157,7 @@ export default function SchedulePage() {
         courseId: updatedEvent.courseId
       })
     } catch (error) {
-      console.error('Failed to update event:', error)
+      toast.error(getErrorMessage(error, "Failed to update event"))
     }
   }
 
@@ -249,8 +165,7 @@ export default function SchedulePage() {
     const eventToDelete = events.find(e => e.id === eventId)
 
     // Only admins can delete course/global events, users can only delete their personal events
-    const canDelete = session?.user.role === 'ADMIN' || session?.user.role === 'SUPERADMIN' ||
-      eventToDelete?.scope === 'personal'
+    const canDelete = canManageEventScope(session ?? null, eventToDelete?.scope)
 
     if (!canDelete) {
       toast.error("You don't have permission to delete this event")
@@ -260,7 +175,7 @@ export default function SchedulePage() {
     try {
       await deleteEventMutation.mutateAsync({ id: eventId })
     } catch (error) {
-      console.error('Failed to delete event:', error)
+      toast.error(getErrorMessage(error, "Failed to delete event"))
     }
   }
 

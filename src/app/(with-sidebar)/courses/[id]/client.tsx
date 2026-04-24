@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,35 +35,27 @@ const ResourceCategorySection = ({
 }) => {
   if (!resources || resources.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon className="h-5 w-5" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No resources in this category yet.</p>
-        </CardContent>
-      </Card>
+      <section className="space-y-3 border-b border-border/70 pb-6 last:border-b-0">
+        <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-foreground">
+          <Icon className="h-4 w-4 text-primary" />
+          {title}
+        </h3>
+        <p className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">No resources in this category yet.</p>
+      </section>
     );
   }
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className="h-5 w-5" />
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3">
-          {resources.map((resource) => (
-            <ResourceItem key={resource.id} resource={resource} onViewResource={onViewResource} />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <section className="space-y-3 border-b border-border/70 pb-6 last:border-b-0">
+      <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {title}
+      </h3>
+      <div className="grid gap-3">
+        {resources.map((resource) => (
+          <ResourceItem key={resource.id} resource={resource} onViewResource={onViewResource} />
+        ))}
+      </div>
+    </section>
   );
 };
 
@@ -81,6 +71,13 @@ export default function CourseContentClient({ initialCourseData, courseId }: Cou
     setSelectedResource(resource);
     setOpenViewer(true);
   };
+
+  const sectionLinks = [
+    { id: 'materials', label: 'Materials' },
+    { id: 'problems', label: 'Problems' },
+    { id: 'tryouts', label: 'Tryouts' },
+    { id: 'videos', label: 'Videos' },
+  ] as const;
 
   if (isLoading) {
     return (
@@ -106,106 +103,123 @@ export default function CourseContentClient({ initialCourseData, courseId }: Cou
         {selectedResource && (
           <DocumentViewer resource={selectedResource} open={openViewer} onOpenChange={setOpenViewer} />
         )}
-        <Tabs defaultValue="materials">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="materials">Materials</TabsTrigger>
-            <TabsTrigger value="problems">Problems</TabsTrigger>
-            <TabsTrigger value="tryouts">Tryouts</TabsTrigger>
-            <TabsTrigger value="videos">Videos</TabsTrigger>
-          </TabsList>
+        <nav className="sticky top-3 z-20 -mx-1 overflow-x-auto rounded-xl border border-border/80 bg-background p-2 shadow-sm">
+          <div className="flex min-w-max items-center gap-2 px-1">
+            {sectionLinks.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="rounded-full border border-border/80 bg-muted/60 px-3 py-1.5 text-sm font-semibold text-foreground/90 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+              >
+                {section.label}
+              </a>
+            ))}
+          </div>
+        </nav>
 
-          <TabsContent value="materials" className="space-y-6">
+        <section id="materials" className="scroll-mt-24 space-y-6 rounded-xl border border-border/80 bg-card/40 p-4 shadow-sm md:p-5">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Materials</h2>
+          </div>
+          <div className="h-px bg-border/80" />
             <ResourceCategorySection title="E-books" icon={BookOpen} resources={materials?.E_BOOK ?? []} onViewResource={handleViewResource} />
             <ResourceCategorySection title="Presentations & Slides" icon={Presentation} resources={materials?.PRESENTATION ?? []} onViewResource={handleViewResource} />
             <ResourceCategorySection title="Notes" icon={FileText} resources={materials?.NOTES ?? []} onViewResource={handleViewResource} />
             <ResourceCategorySection title="Syllabus" icon={Star} resources={materials?.SYLLABUS ?? []} onViewResource={handleViewResource} />
             <ResourceCategorySection title="Other Resources" icon={ClipboardList} resources={materials?.OTHER ?? []} onViewResource={handleViewResource} />
-          </TabsContent>
+        </section>
 
-          <TabsContent value="problems" className="space-y-6">
+        <section id="problems" className="scroll-mt-24 space-y-6 rounded-xl border border-border/80 bg-card/40 p-4 shadow-sm md:p-5">
+          <div className="flex items-center gap-2">
+            <FileQuestion className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Problems</h2>
+          </div>
+          <div className="h-px bg-border/80" />
             <ResourceCategorySection title="Problems & Past Exams" icon={FileQuestion} resources={materials?.PROBLEMS ?? []} onViewResource={handleViewResource} />
-          </TabsContent>
+        </section>
 
-          <TabsContent value="tryouts" className="space-y-6">
-            <div className="grid gap-4">
+        <section id="tryouts" className="scroll-mt-24 space-y-4 rounded-xl border border-border/80 bg-card/40 p-4 shadow-sm md:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold tracking-tight text-foreground">Tryouts</h2>
+            </div>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{course.tryout.length} total</span>
+          </div>
+          <div className="grid gap-4">
               {course.tryout.map((tryout) => (
-                <Card key={tryout.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Award className="h-5 w-5" />
-                          {tryout.title}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {tryout.description ?? 'No description available'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={tryout.isActive ? "default" : "secondary"}>
-                        {tryout.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                <article key={tryout.id} className="rounded-lg border border-border/80 bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h4 className="flex items-center gap-2 text-base font-semibold">
+                        <Award className="h-4 w-4" />
+                        {tryout.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground/90">
+                        {tryout.description ?? 'No description available'}
+                      </p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground max-sm:text-xs">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {tryout.duration ? `${tryout.duration} minutes` : 'No time limit'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <ClipboardList className="h-4 w-4" />
-                          {tryout._count.questions} questions
-                        </span>
-                        <span className="flex items-center gap-1 max-sm:hidden">
-                          <Users className="h-4 w-4" />
-                          {tryout._count.attempts} attempts
-                        </span>
-                      </div>
-                      <Button asChild disabled={!tryout.isActive}>
-                        <Link href={`/tryouts/${tryout.id}`} className='text-sm'>
-                          Start Tryout
-                        </Link>
-                      </Button>
+                    <Badge variant={tryout.isActive ? "default" : "secondary"}>
+                      {tryout.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-foreground/80 sm:text-sm">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {tryout.duration ? `${tryout.duration} minutes` : 'No time limit'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ClipboardList className="h-4 w-4" />
+                        {tryout._count.questions} questions
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {tryout._count.attempts} attempts
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <Button asChild size="sm" disabled={!tryout.isActive}>
+                      <Link href={`/tryouts/${tryout.id}`} className='text-sm'>
+                        Start Tryout
+                      </Link>
+                    </Button>
+                  </div>
+                </article>
               ))}
               {course.tryout.length === 0 && (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <Award className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No tryouts available yet.</p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-lg border border-dashed border-border/80 bg-muted/20 py-10 text-center">
+                  <Award className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                  <p className="text-muted-foreground">No tryouts available yet.</p>
+                </div>
               )}
-            </div>
-          </TabsContent>
+          </div>
+        </section>
 
-          <TabsContent value="videos" className="space-y-6">
+        <section id="videos" className="scroll-mt-24 space-y-6 rounded-xl border border-border/80 bg-card/40 p-4 shadow-sm md:p-5">
+          <div className="flex items-center gap-2">
+            <Video className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Videos</h2>
+          </div>
+          <div className="h-px bg-border/80" />
             <ResourceCategorySection title="Learning Videos" icon={Video} resources={materials?.VIDEO ?? []} onViewResource={handleViewResource} />
-          </TabsContent>
-        </Tabs>
+        </section>
 
         {course.announcements.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Announcements</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {course.announcements.map((announcement) => (
-                <div key={announcement.id} className="border-l-4 border-primary pl-4">
-                  <h4 className="font-semibold">{announcement.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {announcement.content}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    By {announcement.createdBy.name} • {formatDistanceToNow(announcement.createdAt)} ago
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <section className="space-y-4 rounded-xl border border-border/80 bg-card/40 p-4 shadow-sm md:p-5">
+            <h3 className="text-xl font-bold tracking-tight">Recent Announcements</h3>
+            {course.announcements.map((announcement) => (
+              <div key={announcement.id} className="rounded-md border-l-2 border-primary bg-background/60 px-3 py-2">
+                <h4 className="font-semibold">{announcement.title}</h4>
+                <p className="line-clamp-2 text-sm text-foreground/80">
+                  {announcement.content}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  By {announcement.createdBy.name} • {formatDistanceToNow(announcement.createdAt)} ago
+                </p>
+              </div>
+            ))}
+          </section>
         )}
       </div>
     </>

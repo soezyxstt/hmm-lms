@@ -1,3 +1,5 @@
+self.__WB_DISABLE_DEV_LOGS = true;
+
 self.addEventListener("push", function (event) {
   if (!event.data) return;
 
@@ -17,12 +19,10 @@ self.addEventListener("push", function (event) {
       {
         action: "view",
         title: "View",
-        icon: "/icons/checkmark.png",
       },
       {
         action: "close",
         title: "Close",
-        icon: "/icons/xmark.png",
       },
     ],
     tag: data.tag || "default",

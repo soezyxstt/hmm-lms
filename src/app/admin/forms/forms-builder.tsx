@@ -1,10 +1,7 @@
-/* eslint-disable */
-// @ts-nocheck
-
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Plus, Save, Trash2, ArrowLeft, Loader2 } from "lucide-react";
@@ -37,7 +34,6 @@ import { api } from "~/trpc/react";
 import {
   type FormBuilderSchema,
   formBuilderSchema,
-  QUESTION_TYPE_CONFIG,
 } from "~/lib/types/forms";
 import { QuestionBuilderItem } from "./question-builder";
 
@@ -54,8 +50,8 @@ export function FormsBuilder({ mode, initialData }: FormsBuilderProps) {
   const utils = api.useUtils();
 
   const form = useForm<FormBuilderSchema>({
-    resolver: zodResolver(formBuilderSchema),
-    defaultValues: initialData || {
+    resolver: zodResolver(formBuilderSchema) as Resolver<FormBuilderSchema>,
+    defaultValues: initialData ?? {
       title: "",
       description: "",
       type: "NORMAL",
@@ -69,7 +65,7 @@ export function FormsBuilder({ mode, initialData }: FormsBuilderProps) {
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "questions",
   });
@@ -88,7 +84,7 @@ export function FormsBuilder({ mode, initialData }: FormsBuilderProps) {
   const updateForm = api.form.update.useMutation({
     onSuccess: () => {
       toast.success("Form updated successfully");
-      utils.form.getById.invalidate({ id: initialData?.id ?? "" });
+      void utils.form.getById.invalidate({ id: initialData?.id ?? "" });
       router.push("/admin/forms");
       router.refresh();
     },

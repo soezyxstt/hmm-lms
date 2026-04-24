@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import React from "react";
@@ -14,6 +12,7 @@ import Link from "next/link";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { QuestionRenderer } from "~/app/admin/forms/question-renderer";
 import { uploadImages } from "~/server/action";
+import { getErrorMessage } from "~/lib/error-utils";
 
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "~/components/ui/card";
@@ -53,9 +52,19 @@ interface Answer {
   fileUrl?: string;
 }
 
+interface PendingFileUpload {
+  questionId: string;
+  files: File[];
+  type: "FILE_UPLOAD";
+}
+
+function isPendingFileUpload(value: Answer | PendingFileUpload): value is PendingFileUpload {
+  return "type" in value && value.type === "FILE_UPLOAD";
+}
+
 export function FormSubmitClient({ form: initialForm, isPreview = false }: FormSubmitClientProps) {
   const router = useRouter();
-  const { data: session, status: sessionStatus } = useSession();
+  const { status: sessionStatus } = useSession();
 
   // Check if user has already submitted this form
   // Skip this check if in preview mode
@@ -140,7 +149,7 @@ export function FormSubmitClient({ form: initialForm, isPreview = false }: FormS
             return {
               questionId,
               files: value as File[],
-              type: 'FILE_UPLOAD'
+              type: "FILE_UPLOAD",
             };
           }
           break;
@@ -162,11 +171,9 @@ export function FormSubmitClient({ form: initialForm, isPreview = false }: FormS
 
     try {
       for (const item of formattedAnswers) {
-        if ('type' in item && item.type === 'FILE_UPLOAD') {
+        if (isPendingFileUpload(item)) {
           // It's a file upload item that needs processing
-          // @ts-ignore
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const files = (item as any).files as File[];
+          const files = item.files;
           const dataTransfer = new DataTransfer();
           files.forEach(file => dataTransfer.items.add(file));
 
@@ -176,9 +183,7 @@ export function FormSubmitClient({ form: initialForm, isPreview = false }: FormS
             initialForm.id
           );
 
-          // @ts-ignore
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const answer: Answer = { questionId: (item as any).questionId };
+          const answer: Answer = { questionId: item.questionId };
 
           if (uploadResults.length === 1 && uploadResults[0]) {
             answer.fileUrl = uploadResults[0].CDNurl || uploadResults[0].key;
@@ -193,12 +198,11 @@ export function FormSubmitClient({ form: initialForm, isPreview = false }: FormS
 
           finalAnswers.push(answer);
         } else {
-          finalAnswers.push(item as Answer);
+          finalAnswers.push(item);
         }
       }
     } catch (error) {
-      console.error("File upload failed:", error);
-      toast.error("Failed to upload files. Please try again.");
+      toast.error(getErrorMessage(error, "Failed to upload files. Please try again."));
       return;
     }
 

@@ -92,8 +92,9 @@ export default async function AdminNavbar({
   const courses = (await getCourses()).map(course => ({
     id: course.id,
     title: course.title,
-    totalLessons: 12,
-    totalVideos: 10
+    classCode: course.classCode,
+    totalLessons: course.totalLessons,
+    totalVideos: course.totalVideos
   }));
 
   const announcements = (await getAnnoucements()).map(announcement => ({

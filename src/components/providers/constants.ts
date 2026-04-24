@@ -24,6 +24,28 @@ export const FONT_FAMILIES = {
   "shadows-into-light": { value: "--font-shadows-into-light", label: "Shadows Into Light", class: '[font-family:var(--font-shadows-into-light)]' },
 };
 
+export const REDUCE_MOTION_OPTIONS = {
+  system: { value: "system", label: "Match system" },
+  on: { value: "on", label: "Reduce motion" },
+  off: { value: "off", label: "Full motion" },
+} as const;
+
+export type ReduceMotionMode = (typeof REDUCE_MOTION_OPTIONS)[keyof typeof REDUCE_MOTION_OPTIONS]["value"];
+
+export const DEFAULT_A11Y = {
+  highContrast: false,
+  reduceMotion: "system" as ReduceMotionMode,
+  underlineLinks: false,
+  alwaysShowFocusRing: false,
+} as const;
+
+export type A11ySettings = {
+  highContrast: boolean;
+  reduceMotion: ReduceMotionMode;
+  underlineLinks: boolean;
+  alwaysShowFocusRing: boolean;
+};
+
 export const SPACING_SIZES = {
   tight: {
     value: "0.15rem",

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Progress } from "~/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
@@ -28,6 +27,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flag,
+  CircleDot,
 } from "lucide-react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
@@ -155,7 +155,7 @@ export function TryoutAttemptClient({
         <Label
           key={option.id}
           htmlFor={option.id}
-          className="p-4 flex flex-col items-start border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary"
+          className="rounded-md border p-3 text-sm transition-colors cursor-pointer hover:bg-accent/50 has-[[data-state=checked]]:bg-accent/70 has-[[data-state=checked]]:border-primary flex flex-col items-start"
         >
           <div className="flex items-center space-x-3 w-full">
             <RadioGroupItem value={option.id} id={option.id} />
@@ -190,7 +190,7 @@ export function TryoutAttemptClient({
           <Label
             key={option.id}
             htmlFor={option.id}
-            className="p-4 border rounded-md cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:border-primary flex flex-col items-start"
+            className="rounded-md border p-3 text-sm transition-colors cursor-pointer hover:bg-accent/50 has-[[data-state=checked]]:bg-accent/70 has-[[data-state=checked]]:border-primary flex flex-col items-start"
           >
             <div className="flex items-center space-x-3 w-full">
               <Checkbox
@@ -265,72 +265,69 @@ export function TryoutAttemptClient({
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{tryout.title}</h1>
-          <p className="text-muted-foreground">
-            {tryout.course.title} ({tryout.course.classCode})
-          </p>
-        </div>
-        {timeLeft !== null && (
+    <div className="mx-auto max-w-6xl space-y-4">
+      <section className="sticky top-2 z-20 rounded-xl border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85 md:p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold md:text-xl">{tryout.title}</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">
+              {tryout.course.title} ({tryout.course.classCode})
+            </p>
+          </div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span className={`font-mono text-lg ${timeLeft < 300000 ? 'text-red-600' : ''}`}>
-              {formatTime(timeLeft)}
-            </span>
+            <Badge variant="outline" className="font-medium">
+              Q {currentQuestionIndex + 1}/{totalQuestions}
+            </Badge>
+            <Badge variant={answeredQuestions === totalQuestions ? "default" : "secondary"} className="font-medium">
+              {answeredQuestions} answered
+            </Badge>
+            {timeLeft !== null && (
+              <Badge variant="outline" className={`font-mono ${timeLeft < 300000 ? 'border-red-300 text-red-700' : ''}`}>
+                <Clock className="mr-1 h-3.5 w-3.5" />
+                {formatTime(timeLeft)}
+              </Badge>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Progress */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Question {currentQuestionIndex + 1} of {totalQuestions}</span>
-              <span>{answeredQuestions} of {totalQuestions} answered</span>
-            </div>
-            <Progress value={progress} className="h-2" />
+        </div>
+        <div className="mt-3 space-y-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Question progress</span>
+            <span>{Math.round(progress)}%</span>
           </div>
-        </CardContent>
-      </Card>
+          <Progress value={progress} className="h-1.5" />
+        </div>
+      </section>
 
       {/* Time Warning */}
       {timeLeft !== null && timeLeft < 300000 && (
-        <Alert className="border-amber-200 bg-amber-50">
+        <Alert className="border-amber-200 bg-amber-50 py-2">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
+          <AlertDescription className="text-sm text-amber-800">
             Less than 5 minutes remaining! The tryout will be submitted automatically when time runs out.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Question */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="text-lg">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
+        <section className="rounded-xl border p-3 md:p-4">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-base font-semibold md:text-lg">
               Question {currentQuestionIndex + 1}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-xs">
                 {currentQuestion.points} point{currentQuestion.points !== 1 ? 's' : ''}
               </Badge>
-              {answers[currentQuestion.id] && (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              )}
+              {answers[currentQuestion.id] && <CheckCircle2 className="h-4 w-4 text-green-600" />}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="prose prose-sm max-w-none dark:prose-invert">
+          <div className="mt-3 space-y-4">
+          <div className="prose prose-sm max-w-none leading-relaxed dark:prose-invert">
             <p>{currentQuestion.question}</p>
           </div>
 
           {currentQuestion.images && currentQuestion.images.length > 0 && (
-            <div className="flex flex-wrap gap-4 h-44 overflow-x-auto">
+            <div className="flex h-36 flex-wrap gap-3 overflow-x-auto md:h-44">
               {currentQuestion.images.map((imgUrl) => (
                 < MotionImageDialog key={imgUrl} layoutId={imgUrl + 'question'} src={imgUrl} alt="Question attachment" className="rounded-md border object-contain h-full w-max" width={1000} height={1000} />
               ))}
@@ -338,55 +335,22 @@ export function TryoutAttemptClient({
           )}
 
           {renderQuestion()}
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      {/* Navigation & Submit */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-          disabled={currentQuestionIndex === 0}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-
-        <div className="flex items-center gap-2">
-          {currentQuestionIndex < totalQuestions - 1 ? (
-            <Button
-              onClick={() => setCurrentQuestionIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setShowSubmitDialog(true)}
-              disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Flag className="h-4 w-4 mr-2" />
-              Submit Tryout
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Question Navigator */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Question Navigator</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-10 gap-2">
+        <aside className="space-y-3 rounded-xl border p-3 lg:sticky lg:top-24 lg:h-fit">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Navigator</h3>
+            <span className="text-xs text-muted-foreground">{totalQuestions} questions</span>
+          </div>
+          <div className="grid grid-cols-6 gap-2 lg:grid-cols-5">
             {tryout.questions.map((question: Question, index: number) => (
               <Button
                 key={question.id}
                 variant={index === currentQuestionIndex ? "default" : "outline"}
                 size="sm"
-                className={`h-8 w-8 p-0 ${answers[question.id] && answers[question.id]?.trim() !== "" && answers[question.id]?.trim() !== "[]"
-                  ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+                className={`h-8 w-8 p-0 text-xs ${answers[question.id] && answers[question.id]?.trim() !== "" && answers[question.id]?.trim() !== "[]"
+                  ? 'border-green-300 bg-green-100 text-green-800 hover:bg-green-200'
                   : ''
                   }`}
                 onClick={() => setCurrentQuestionIndex(index)}
@@ -395,8 +359,45 @@ export function TryoutAttemptClient({
               </Button>
             ))}
           </div>
-        </CardContent>
-      </Card>
+          <div className="space-y-2 border-t pt-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CircleDot className="h-3.5 w-3.5 text-primary" />
+              Jump between questions quickly
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentQuestionIndex === 0}
+              className="w-full justify-between"
+            >
+              <span className="inline-flex items-center">
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </span>
+              {currentQuestionIndex}
+            </Button>
+
+            {currentQuestionIndex < totalQuestions - 1 ? (
+              <Button
+                onClick={() => setCurrentQuestionIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
+                className="w-full justify-between"
+              >
+                <span>Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setShowSubmitDialog(true)}
+                disabled={isSubmitting}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <Flag className="mr-2 h-4 w-4" />
+                Submit Tryout
+              </Button>
+            )}
+          </div>
+        </aside>
+      </div>
 
       {/* Submit Dialog */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>

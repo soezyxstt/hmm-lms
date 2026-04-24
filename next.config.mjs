@@ -1,8 +1,11 @@
 import withPWA from "@ducanh2912/next-pwa";
 
+const pwaDevDisabled =
+  process.env.NODE_ENV === "development" && process.env.ENABLE_PWA_IN_DEV !== "1";
+
 const pwaConfig = withPWA({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: pwaDevDisabled,
   register: true,
   customWorkerSrc: "worker",
 
@@ -12,6 +15,8 @@ const pwaConfig = withPWA({
   aggressiveFrontEndNavCaching: false,
 
   workboxOptions: {
+    // Forces Workbox prod runtime bundle to avoid verbose router debug logs in dev PWA mode.
+    mode: "production",
     skipWaiting: true,
     clientsClaim: true,
 

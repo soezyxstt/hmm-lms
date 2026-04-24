@@ -67,8 +67,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Endpoint required" }, { status: 400 });
     }
 
-    await db.pushSubscription.delete({
-      where: { endpoint },
+    await db.pushSubscription.deleteMany({
+      where: { endpoint, userId: session.user.id },
     });
 
     return NextResponse.json({

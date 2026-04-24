@@ -12,6 +12,7 @@ export const editProfileSchema = z
       .optional()
       .or(z.literal("")),
     image: z.string().optional().or(z.literal("")),
+    coverImage: z.string().optional().or(z.literal("")),
     currentPassword: z.string().optional().or(z.literal("")),
     newPassword: z.string().optional().or(z.literal("")),
     confirmPassword: z.string().optional().or(z.literal("")),
@@ -62,6 +63,19 @@ export const editProfileSchema = z
           code: z.ZodIssueCode.custom,
           message: "Invalid image URL",
           path: ["image"],
+        });
+      }
+    }
+
+    // Validate cover image URL if provided
+    if (data.coverImage && data.coverImage.trim().length > 0) {
+      try {
+        new URL(data.coverImage);
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Invalid cover image URL",
+          path: ["coverImage"],
         });
       }
     }

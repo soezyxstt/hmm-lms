@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import SearchCMDK, { type TabsType } from './cmdk-search';
-import { Banknote, Briefcase, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, Phone } from 'lucide-react';
+import { Banknote, Briefcase, Calendar, Footprints, GraduationCap, Home, Megaphone, Settings, Tally5, Phone, Trophy } from 'lucide-react';
 import { auth } from '~/server/auth';
 import ThemeSwitch from '../theme-switch';
 import { getAnnoucements, getCourses, getScholarships, getTryouts, getUserEvents } from '~/server/action';
@@ -25,6 +25,7 @@ const sidebarTabs: {
     {
       group: 'General', items: [
         { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
+        { label: 'Hall of Fame', href: '/hall-of-fame', icon: Trophy, tooltip: 'Hall of Fame' },
         { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
       ]
     },
@@ -70,8 +71,9 @@ export default async function MainNavbar({
   const courses = (await getCourses()).map(course => ({
     id: course.id,
     title: course.title,
-    totalLessons: 12,
-    totalVideos: 10
+    classCode: course.classCode,
+    totalLessons: course.totalLessons,
+    totalVideos: course.totalVideos
   }));
   const announcements = (await getAnnoucements()).map(announcement => ({
     id: announcement.id,

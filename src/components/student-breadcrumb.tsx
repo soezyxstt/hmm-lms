@@ -18,6 +18,7 @@ import {
 } from "~/components/ui/dropdown-menu"
 import { Fragment } from 'react';
 import BreadcrumbItemResolver from './breadcrumb-item-resolver';
+import Link from "next/link";
 
 export default function StudentBreadcrumb({ isMobile = false }: { isMobile?: boolean }) {
   const pathNames = usePathname()?.split("/").filter(Boolean) || [];
@@ -88,9 +89,9 @@ export default function StudentBreadcrumb({ isMobile = false }: { isMobile?: boo
 
                 return (
                   <DropdownMenuItem key={href} asChild>
-                    <a href={href} className="capitalize">
+                    <Link href={href} className="capitalize">
                       <BreadcrumbItemResolver path={path} index={realIndex} pathNames={pathNames} />
-                    </a>
+                    </Link>
                   </DropdownMenuItem>
                 );
               })}

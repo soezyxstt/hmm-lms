@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
@@ -18,10 +19,11 @@ import {
 } from "~/components/ui/form";
 import { ProfileAvatar } from "./profile-avatar";
 import { editProfileSchema, type EditProfileInput } from "~/lib/schema/profile";
-import { Loader2, Save, X, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, X, Eye, EyeOff, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { Separator } from "~/components/ui/separator";
+import { ImageCropper } from "~/components/ui/image-cropper";
 
 type User = {
   id: string;
@@ -33,6 +35,7 @@ type User = {
   position: string | null;
   role: string;
   image: string | null;
+  coverImage: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -54,6 +57,8 @@ export function EditProfileDialog({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCoverEditing, setIsCoverEditing] = useState(false);
+  const [tempCoverImageSrc, setTempCoverImageSrc] = useState("");
 
   const updateProfileMutation = api.user.updateProfile.useMutation({
     onSuccess: async () => {
@@ -74,6 +79,7 @@ export function EditProfileDialog({
       name: user.name,
       position: user.position ?? "",
       image: user.image ?? "",
+      coverImage: user.coverImage ?? "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
@@ -87,6 +93,7 @@ export function EditProfileDialog({
         name: user.name,
         position: user.position ?? "",
         image: user.image ?? "",
+        coverImage: user.coverImage ?? "",
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
@@ -99,6 +106,7 @@ export function EditProfileDialog({
       name: data.name,
       position: data.position ?? undefined,
       image: data.image ?? undefined,
+      coverImage: data.coverImage ?? undefined,
       currentPassword: data.currentPassword ?? undefined,
       newPassword: data.newPassword ?? undefined,
     });
@@ -117,8 +125,34 @@ export function EditProfileDialog({
       setShowCurrentPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
+      setIsCoverEditing(false);
+      setTempCoverImageSrc("");
       onClose();
     }
+  };
+
+  const handleCoverFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === "string") {
+        setTempCoverImageSrc(result);
+        setIsCoverEditing(true);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoverCrop = (croppedImage: string) => {
+    form.setValue("coverImage", croppedImage, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setIsCoverEditing(false);
+    setTempCoverImageSrc("");
   };
 
   return (
@@ -130,6 +164,73 @@ export function EditProfileDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Cover Photo */}
+            <div className="space-y-2">
+              <Label>Cover Photo</Label>
+              <div className="relative h-36 w-full overflow-hidden rounded-lg border bg-muted">
+                {form.watch("coverImage") ? (
+                  <Image
+                    src={form.watch("coverImage") ?? ""}
+                    alt="Profile cover"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                    No cover photo yet
+                  </div>
+                )}
+                <div className="absolute right-3 top-3 flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={updateProfileMutation.isPending}
+                    onClick={() => document.getElementById("cover-upload")?.click()}
+                  >
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                    Change Cover
+                  </Button>
+                  {form.watch("coverImage") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={updateProfileMutation.isPending}
+                      onClick={() => {
+                        form.setValue("coverImage", "", {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <Input
+                id="cover-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCoverFileSelect}
+                disabled={updateProfileMutation.isPending}
+              />
+              <p className="text-sm text-muted-foreground">
+                Upload a banner image for your profile header.
+              </p>
+              <FormField
+                control={form.control}
+                name="coverImage"
+                render={() => (
+                  <FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Profile Picture */}
             <div className="flex flex-col items-center space-y-2">
               <ProfileAvatar
@@ -228,7 +329,7 @@ export function EditProfileDialog({
               <div>
                 <h3 className="text-lg font-medium">Change Password</h3>
                 <p className="text-sm text-muted-foreground">
-                  Leave blank if you don't want to change your password
+                  Leave blank if you do not want to change your password
                 </p>
               </div>
 
@@ -373,6 +474,16 @@ export function EditProfileDialog({
             </div>
           </form>
         </Form>
+        <ImageCropper
+          dialogProps={{ open: isCoverEditing, onOpenChange: setIsCoverEditing }}
+          src={tempCoverImageSrc || "/placeholder.svg"}
+          cropShape="square"
+          onCancel={() => {
+            setIsCoverEditing(false);
+            setTempCoverImageSrc("");
+          }}
+          onSave={handleCoverCrop}
+        />
       </DialogContent>
     </Dialog>
   );

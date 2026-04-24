@@ -1,8 +1,5 @@
 import { CircleCheckBig } from 'lucide-react';
-import GeometricBackground from '~/components/ui/background/geometry';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-import { Separator } from '~/components/ui/separator';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -27,61 +24,52 @@ interface ScholarshipCardProps {
 export default function ScholarshipCard({ scholarship }: ScholarshipCardProps) {
   const { title, provider, deadline, type, benefits, quota, image } = scholarship;
   return (
-    <Card className='flex flex-col md:flex-row gap-0 relative overflow-hidden'>
-      <GeometricBackground className='' variant='subtle-glow' />
-
-      {/* Image Section */}
-      <div className="relative w-full md:w-64 h-48 md:h-auto shrink-0">
-        {image ? (
-          <Image
-            src={image}
-            alt={title}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
-            No Image
-            </div>
+    <article className="rounded-lg border border-border/80 bg-background px-4 py-3 transition-colors hover:border-primary/40">
+      <div className="flex gap-4">
+        {image && (
+          <div className="relative hidden h-20 w-28 shrink-0 overflow-hidden rounded-md border md:block">
+            <Image src={image} alt={title} fill className="object-cover" />
+          </div>
         )}
-        <ScholarshipBadge deadline={deadline} />
-      </div>
 
-      {/* Content Section */}
-      <CardContent className='flex flex-col p-4 md:p-6 w-full z-10 gap-4'>
-        <div className="flex justify-between items-start gap-4">
-          <div>
-            <h2 className="text-primary font-semibold text-sm uppercase tracking-wider mb-1">{provider}</h2>
-            <CardTitle className='text-lg md:text-xl leading-tight'>
-              {title}
-            </CardTitle>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="mb-0.5 flex items-center gap-2">
+                <ScholarshipBadge deadline={deadline} />
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">{provider}</p>
+              </div>
+              <h3 className="line-clamp-2 text-base font-semibold leading-tight text-foreground md:text-lg">
+                {title}
+              </h3>
+            </div>
+            <Button className="h-8 px-3 text-xs md:text-sm" size="sm" asChild>
+              <Link href={`/scholarships/${scholarship.id}`}>
+                Details
+              </Link>
+            </Button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground text-xs">Type</p>
-            <p className="font-medium capitalize">{type.toLowerCase()}</p>
+          <div className="grid grid-cols-3 gap-2 text-xs md:text-sm">
+            <div>
+              <p className="text-muted-foreground">Type</p>
+              <p className="font-medium capitalize text-foreground">{type.toLowerCase()}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Deadline</p>
+              <p className="font-medium text-foreground">{deadline.toLocaleDateString("id", { dateStyle: 'medium' })}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Quota</p>
+              <p className="font-medium text-foreground">{quota ?? "-"}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs">Deadline</p>
-            <p className="font-medium">{deadline.toLocaleDateString("id", { dateStyle: 'medium' })}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">Quota</p>
-            <p className="font-medium">{quota ?? "-"}</p>
-          </div>
-        </div>
 
-        <Separator />
-
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Benefits</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1 border-t pt-2 text-xs md:grid-cols-2 md:text-sm">
             {benefits.slice(0, 4).map((benefit, index) => (
-              <div className="flex gap-2 items-start" key={index + benefit}>
-                <CircleCheckBig className='text-primary shrink-0 mt-0.5' size={14} />
-                <p className="line-clamp-1 text-muted-foreground">{benefit}</p>
+              <div className="flex items-start gap-1.5" key={index + benefit}>
+                <CircleCheckBig className='mt-0.5 shrink-0 text-primary' size={13} />
+                <p className="line-clamp-1 text-foreground/85">{benefit}</p>
               </div>
             ))}
             {benefits.length > 4 && (
@@ -89,24 +77,16 @@ export default function ScholarshipCard({ scholarship }: ScholarshipCardProps) {
             )}
           </div>
         </div>
-
-        <div className="mt-auto flex justify-end pt-2">
-          <Button className='w-full md:w-auto' size='sm' variant='default' asChild>
-            <Link href={`/scholarships/${scholarship.id}`}>
-              Read More
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   )
 }
 
 function ScholarshipBadge({ deadline }: { deadline: Date }) {
   const isEnded = deadline < new Date();
   return (
-    <div className={`${!isEnded ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground"} absolute top-2 left-2 px-2 py-0.5 text-xs font-bold rounded shadow-sm z-20`}>
-      {isEnded ? "CLOSED" : "CLOSING SOON"}
-    </div>
+    <span className={`${isEnded ? "bg-muted text-muted-foreground" : "bg-emerald-600 text-white"} rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide`}>
+      {isEnded ? "CLOSED" : "OPEN"}
+    </span>
   )
 }

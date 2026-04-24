@@ -5,17 +5,12 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 
 export const THEMES = [
   'light', 'dark',
-  'violet', 'dark-violet',
-  'orange', 'dark-orange',
   'teal', 'dark-teal',
-  'emerald', 'dark-emerald',
-  'amber', 'dark-amber',
   'rose', 'dark-rose',
   'zinc', 'dark-zinc',
-  'aqua', 'dark-aqua',
-  'lime', 'dark-lime',
-  'stone', 'dark-stone',
-  'fuchsia', 'dark-fuchsia',
+  'vivid-pop', 'dark-vivid-pop',
+  'aurora-mix', 'dark-aurora-mix',
+  'custom', 'dark-custom',
 ]
 
 export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {

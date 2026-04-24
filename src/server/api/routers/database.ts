@@ -1,6 +1,4 @@
 // src/server/api/routers/admin/database.ts
-/* eslint-disable */
-// @ts-nocheck
 import { z } from "zod";
 import {
   createTRPCRouter,
@@ -14,7 +12,6 @@ import type { PrismaClient } from "@prisma/client";
 const MODEL_NAMES = [
   "user",
   "courseTestimonial",
-  "account",
   "session",
   "course",
   "learningSession",
@@ -26,13 +23,31 @@ const MODEL_NAMES = [
   "event",
   "announcement",
   "scholarship",
-  "document",
-  "documentAccess",
   "jobVacancy",
   "pushSubscription",
 ] as const;
 
 type ModelName = (typeof MODEL_NAMES)[number];
+
+type GenericModelDelegate = {
+  findMany: (args?: Record<string, unknown>) => Promise<unknown[]>;
+  count: (args?: Record<string, unknown>) => Promise<number>;
+  create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+  update: (args: {
+    where: { id: string };
+    data: Record<string, unknown>;
+  }) => Promise<unknown>;
+  delete: (args: { where: { id: string } }) => Promise<unknown>;
+  createMany: (args: {
+    data: Record<string, unknown>[];
+    skipDuplicates?: boolean;
+  }) => Promise<unknown>;
+  updateMany: (args: {
+    where: { id: { in: string[] } };
+    data: Record<string, unknown>;
+  }) => Promise<unknown>;
+  deleteMany: (args: { where: { id: { in: string[] } } }) => Promise<unknown>;
+};
 
 // More flexible type for data payloads
 const flexibleData = z.union([
@@ -73,11 +88,10 @@ const bulkCreateSchema = z.object({
 });
 
 // Helper function to get model delegate
-function getModelDelegate(db: PrismaClient, model: ModelName) {
+function getModelDelegate(db: PrismaClient, model: ModelName): GenericModelDelegate {
   const delegates = {
     user: db.user,
     courseTestimonial: db.courseTestimonial,
-    account: db.account,
     session: db.session,
     course: db.course,
     learningSession: db.learningSession,
@@ -89,12 +103,10 @@ function getModelDelegate(db: PrismaClient, model: ModelName) {
     event: db.event,
     announcement: db.announcement,
     scholarship: db.scholarship,
-    document: db.document,
-    documentAccess: db.documentAccess,
     jobVacancy: db.jobVacancy,
     pushSubscription: db.pushSubscription,
   };
-  return delegates[model];
+  return delegates[model] as unknown as GenericModelDelegate;
 }
 
 // CORRECTED: A comprehensive map of default sort orders for ALL models.
@@ -104,7 +116,6 @@ const DEFAULT_SORT_ORDERS: Record<
 > = {
   user: { field: "createdAt", order: "desc" },
   courseTestimonial: { field: "createdAt", order: "desc" },
-  account: { field: "provider", order: "asc" }, // No timestamp, sort by provider
   session: { field: "expires", order: "desc" },
   course: { field: "createdAt", order: "desc" },
   learningSession: { field: "createdAt", order: "desc" },
@@ -116,8 +127,6 @@ const DEFAULT_SORT_ORDERS: Record<
   event: { field: "createdAt", order: "desc" },
   announcement: { field: "createdAt", order: "desc" },
   scholarship: { field: "createdAt", order: "desc" },
-  document: { field: "createdAt", order: "desc" },
-  documentAccess: { field: "accessedAt", order: "desc" },
   jobVacancy: { field: "createdAt", order: "desc" },
   pushSubscription: { field: "createdAt", order: "desc" },
 };
@@ -141,22 +150,16 @@ function buildSearchConditions(model: ModelName, search: string) {
       { title: { contains: search, mode: "insensitive" } },
       { provider: { contains: search, mode: "insensitive" } },
     ],
-    document: [
-      { title: { contains: search, mode: "insensitive" } },
-      { filename: { contains: search, mode: "insensitive" } },
-    ],
     jobVacancy: [
       { title: { contains: search, mode: "insensitive" } },
       { company: { contains: search, mode: "insensitive" } },
     ],
-    account: [],
-    session: [],
     learningSession: [],
+    session: [],
     question: [],
     questionOption: [],
     userAttempt: [],
     userAnswer: [],
-    documentAccess: [],
     pushSubscription: [],
     courseTestimonial: [
       { comment: { contains: search, mode: "insensitive" } },
@@ -188,9 +191,8 @@ function getModelIncludes(model: ModelName) {
       _count: { select: { questions: true, attempts: true } },
       course: { select: { title: true, classCode: true } },
     },
-    account: {},
-    session: {},
     learningSession: {},
+    session: {},
     question: {},
     questionOption: {},
     userAttempt: {},
@@ -198,8 +200,6 @@ function getModelIncludes(model: ModelName) {
     event: {},
     announcement: {},
     scholarship: {},
-    document: {},
-    documentAccess: {},
     jobVacancy: {},
     pushSubscription: {},
     courseTestimonial: {
@@ -249,15 +249,15 @@ export const databaseRouter = createTRPCRouter({
 
         const include = getModelIncludes(model);
 
-        const [data, total] = await ctx.db.$transaction([
-          (modelDelegate as any).findMany({
+        const [data, total] = await Promise.all([
+          modelDelegate.findMany({
             where,
             skip,
             take: limit,
             orderBy,
             ...(Object.keys(include).length > 0 && { include }),
           }),
-          (modelDelegate as any).count({ where }),
+          modelDelegate.count({ where }),
         ]);
 
         return {
@@ -292,7 +292,7 @@ export const databaseRouter = createTRPCRouter({
       try {
         const modelDelegate = getModelDelegate(ctx.db, model);
         const data = await modelDelegate.findMany({
-          where: filters || {},
+          where: filters ?? {},
           take: 10000,
         });
         return { data, count: data.length };

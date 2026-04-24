@@ -7,6 +7,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from '~/components/ui/sonner';
 import { ThemeProvider } from '~/components/providers/theme-provider';
 import { DisplaySettingProvider } from '~/components/providers/display-provider';
+import { CustomThemeProvider } from "~/components/providers/custom-theme-provider";
 import Script from 'next/script';
 import { ServiceWorkerUpdate } from '~/components/sw-update';
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -169,12 +170,14 @@ export default function RootLayout({
         <SessionProvider>
           <TRPCReactProvider>
             <DisplaySettingProvider>
-              <ThemeProvider attribute="class" defaultTheme="light">
-                {/* <RegisterSW /> */}
-                <SpeedInsights />
-                <ServiceWorkerUpdate />
-                {children}
-              </ThemeProvider>
+              <CustomThemeProvider>
+                <ThemeProvider attribute="class" defaultTheme="light">
+                  {/* <RegisterSW /> */}
+                  <SpeedInsights />
+                  <ServiceWorkerUpdate />
+                  {children}
+                </ThemeProvider>
+              </CustomThemeProvider>
             </DisplaySettingProvider>
           </TRPCReactProvider>
           <Toaster richColors position='top-center' />

@@ -18,6 +18,8 @@ export default function NotificationSettings() {
     isLoading,
     testNotification,
     debugInfo,
+    subscriptionCheckDone,
+    showServiceWorkerWarning,
   } = useNotifications();
 
   const [showDebug, setShowDebug] = useState(false);
@@ -100,21 +102,38 @@ export default function NotificationSettings() {
           </Alert>
         )}
 
+        {showServiceWorkerWarning ? (
+          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
+            <AlertDescription>
+              <span className="font-medium">Service worker is not active.</span> Web push needs a registered
+              service worker. Use a <strong>production</strong> build, or for local dev set{" "}
+              <code className="rounded bg-muted px-1 text-xs">ENABLE_PWA_IN_DEV=1</code> in <code className="rounded bg-muted px-1 text-xs">.env</code> and restart. See <code className="rounded bg-muted px-1 text-xs">.env.example</code>
+              .
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {isSubscribed ? (
+            {!subscriptionCheckDone && isSupported ? (
+              <LoadingSpinner size="sm" />
+            ) : isSubscribed ? (
               <Bell className="h-5 w-5 text-green-500" />
             ) : (
               <BellOff className="h-5 w-5 text-gray-400" />
             )}
             <div>
               <p className="font-medium">
-                {isSubscribed ? 'Notifications Enabled' : 'Notifications Disabled'}
+                {!subscriptionCheckDone && isSupported
+                  ? "Checking subscription…"
+                  : isSubscribed
+                    ? "Notifications enabled"
+                    : "Notifications disabled"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {isSubscribed
-                  ? 'You will receive push notifications'
-                  : 'Enable to receive important updates'}
+                  ? "You will receive push notifications for announcements and events"
+                  : "Enable to receive important updates in this browser"}
               </p>
             </div>
           </div>
@@ -122,9 +141,9 @@ export default function NotificationSettings() {
           <Button
             variant={isSubscribed ? "destructive" : "default"}
             onClick={isSubscribed ? unsubscribe : requestPermission}
-            disabled={isLoading}
+            disabled={isLoading || (isSupported && !subscriptionCheckDone)}
           >
-            {isLoading ? (<LoadingSpinner size='sm' />) : isSubscribed ? 'Disable' : 'Enable'}
+            {isLoading ? <LoadingSpinner size="sm" /> : isSubscribed ? "Disable" : "Enable"}
           </Button>
         </div>
 

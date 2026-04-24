@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import { Banknote, Bell, Calendar, CornerDownLeft, FileSpreadsheet, Footprints, GraduationCap, Home, Megaphone, Settings, SquarePlay, Tally5, User } from 'lucide-react';
+import { Banknote, Bell, Calendar, CornerDownLeft, FileSpreadsheet, Footprints, GraduationCap, Home, Megaphone, Settings, SquarePlay, Tally5, Trophy, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Kbd } from '../ui/key-bind';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
@@ -12,6 +12,7 @@ const tabs = [
     group: 'Academics',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
+      { label: 'Hall of Fame', href: '/hall-of-fame', icon: Trophy, tooltip: 'Hall of Fame' },
       { label: 'Courses', href: '/courses', icon: GraduationCap, tooltip: 'Courses' },
       { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule' },
       { label: 'Tryouts', href: '/tryouts', icon: Tally5, tooltip: 'Try Outs' },
@@ -44,6 +45,7 @@ export type TabsType = {
   courses: {
     id: string,
     title: string,
+    classCode?: string,
     totalLessons: number,
     totalVideos: number
   }[],
@@ -87,14 +89,28 @@ function CourseSearchItem({
   }
 
   return (
-    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
-      <GraduationCap className='mr-2' />
-      <span>{props.title}</span>
-      <div className='flex justify-end gap-2 items-center md:text-sm self-end text-xs ml-auto'>
-        <FileSpreadsheet size={10} />
-        <span>{props.totalLessons}</span>
-        <SquarePlay size={10} />
-        <span>{props.totalVideos}</span>
+    <CommandItem
+      onSelect={handleSelect}
+      className='cursor-pointer'
+      value={[
+        props.title,
+        props.classCode ?? '',
+        `${props.totalLessons} materials`,
+        `${props.totalVideos} videos`,
+        'course',
+      ].join(' ')}
+    >
+      <GraduationCap className='mr-2 h-4 w-4 shrink-0' />
+      <span className='truncate'>{props.title}</span>
+      <div className='ml-auto flex items-center gap-1.5 text-xs text-muted-foreground'>
+        <span className='inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5'>
+          <FileSpreadsheet className='h-3.5 w-3.5' />
+          <span>{props.totalLessons} materials</span>
+        </span>
+        <span className='inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5'>
+          <SquarePlay className='h-3.5 w-3.5' />
+          <span>{props.totalVideos} videos</span>
+        </span>
       </div>
     </CommandItem>
   )
@@ -111,7 +127,7 @@ function AnnouncementSearchItem({
   }
 
   return (
-    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+    <CommandItem onSelect={handleSelect} className='cursor-pointer' value={`${props.title} announcement`}>
       <Megaphone className='mr-2' />
       <span>{props.title}</span>
     </CommandItem>
@@ -129,7 +145,7 @@ function EventSearchItem({
   }
 
   return (
-    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+    <CommandItem onSelect={handleSelect} className='cursor-pointer' value={`${props.title} event`}>
       <Footprints className='mr-2' />
       <span>{props.title}</span>
     </CommandItem>
@@ -147,7 +163,7 @@ function ScholarshipSearchItem({
   }
 
   return (
-    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+    <CommandItem onSelect={handleSelect} className='cursor-pointer' value={`${props.title} scholarship`}>
       <Banknote className='mr-2' />
       <span>{props.title}</span>
     </CommandItem>
@@ -165,7 +181,7 @@ function TryOutSearchItem({
   }
 
   return (
-    <CommandItem onSelect={handleSelect} className='cursor-pointer'>
+    <CommandItem onSelect={handleSelect} className='cursor-pointer' value={`${props.title} ${props.classCode} tryout`}>
       <Tally5 className='mr-2' />
       <span>{props.title}</span>
       <p className='text-muted-foreground ml-auto'>{props.classCode}</p>
@@ -225,6 +241,7 @@ export default function SearchCMDK({ data }: { data: TabsType }) {
               {group.items.map(item => (
                 <CommandItem
                   key={item.label + '-cmd-item-' + group.group}
+                  value={[item.label, item.tooltip ?? '', item.href, group.group].join(' ')}
                   // asChild
                   onSelect={() => {
                     // Close the dialog when user selects

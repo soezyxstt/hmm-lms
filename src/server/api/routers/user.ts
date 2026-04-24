@@ -191,6 +191,7 @@ export const userRouter = createTRPCRouter({
         position: true,
         role: true,
         image: true,
+        coverImage: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -225,11 +226,16 @@ export const userRouter = createTRPCRouter({
         name: string;
         position?: string | null;
         image?: string | null;
+        coverImage?: string | null;
         password?: string;
       } = {
         name: input.name,
         position: input.position && input.position.trim() !== "" ? input.position : null,
         image: input.image && input.image.trim() !== "" ? input.image : null,
+        coverImage:
+          input.coverImage && input.coverImage.trim() !== ""
+            ? input.coverImage
+            : null,
       };
 
       // Handle password change if newPassword is provided
@@ -266,6 +272,7 @@ export const userRouter = createTRPCRouter({
           position: true,
           role: true,
           image: true,
+          coverImage: true,
           createdAt: true,
           updatedAt: true,
         },

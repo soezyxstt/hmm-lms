@@ -6,11 +6,9 @@ import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
-import { Link as LinkIcon, ExternalLink, FileText } from 'lucide-react';
+import { Link as LinkIcon, ExternalLink, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ResourceType, LinkSource, type Prisma } from '@prisma/client';
 import { getCdnUrl } from '~/lib/utils';
@@ -93,24 +91,38 @@ export default function DocumentViewer({ resource, open, onOpenChange }: Documen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-full h-full flex flex-col p-0 max-h-screen min-h-screen overflow-y-auto">
-        <DialogHeader className="p-4 border-b border-border">
-          <DialogTitle className="flex items-center gap-2">
-            {resource.type === ResourceType.LINK ? <LinkIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
-            <span className="flex-1 truncate">{resource.title}</span>
-          </DialogTitle>
-          {/* Include description from original code */}
-          <p className="text-sm text-muted-foreground">
-            {resource.description ?? `Uploaded on ${format(resource.createdAt, 'MMM dd, yyyy')}`}
-          </p>
-        </DialogHeader>
+      <DialogContent className="min-h-screen min-w-full max-h-screen overflow-y-auto p-0">
+        <div className="flex h-full flex-col">
+          <header className="sticky top-0 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="flex items-start gap-3">
+              <div className="pt-0.5">
+                {resource.type === ResourceType.LINK ? <LinkIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold md:text-base">{resource.title}</p>
+                <p className="text-xs text-muted-foreground md:text-sm">
+                  {resource.description ?? `Uploaded on ${format(resource.createdAt, 'MMM dd, yyyy')}`}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </header>
 
+          <div className="flex-1">
         {showFallback ? (
           // Fallback for non-embeddable links
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <ExternalLink className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">This link cannot be embedded.</p>
-            <p className="text-sm text-muted-foreground mb-4">
+          <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+            <ExternalLink className="mb-4 h-12 w-12 text-muted-foreground" />
+            <p className="mb-2 text-lg font-medium">This link cannot be embedded.</p>
+            <p className="mb-4 text-sm text-muted-foreground">
               This viewer only supports YouTube and Google Drive links. Click the button below to open the URL in a new tab.
             </p>
             <Button asChild>
@@ -121,18 +133,18 @@ export default function DocumentViewer({ resource, open, onOpenChange }: Documen
           </div>
         ) : isImage ? (
           // Render the Next.js Image component for images
-          <div className="relative flex-1 flex items-center justify-center p-4">
+          <div className="relative flex h-full min-h-[70vh] items-center justify-center bg-muted/20 p-4">
             <Image
               src={docUrl ?? ''}
               alt={resource.title}
               fill
               style={{ objectFit: 'contain' }}
-              className="rounded-lg shadow-md"
+              className="rounded-lg"
             />
           </div>
         ) : (
           // Render the iframe for all other document types (files, embeddable links)
-          <div className="relative flex-1 overflow-hidden">
+          <div className="relative h-[calc(100vh-74px)] w-full overflow-hidden">
             <iframe
               src={docUrl ?? ''}
               width="100%"
@@ -143,6 +155,8 @@ export default function DocumentViewer({ resource, open, onOpenChange }: Documen
             />
           </div>
         )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

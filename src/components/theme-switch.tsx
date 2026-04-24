@@ -24,26 +24,24 @@ export default function ThemeSwitch() {
   // Determine if the current theme is a 'dark' variant
   const isDark = theme === 'dark' || theme?.startsWith('dark-');
 
+  const toDarkTheme = (baseTheme: string): string => {
+    if (baseTheme === "light") return "dark";
+    return `dark-${baseTheme}`;
+  };
+
+  const toLightTheme = (baseTheme: string): string => {
+    if (baseTheme === "dark") return "light";
+    return baseTheme;
+  };
+
   const handleThemeChange = (checked: boolean) => {
     // 'checked' is true for Light mode (sun icon)
     // 'checked' is false for Dark mode (moon icon)
 
     const currentBaseTheme = theme?.replace('dark-', '') ?? 'light'
 
-    if (checked) {
-      // Switch to LIGHT
-      // If the base was 'dark', it means we were on the default dark theme, so switch to 'light'
-      setTheme(currentBaseTheme === 'dark' ? 'light' : currentBaseTheme)
-    } else {
-      // Switch to DARK
-      // If the base is the default 'light', switch to the default 'dark'
-      if (currentBaseTheme === 'light') {
-        setTheme('dark')
-      } else {
-        // Otherwise, prepend 'dark-' to the current color theme
-        setTheme(`dark-${currentBaseTheme}`)
-      }
-    }
+    if (checked) setTheme(toLightTheme(currentBaseTheme))
+    else setTheme(toDarkTheme(currentBaseTheme))
   }
 
   return (

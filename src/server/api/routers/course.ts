@@ -12,6 +12,7 @@ import {
   ResourceCategory,
   LinkSource,
   ResourceType,
+  type PrismaClient,
 } from "@prisma/client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "~/lib/s3-client";
@@ -76,6 +77,21 @@ const createResourceSchema = z
   })
   .and(z.union([fileInputSchema, linkInputSchema]));
 
+async function assertCourseExists(db: PrismaClient, courseId: string) {
+  const course = await db.course.findUnique({
+    where: { id: courseId },
+  });
+
+  if (!course) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Course not found",
+    });
+  }
+
+  return course;
+}
+
 export const courseRouter = createTRPCRouter({
   createCourse: adminProcedure
     .input(createCourseSchema)
@@ -114,21 +130,10 @@ export const courseRouter = createTRPCRouter({
       });
     }),
 
-  // ADDED: Delete course procedure
   delete: adminProcedure
     .input(courseIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const course = await ctx.db.course.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!course) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Course not found",
-        });
-      }
-
+      await assertCourseExists(ctx.db, input.id);
       return ctx.db.course.delete({
         where: { id: input.id },
       });
@@ -137,16 +142,7 @@ export const courseRouter = createTRPCRouter({
   deleteCourse: adminProcedure
     .input(courseIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const course = await ctx.db.course.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!course) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Course not found",
-        });
-      }
+      await assertCourseExists(ctx.db, input.id);
 
       return ctx.db.course.delete({
         where: { id: input.id },

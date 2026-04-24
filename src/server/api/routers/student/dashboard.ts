@@ -1,7 +1,8 @@
 // ~/server/api/routers/student-dashboard.ts
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { startOfDay, endOfDay, subDays } from "date-fns";
+import { endOfDay, endOfWeek, getISOWeek, getISOWeekYear, startOfDay, startOfWeek, subDays } from "date-fns";
+import type { Prisma } from "@prisma/client";
 
 export const studentDashboardRouter = createTRPCRouter({
   // Get enrolled courses with progress
@@ -89,6 +90,78 @@ export const studentDashboardRouter = createTRPCRouter({
     });
   }),
 
+
+  getWeeklyHallOfFame: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(3).max(50).default(20),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const now = new Date();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+      const whereClause: Prisma.LearningSessionWhereInput = {
+        date: {
+          gte: weekStart,
+          lte: weekEnd,
+        },
+      };
+
+      const grouped = await ctx.db.learningSession.groupBy({
+        by: ["userId"],
+        where: whereClause,
+        _sum: {
+          duration: true,
+        },
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          _sum: {
+            duration: "desc",
+          },
+        },
+        take: input?.limit ?? 20,
+      });
+
+      const userIds = grouped.map((item) => item.userId);
+      const users = userIds.length
+        ? await ctx.db.user.findMany({
+          where: { id: { in: userIds } },
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        })
+        : [];
+
+      const leaderboard = grouped.map((item, index) => {
+        const user = users.find((entry) => entry.id === item.userId);
+        return {
+          rank: index + 1,
+          userId: item.userId,
+          userName: user?.name ?? "Anonymous Learner",
+          userImage: user?.image ?? null,
+          weeklyDurationSeconds: item._sum.duration ?? 0,
+          totalSessions: item._count.id,
+          isCurrentUser: item.userId === ctx.session.user.id,
+        };
+      });
+
+      const currentUserRank = leaderboard.find((item) => item.isCurrentUser) ?? null;
+      const currentWeekKey = `${getISOWeekYear(now)}-W${String(getISOWeek(now)).padStart(2, "0")}`;
+
+      return {
+        currentWeekKey,
+        weekStart,
+        weekEnd,
+        leaderboard,
+        currentUserRank,
+      };
+    }),
 
   // Get events for calendar (simplified without approval)
   getCalendarEvents: protectedProcedure

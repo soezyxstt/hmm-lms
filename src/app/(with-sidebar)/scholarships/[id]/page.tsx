@@ -3,9 +3,8 @@
 import { api } from "~/trpc/react";
 import { useParams } from "next/navigation";
 import { Button } from "~/components/ui/button";
-import { Calendar, Users, CheckCircle2, FileText, ArrowLeft } from "lucide-react";
+import { Calendar, Users, CheckCircle2, FileText } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import GeometricBackground from "~/components/ui/background/geometry";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
@@ -30,67 +29,58 @@ export default function ScholarshipDetailPage() {
   const isEnded = scholarship.deadline < new Date();
 
   return (
-    <div className="min-h-screen pb-8 relative">
+    <div className="relative min-h-screen pb-8">
       <GeometricBackground variant="subtle-glow" />
       
-      <div className="container max-w-5xl mx-auto relative z-10">
-        <div className="bg-card rounded-md overflow-hidden border shadow-xl">
-          {/* Hero Section */}
-          <div className="relative h-64 md:h-96 w-full bg-muted group overflow-hidden">
-            {scholarship.image ? (
-              <MotionImageDialog
-                layoutId={"hero-image"+scholarship.id}
-                src={scholarship.image}
-                alt={scholarship.title}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                priority
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <FileText className="w-24 h-24 text-primary/40" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
-            
-            <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 pointer-events-none">
-              <div className="flex flex-wrap gap-3 mb-4">
-                <Badge variant={isEnded ? "destructive" : "default"} className="text-sm px-3 py-1 shadow-lg">
-                  {isEnded ? "Closed" : "Open for Application"}
-                </Badge>
-                <Badge variant="outline" className="text-sm px-3 py-1 bg-black/40 backdrop-blur-md text-white border-white/20">
-                  {scholarship.type}
-                </Badge>
-              </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 drop-shadow-md">{scholarship.title}</h1>
-              <p className="text-xl text-gray-200 font-medium drop-shadow-sm">{scholarship.provider}</p>
-            </div>
+      <div className="container relative z-10 mx-auto max-w-5xl space-y-4">
+        <section className="rounded-xl border border-border/80 bg-background/95 p-4 shadow-sm md:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={isEnded ? "destructive" : "default"} className="text-xs md:text-sm">
+              {isEnded ? "Closed" : "Open for Application"}
+            </Badge>
+            <Badge variant="outline" className="text-xs md:text-sm">
+              {scholarship.type}
+            </Badge>
           </div>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">{scholarship.title}</h1>
+          <p className="mt-1 text-base text-foreground/80 md:text-lg">{scholarship.provider}</p>
+        </section>
 
-          <div className="grid md:grid-cols-3 gap-8 p-6 md:p-10">
+        {scholarship.image && (
+          <section className="relative h-56 w-full overflow-hidden rounded-xl border md:h-80">
+            <MotionImageDialog
+              layoutId={"hero-image" + scholarship.id}
+              src={scholarship.image}
+              alt={scholarship.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </section>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-3">
             {/* Main Content */}
-            <div className="md:col-span-2 space-y-8">
-              <section>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <div className="space-y-6 md:col-span-2">
+              <section className="space-y-3 rounded-xl border border-border/80 bg-background/95 p-4">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
                   About the Scholarship
                 </h2>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                <p className="whitespace-pre-wrap leading-relaxed text-foreground/85">
                   {scholarship.description || "No description provided."}
                 </p>
               </section>
 
-              <Separator />
-
-              <section>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <section className="space-y-3 rounded-xl border border-border/80 bg-background/95 p-4">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
                   <CheckCircle2 className="w-5 h-5 text-primary" />
                   Benefits
                 </h2>
                 {scholarship.benefits.length > 0 ? (
-                  <ul className="grid gap-3">
+                  <ul className="grid gap-2">
                     {scholarship.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-start gap-3 bg-muted/30 p-3 rounded-lg">
-                        <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                      <li key={index} className="flex items-start gap-2 rounded-md bg-muted/30 p-2.5">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                         <span>{benefit}</span>
                       </li>
                     ))}
@@ -100,16 +90,16 @@ export default function ScholarshipDetailPage() {
                 )}
               </section>
 
-              <section>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <section className="space-y-3 rounded-xl border border-border/80 bg-background/95 p-4">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
                   <FileText className="w-5 h-5 text-primary" />
                   Requirements
                 </h2>
                 {scholarship.requirements.length > 0 ? (
-                  <ul className="grid gap-3">
+                  <ul className="grid gap-2">
                     {scholarship.requirements.map((req, index) => (
-                      <li key={index} className="flex items-start gap-3 bg-muted/30 p-3 rounded-lg">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2.5 shrink-0" />
+                      <li key={index} className="flex items-start gap-2 rounded-md bg-muted/30 p-2.5">
+                        <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                         <span>{req}</span>
                       </li>
                     ))}
@@ -122,14 +112,14 @@ export default function ScholarshipDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <div className="bg-muted/30 rounded-2xl p-6 border space-y-6 sticky top-24">
+              <div className="sticky top-24 space-y-5 rounded-xl border border-border/80 bg-background/95 p-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                     Key Information
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
@@ -146,7 +136,7 @@ export default function ScholarshipDetailPage() {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
                         <Users className="w-5 h-5" />
                       </div>
                       <div>
@@ -163,7 +153,7 @@ export default function ScholarshipDetailPage() {
 
                 <div className="space-y-3">
                   <Button 
-                    className="w-full"
+                    className="w-full font-semibold"
                     asChild 
                     disabled={isEnded}
                   >
@@ -175,7 +165,7 @@ export default function ScholarshipDetailPage() {
                     <div className="space-y-2 pt-2">
                       <p className="text-xs text-center text-muted-foreground">Additional Resources</p>
                       {scholarship.otherLinks.map((link, idx) => (
-                        <Button key={idx} variant="outline" className="w-full" asChild>
+                        <Button key={idx} variant="outline" className="w-full justify-start" asChild>
                           <Link href={link} target="_blank" rel="noopener noreferrer">
                             Resource {idx + 1}
                           </Link>
@@ -186,7 +176,6 @@ export default function ScholarshipDetailPage() {
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

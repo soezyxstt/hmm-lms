@@ -6,7 +6,7 @@ import { DashboardChart } from "./dashboard-chart";
 import { DashboardCalendar } from './dashboard-calendar'
 import CoursesItem from "../courses/course-item";
 import { Card, CardContent, CardTitle } from "~/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Crown, Sparkles, Trophy } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
@@ -22,14 +22,16 @@ export function DashboardContent() {
   const { data: courses, isLoading: coursesLoading } =
     api.studentDashboard.getEnrolledCourses.useQuery();
 
-  const { data: stats, isLoading: statsLoading } =
+  const { isLoading: statsLoading } =
     api.studentDashboard.getDashboardStats.useQuery();
+  const { data: hallOfFame, isLoading: hallOfFameLoading } =
+    api.studentDashboard.getWeeklyHallOfFame.useQuery({ limit: 3 });
 
   const plugin = useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })
   );
 
-  if (coursesLoading || statsLoading) {
+  if (coursesLoading || statsLoading || hallOfFameLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -102,6 +104,42 @@ export function DashboardContent() {
 
         {/* Calendar Section - Takes 1 column */}
         <div className="space-y-4 max-sm:hidden">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-amber-500" />
+                  <CardTitle className="text-lg">Hall of Fame</CardTitle>
+                </div>
+                <Sparkles className="h-4 w-4 text-fuchsia-500" />
+              </div>
+              {hallOfFame?.leaderboard.length ? (
+                <div className="space-y-3">
+                  {hallOfFame.leaderboard.map((entry) => (
+                    <div
+                      key={entry.userId}
+                      className="rounded-lg border bg-muted/30 p-3 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-semibold">#{entry.rank} {entry.userName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {Math.round(entry.weeklyDurationSeconds / 60)} mins this week
+                        </p>
+                      </div>
+                      {entry.rank === 1 && <Trophy className="h-4 w-4 text-amber-500" />}
+                    </div>
+                  ))}
+                  <Button asChild className="w-full">
+                    <Link href="/hall-of-fame">View full ranking</Link>
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No learning sessions this week yet. Be the first champion.
+                </p>
+              )}
+            </CardContent>
+          </Card>
           <DashboardCalendar />
         </div>
       </div>
