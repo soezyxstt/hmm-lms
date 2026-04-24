@@ -289,12 +289,38 @@ const tabsItems: {
   tryouts: TryOutSearchItem,
 };
 
+/** Keeps `tabKey` and `items` in sync so we don't get a cross-tab props intersection. */
+function SearchItemsForKey<K extends keyof TabsType>({
+  tabKey,
+  items,
+  router,
+  setOpen,
+}: {
+  tabKey: K;
+  items: TabsType[K];
+  router: AppRouterInstance;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  // Tab components are a union; assert ties `K` to the correct `props` shape for `tsc`.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- see comment above
+  const Comp = tabsItems[tabKey] as (
+    props: { props: TabsType[K][number] } & SearchItemBaseProps,
+  ) => JSX.Element;
+  return items.map((item) => (
+    <Comp
+      key={item.id + "-cmd-item-" + String(tabKey)}
+      props={item}
+      router={router}
+      setOpen={setOpen}
+    />
+  ));
+}
+
 export default function SearchCMDK({ data }: { data: TabsType }) {
   const [open, setOpen] = useState(false);
   const pathName = usePathname();
   const firstPath = pathName.split("/")[1] as keyof TabsType;
   const primaryData = data[firstPath];
-  const SearchItem = tabsItems[firstPath];
   const router = useRouter();
 
   useEffect(() => {
@@ -328,15 +354,12 @@ export default function SearchCMDK({ data }: { data: TabsType }) {
           <CommandEmpty>No results found.</CommandEmpty>
           {primaryData && (
             <CommandGroup heading={firstPath} className="capitalize">
-              {primaryData.map((item) => (
-                // @ts-expect-error this is perfectly fine but typescript isnt smart enough to handle
-                <SearchItem
-                  key={item.id + "-cmd-item-" + firstPath}
-                  props={item}
-                  router={router}
-                  setOpen={setOpen}
-                />
-              ))}
+              <SearchItemsForKey
+                tabKey={firstPath}
+                items={primaryData}
+                router={router}
+                setOpen={setOpen}
+              />
             </CommandGroup>
           )}
           {tabs.map((group) => (
@@ -367,24 +390,20 @@ export default function SearchCMDK({ data }: { data: TabsType }) {
               ))}
             </CommandGroup>
           ))}
-          {Object.entries(data).map(([label, items]) => {
+          {(Object.keys(data) as (keyof TabsType)[]).map((label) => {
             if (label === firstPath) return null;
-            const ListItem = tabsItems[label as keyof TabsType];
             return (
               <CommandGroup
-                key={label + "-cmd-group"}
-                heading={label}
+                key={String(label) + "-cmd-group"}
+                heading={String(label)}
                 className="capitalize"
               >
-                {items.map((item) => (
-                  // @ts-expect-error this is perfectly fine but typescript isnt smart enough to handle
-                  <ListItem
-                    key={item.id + "-cmd-item-" + label}
-                    props={item}
-                    router={router}
-                    setOpen={setOpen}
-                  />
-                ))}
+                <SearchItemsForKey
+                  tabKey={label}
+                  items={data[label]}
+                  router={router}
+                  setOpen={setOpen}
+                />
               </CommandGroup>
             );
           })}
