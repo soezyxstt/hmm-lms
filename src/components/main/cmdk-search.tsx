@@ -7,7 +7,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Kbd } from '../ui/key-bind';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
-const tabs = [
+type NavTabItem = {
+  label: string
+  href: string
+  icon: typeof Home
+  tooltip?: string
+  dev?: boolean
+}
+
+const tabs: { group: string; items: NavTabItem[] }[] = [
   {
     group: 'Academics',
     items: [
@@ -29,7 +37,7 @@ const tabs = [
   {
     group: 'Preferences',
     items: [
-      { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
+      { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: false },
     ],
   },
   {

@@ -73,18 +73,34 @@ export function resolveCreateScope(
   session: Session | null,
   fallbackScope: EventScope = "personal",
 ): EventScope {
-  if (session?.user.role === "ADMIN" || session?.user.role === "SUPERADMIN") {
+  if (isScheduleAdmin(session)) {
     return fallbackScope;
   }
 
   return "personal";
 }
 
+export function isScheduleAdmin(session: Session | null): boolean {
+  return session?.user.role === "ADMIN" || session?.user.role === "SUPERADMIN";
+}
+
+export function canCreateEvents(session: Session | null): boolean {
+  return isScheduleAdmin(session);
+}
+
+export function canEditEvents(session: Session | null): boolean {
+  return isScheduleAdmin(session);
+}
+
+export function canDeleteEvents(session: Session | null): boolean {
+  return isScheduleAdmin(session);
+}
+
 export function canManageEventScope(
   session: Session | null,
   eventScope: EventScope | undefined,
 ): boolean {
-  if (session?.user.role === "ADMIN" || session?.user.role === "SUPERADMIN") {
+  if (isScheduleAdmin(session)) {
     return true;
   }
 

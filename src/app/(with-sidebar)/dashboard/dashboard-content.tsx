@@ -4,19 +4,12 @@
 import { api } from "~/trpc/react";
 import { DashboardChart } from "./dashboard-chart";
 import { DashboardCalendar } from './dashboard-calendar'
-import CoursesItem from "../courses/course-item";
-import { Card, CardContent, CardTitle } from "~/components/ui/card";
-import { BookOpen, Crown, Sparkles, Trophy } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { ArrowRight, BookOpen, CalendarDays, Crown, Flame, Sparkles, Trophy } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem
-} from "~/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import { useRef } from 'react';
+import { Badge } from "~/components/ui/badge";
 
 export function DashboardContent() {
   const { data: courses, isLoading: coursesLoading } =
@@ -27,112 +20,126 @@ export function DashboardContent() {
   const { data: hallOfFame, isLoading: hallOfFameLoading } =
     api.studentDashboard.getWeeklyHallOfFame.useQuery({ limit: 3 });
 
-  const plugin = useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
-  );
-
   if (coursesLoading || statsLoading || hallOfFameLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3 w-full">
-        {/* Courses Section - Takes 2 columns */}
-        <div className="lg:col-span-2 space-y-4 w-full">
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Course</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/courses">View All</Link>
+    <div className="mx-auto max-w-6xl space-y-7">
+      <Card className="overflow-hidden border-border/70 bg-card shadow-sm">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent" />
+        <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-end md:justify-between md:p-7">
+          <div className="space-y-3.5">
+            <Badge variant="secondary" className="h-6 w-fit gap-1 px-2 text-[11px] font-medium">
+              <Flame className="h-3.5 w-3.5" />
+              Weekly Learning Focus
+            </Badge>
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Make progress with a clearer plan</h2>
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-[15px]">
+                Jump back into your active courses and keep your learning streak going this week.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/courses">Continue Learning</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/events">Upcoming Events</Link>
             </Button>
           </div>
+        </CardContent>
+      </Card>
 
-          {courses && courses.length > 0 ? (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              plugins={[plugin.current]}
-              onMouseEnter={plugin.current.stop}
-              onMouseLeave={plugin.current.reset}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {courses.map((course, index) => (
-                  <CarouselItem
-                    key={course.id}
-                    className="pl-2 md:pl-4 basis-2/3 md:basis-2/5"
-                  >
-                    <CoursesItem
-                      id={course.id}
-                      title={course.title}
-                      numberOfMaterials={course.attachmentsCount}
-                      numberOfVideos={course.videoCount}
-                      image={`/course/${(index % 4) + 1}.png`}
-                      subject={course.classCode}
-                      href={'/courses/' + course.id}
-                      orientation='horizontal'
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          ) : (
-            <Card className="p-8">
-              <div className="text-center space-y-2">
-                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground" />
-                <h3 className="font-semibold">No courses yet</h3>
-                <p className="text-sm text-muted-foreground">
-                  Start learning by enrolling in a course
-                </p>
-                <Button asChild className="mt-4">
-                  <Link href="/courses">Browse Courses</Link>
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="space-y-6 xl:col-span-8">
+          <Card className="border-border/70 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl tracking-tight">Continue Your Courses</CardTitle>
+                  <CardDescription className="text-sm">Your active classes in one clean list</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/courses">View all</Link>
                 </Button>
               </div>
-            </Card>
-          )}
-          <div className="space-y-4 md:hidden">
-            <DashboardCalendar />
-          </div>
-          {/* Activity Chart */}
-          <div className="mt-6">
-            <DashboardChart />
-          </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {courses && courses.length > 0 ? (
+                courses.slice(0, 4).map((course) => (
+                  <Link
+                    key={course.id}
+                    href={`/courses/${course.id}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:bg-accent/40 hover:shadow-sm"
+                  >
+                    <div className="min-w-0 space-y-1.5">
+                      <p className="truncate text-[15px] font-semibold leading-5">{course.title}</p>
+                      <div className="flex items-center gap-2 text-[11px] font-medium tracking-wide text-muted-foreground">
+                        <span>{course.classCode}</span>
+                        <span aria-hidden>•</span>
+                        <span>{course.videoCount} videos</span>
+                        <span aria-hidden>•</span>
+                        <span>{course.attachmentsCount} materials</span>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed p-8 text-center">
+                  <BookOpen className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+                  <h3 className="font-semibold">No courses yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Start learning by enrolling in your first course.
+                  </p>
+                  <Button asChild className="mt-4">
+                    <Link href="/courses">Browse Courses</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <DashboardChart />
         </div>
 
-        {/* Calendar Section - Takes 1 column */}
-        <div className="space-y-4 max-sm:hidden">
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-amber-500" />
-                  <CardTitle className="text-lg">Hall of Fame</CardTitle>
-                </div>
-                <Sparkles className="h-4 w-4 text-fuchsia-500" />
+        <div className="space-y-6 xl:col-span-4">
+          <Card className="border-border/60 bg-card/80 shadow-xs">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-amber-500" />
+                <CardTitle className="text-lg tracking-tight">Hall of Fame</CardTitle>
+                <Sparkles className="ml-auto h-4 w-4 text-fuchsia-500" />
               </div>
+              <CardDescription className="text-xs uppercase tracking-[0.08em]">Top learners this week</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
               {hallOfFame?.leaderboard.length ? (
-                <div className="space-y-3">
+                <>
                   {hallOfFame.leaderboard.map((entry) => (
                     <div
                       key={entry.userId}
-                      className="rounded-lg border bg-muted/30 p-3 flex items-center justify-between"
+                      className="flex items-center justify-between rounded-lg border border-border/60 bg-background/70 p-3"
                     >
-                      <div>
-                        <p className="font-semibold">#{entry.rank} {entry.userName}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold">#{entry.rank} {entry.userName}</p>
+                        <p className="text-[11px] text-muted-foreground">
                           {Math.round(entry.weeklyDurationSeconds / 60)} mins this week
                         </p>
                       </div>
-                      {entry.rank === 1 && <Trophy className="h-4 w-4 text-amber-500" />}
+                      {entry.rank === 1 ? (
+                        <Trophy className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                   ))}
                   <Button asChild className="w-full">
                     <Link href="/hall-of-fame">View full ranking</Link>
                   </Button>
-                </div>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   No learning sessions this week yet. Be the first champion.
@@ -140,6 +147,7 @@ export function DashboardContent() {
               )}
             </CardContent>
           </Card>
+
           <DashboardCalendar />
         </div>
       </div>
@@ -149,36 +157,16 @@ export function DashboardContent() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <Skeleton className="h-9 w-[250px]" />
-        <Skeleton className="h-4 w-[350px] mt-2" />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="pt-6">
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-8 w-[60px] mt-2" />
-              <Skeleton className="h-3 w-[80px] mt-2" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Skeleton className="h-8 w-[150px] mb-4" />
-          <div className="grid gap-4 md:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-[200px]" />
-            ))}
-          </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <Skeleton className="h-36 w-full" />
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="space-y-6 xl:col-span-8">
+          <Skeleton className="h-80 w-full" />
+          <Skeleton className="h-80 w-full" />
         </div>
-        <div>
-          <Skeleton className="h-8 w-[150px] mb-4" />
-          <Skeleton className="h-[400px]" />
+        <div className="space-y-6 xl:col-span-4">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-[420px] w-full" />
         </div>
       </div>
     </div>

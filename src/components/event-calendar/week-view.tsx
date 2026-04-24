@@ -36,6 +36,7 @@ interface WeekViewProps {
   events: CalendarEvent[]
   onEventSelect: (event: CalendarEvent) => void
   onEventCreate: (startTime: Date) => void
+  canManageEvents: boolean
 }
 
 interface PositionedEvent {
@@ -52,6 +53,7 @@ export function WeekView({
   events,
   onEventSelect,
   onEventCreate,
+  canManageEvents,
 }: WeekViewProps) {
   const days = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
@@ -344,6 +346,7 @@ export function WeekView({
                     onClick={(e) => handleEventClick(positionedEvent.event, e)}
                     showTime
                     height={positionedEvent.height}
+                    canDrag={canManageEvents}
                   />
                 </div>
               </div>
@@ -388,6 +391,7 @@ export function WeekView({
                           "top-[calc(var(--week-cells-height)/4*3)]"
                         )}
                         onClick={() => {
+                          if (!canManageEvents) return
                           const startTime = new Date(day)
                           startTime.setHours(hourValue)
                           startTime.setMinutes(quarter * 15)

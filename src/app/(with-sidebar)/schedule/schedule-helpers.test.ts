@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { canManageEventScope, getFilteredUniqueEvents } from "./schedule-helpers";
+import {
+  canCreateEvents,
+  canDeleteEvents,
+  canEditEvents,
+  canManageEventScope,
+  getFilteredUniqueEvents,
+  isScheduleAdmin,
+} from "./schedule-helpers";
 
 describe("getFilteredUniqueEvents", () => {
   const sampleEvent = {
@@ -45,5 +52,31 @@ describe("canManageEventScope", () => {
       "course",
     );
     expect(result).toBe(false);
+  });
+});
+
+describe("schedule capabilities", () => {
+  it("grants full capabilities to ADMIN", () => {
+    const session = { user: { role: "ADMIN" } } as never;
+    expect(isScheduleAdmin(session)).toBe(true);
+    expect(canCreateEvents(session)).toBe(true);
+    expect(canEditEvents(session)).toBe(true);
+    expect(canDeleteEvents(session)).toBe(true);
+  });
+
+  it("grants full capabilities to SUPERADMIN", () => {
+    const session = { user: { role: "SUPERADMIN" } } as never;
+    expect(isScheduleAdmin(session)).toBe(true);
+    expect(canCreateEvents(session)).toBe(true);
+    expect(canEditEvents(session)).toBe(true);
+    expect(canDeleteEvents(session)).toBe(true);
+  });
+
+  it("keeps STUDENT in read-only mode", () => {
+    const session = { user: { role: "STUDENT" } } as never;
+    expect(isScheduleAdmin(session)).toBe(false);
+    expect(canCreateEvents(session)).toBe(false);
+    expect(canEditEvents(session)).toBe(false);
+    expect(canDeleteEvents(session)).toBe(false);
   });
 });

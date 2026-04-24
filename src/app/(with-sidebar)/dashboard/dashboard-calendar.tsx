@@ -92,8 +92,8 @@ export function DashboardCalendar() {
   };
 
   return (
-    <Card>
-      <CardContent className="">
+    <Card className="border-border/70 bg-card shadow-sm">
+      <CardContent className="pt-5">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -114,8 +114,8 @@ export function DashboardCalendar() {
 
         <Separator className="my-4" />
 
-        <div className="space-y-2">
-          <h3 className="font-medium text-sm">
+        <div className="space-y-2.5">
+          <h3 className="text-sm font-semibold tracking-tight">
             {formatInTimeZone(selectedDate, TIMEZONE, "d MMMM yyyy")}
           </h3>
 
@@ -130,13 +130,13 @@ export function DashboardCalendar() {
                 return (
                   <Popover key={event.id}>
                     <PopoverTrigger asChild>
-                      <button className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors">
+                      <button className="w-full rounded-lg border border-border/70 bg-background/70 p-3 text-left transition-all hover:-translate-y-0.5 hover:bg-accent/40">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">
+                            <p className="truncate text-sm font-semibold leading-5">
                               {event.title}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[11px] text-muted-foreground">
                               {formatInTimeZone(eventStart, TIMEZONE, "HH:mm")} -{" "}
                               {formatInTimeZone(eventEnd, TIMEZONE, "HH:mm")}
                             </p>

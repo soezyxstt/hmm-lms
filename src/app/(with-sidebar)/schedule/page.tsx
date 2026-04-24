@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useSession } from "next-auth/react"
-import { Loader2, Plus, Upload, Filter, RefreshCw } from "lucide-react"
+import { Loader2, Filter, RefreshCw, Sparkles } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { Skeleton } from "~/components/ui/skeleton"
@@ -16,17 +16,17 @@ import {
   DropdownMenuLabel
 } from "~/components/ui/dropdown-menu"
 import { EventCalendar } from '~/components/event-calendar/event-calendar'
-import { IcsImportDialog } from '~/components/ics-import-dialog'
-import { CreateEventDialog } from './create-event-dialog'
 import { api } from "~/trpc/react"
 import { toast } from "sonner"
 import { getErrorMessage } from "~/lib/error-utils"
 import type { CalendarEvent } from '~/components/event-calendar/types'
 import {
+  canCreateEvents,
+  canDeleteEvents,
+  canEditEvents,
+  isScheduleAdmin,
   type EventScopeFilter,
-  canManageEventScope,
   getFilteredUniqueEvents,
-  resolveCreateScope,
 } from "./schedule-helpers"
 
 
@@ -37,8 +37,6 @@ export default function SchedulePage() {
     course: true,
     global: true
   })
-  const [showIcsImport, setShowIcsImport] = useState(false)
-  const [showCreateEvent, setShowCreateEvent] = useState(false)
 
   // Fetch events based on current user's access
   const {
@@ -109,10 +107,13 @@ export default function SchedulePage() {
     () => getFilteredUniqueEvents(allEventsData, myEventsData, courseEventsData, scopeFilter),
     [allEventsData, myEventsData, courseEventsData, scopeFilter],
   )
+  const canManageEvents = isScheduleAdmin(session ?? null)
 
   const handleEventAdd = async (event: CalendarEvent) => {
-    // Only allow personal event creation for non-admin users
-    const eventScope = resolveCreateScope(session ?? null, event.scope ?? "personal")
+    if (!canCreateEvents(session ?? null)) {
+      toast.error("Only admins can create events")
+      return
+    }
 
     try {
       await createEventMutation.mutateAsync({
@@ -122,7 +123,7 @@ export default function SchedulePage() {
         end: event.end,
         allDay: event.allDay ?? false,
         location: event.location,
-        scope: eventScope,
+        scope: event.scope ?? "personal",
         courseId: event.courseId,
         eventMode: 'BASIC',
         hasTimeline: false,
@@ -136,11 +137,8 @@ export default function SchedulePage() {
   }
 
   const handleEventUpdate = async (updatedEvent: CalendarEvent) => {
-    // Only admins can edit course/global events, users can only edit their personal events
-    const canEdit = canManageEventScope(session ?? null, updatedEvent.scope)
-
-    if (!canEdit) {
-      toast.error("You don't have permission to edit this event")
+    if (!canEditEvents(session ?? null)) {
+      toast.error("Only admins can edit events")
       return
     }
 
@@ -162,13 +160,8 @@ export default function SchedulePage() {
   }
 
   const handleEventDelete = async (eventId: string) => {
-    const eventToDelete = events.find(e => e.id === eventId)
-
-    // Only admins can delete course/global events, users can only delete their personal events
-    const canDelete = canManageEventScope(session ?? null, eventToDelete?.scope)
-
-    if (!canDelete) {
-      toast.error("You don't have permission to delete this event")
+    if (!canDeleteEvents(session ?? null)) {
+      toast.error("Only admins can delete events")
       return
     }
 
@@ -202,20 +195,25 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-4">
-      {/* Header with actions */}
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <Card className="border-dashed bg-gradient-to-b from-muted/30 to-transparent p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Schedule</h1>
-          <p className="text-muted-foreground">
-            Your personal calendar with course and global events
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="text-primary h-4 w-4" />
+            <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
+            <Badge variant={canManageEvents ? "default" : "secondary"}>
+              {canManageEvents ? "Admin access" : "View only"}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A focused calendar for personal, course, and global timelines.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Refresh Button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={refetchAllData}
             disabled={isLoading}
@@ -223,7 +221,6 @@ export default function SchedulePage() {
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
 
-          {/* Scope Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -274,30 +271,11 @@ export default function SchedulePage() {
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* ICS Import */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowIcsImport(true)}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-
-          {/* Create Event */}
-          <Button
-            size="sm"
-            onClick={() => setShowCreateEvent(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Event
-          </Button>
         </div>
-      </div>
+        </div>
+      </Card>
 
-      {/* Calendar */}
-      <Card>
+      <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-center py-8">
@@ -316,61 +294,10 @@ export default function SchedulePage() {
             onEventAdd={handleEventAdd}
             onEventUpdate={handleEventUpdate}
             onEventDelete={handleEventDelete}
+            canManageEvents={canManageEvents}
           />
         )}
       </Card>
-
-      {/* Event Summary */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-emerald-500" />
-            <div>
-              <p className="text-sm font-medium">Personal Events</p>
-              <p className="text-2xl font-bold">
-                {events.filter(e => e.scope === 'personal').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-violet-500" />
-            <div>
-              <p className="text-sm font-medium">Course Events</p>
-              <p className="text-2xl font-bold">
-                {events.filter(e => e.scope === 'course').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-sky-500" />
-            <div>
-              <p className="text-sm font-medium">Global Events</p>
-              <p className="text-2xl font-bold">
-                {events.filter(e => e.scope === 'global').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Dialogs */}
-      <IcsImportDialog
-        open={showIcsImport}
-        onOpenChange={setShowIcsImport}
-        // onImportComplete={refetchAllData}
-      />
-
-      <CreateEventDialog
-        open={showCreateEvent}
-        onOpenChange={setShowCreateEvent}
-        onEventCreated={refetchAllData}
-        defaultScope="personal"
-        isAdmin={session?.user.role === 'ADMIN' || session?.user.role === 'SUPERADMIN'}
-      />
     </div>
   )
 }

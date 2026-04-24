@@ -19,14 +19,15 @@ const sidebarTabs: {
     href: string,
     icon: typeof Banknote,
     tooltip: string,
-    dev?: boolean
+    dev?: boolean,
+    tag?: string
   }[]
 }[] = [
     {
       group: 'General', items: [
         { label: 'Dashboard', href: '/dashboard', icon: Home, tooltip: 'Dashboard' },
-        { label: 'Hall of Fame', href: '/hall-of-fame', icon: Trophy, tooltip: 'Hall of Fame' },
-        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: true },
+        { label: 'Hall of Fame', href: '/hall-of-fame', icon: Trophy, tooltip: 'Hall of Fame', tag: 'new' },
+        { label: 'Schedule', href: '/schedule', icon: Calendar, tooltip: 'Schedule', dev: false },
       ]
     },
     {
@@ -42,14 +43,14 @@ const sidebarTabs: {
       items: [
         { label: 'Events', href: '/events', icon: Footprints, tooltip: 'Events', dev: false },
         { label: 'Announcements', href: '/announcements', icon: Megaphone, tooltip: 'Announcements', dev: false },
-        { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity", dev: true },
+        { label: "M-Opportunity", href: "/loker", icon: Briefcase, tooltip: "M-Opportunity", dev: false },
         { label: "Hotline", href: "/hotline", icon: Phone, tooltip: "Hotline", dev: false },
       ],
     },
     {
       group: 'Preferences',
       items: [
-        { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: true },
+        { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Settings', dev: false },
       ],
     },
     {
@@ -108,7 +109,7 @@ export default async function MainNavbar({
   return (
     <SidebarProvider defaultOpen={defaultOpen} cookieName={SIDEBAR_COOKIE_NAME}>
       <AppSidebar />
-      <main className='w-full h-screen'>
+      <main className='h-screen w-full bg-background'>
         <SiteHeader data={tabs} />
         <div className="h-[calc(100%-16*var(--spacing)))] p-4 md:p-6 group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100%-12*var(--spacing))]">
           {children}
@@ -127,15 +128,15 @@ async function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible='icon'>
-      <SidebarHeader>
+    <Sidebar collapsible='icon' className="border-r border-sidebar-border/60">
+      <SidebarHeader className="px-3 pt-3 group-data-[collapsible=icon]:px-1.5">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-inherit"
+              className="rounded-xl border border-transparent px-2 data-[state=open]:border-sidebar-border/70 data-[state=open]:bg-sidebar-accent/30 data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/20 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
             >
-              <div className="flex aspect-square transition-all items-center justify-center rounded-lg h-full">
+              <div className="flex h-full aspect-square items-center justify-center rounded-lg transition-all">
                 <Image
                   src="/hmm-vstock/logo.png"
                   alt="Logo"
@@ -144,31 +145,32 @@ async function AppSidebar() {
                   className="h-full w-full object-contain"
                 />
               </div>
-              <div className="flex-1 text-left text-sm leading-tight ml-2">
-                <h1 className="text-xl font-semibold truncate">HMM ITB</h1>
+              <div className="ml-2 flex-1 text-left leading-tight">
+                <h1 className="truncate text-base font-semibold tracking-tight">HMM ITB</h1>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2 pb-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
         {sidebarTabs.map((group) => {
           if (group.group === 'Admin' && (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
             return null;
           }
           return (
-            <SidebarGroup key={'sidebar-group-' + group.group}>
-              <SidebarGroupLabel>
+            <SidebarGroup key={'sidebar-group-' + group.group} className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:p-1">
+              <SidebarGroupLabel className="px-3 text-[10px] font-medium uppercase tracking-[0.1em] text-sidebar-foreground/45">
                 {group.group}
               </SidebarGroupLabel>
-              <SidebarMenu>
+              <SidebarMenu className="group-data-[collapsible=icon]:items-center">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={'sidebar-item-' + item.label}>
-                    <SidebarMenuButton tooltip={item.tooltip} asChild>
-                      <Link href={item.href} className='transition-all rounded-l-full pl-4 py-1.5 flex items-center'>
-                        <item.icon />
-                        <span>{item.label}</span>
-                        {item.dev && <Badge variant='secondary' className='ml-2'>dev</Badge>}
+                    <SidebarMenuButton tooltip={item.tooltip} asChild className="h-10 rounded-xl px-3 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/25 hover:text-sidebar-foreground [&[aria-current=page]]:bg-sidebar-primary [&[aria-current=page]]:font-semibold [&[aria-current=page]]:text-sidebar-primary-foreground [&[aria-current=page]]:shadow-sm group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+                      <Link href={item.href} className='flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center'>
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                        {item.dev && <Badge variant='secondary' className='ml-2 group-data-[collapsible=icon]:hidden'>dev</Badge>}
+                        {item.tag && <Badge className='ml-auto h-5 rounded-md px-1.5 text-[10px] group-data-[collapsible=icon]:hidden'>{item.tag}</Badge>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -178,7 +180,7 @@ async function AppSidebar() {
           )
         })}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="px-3 pb-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
         <ProfileMenu user={user} />
       </SidebarFooter>
     </Sidebar>
@@ -187,7 +189,7 @@ async function AppSidebar() {
 
 function SiteHeader({ data }: { data: TabsType }) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 py-2 sticky top-0 z-50 border-b bg-background">
+    <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background/90 py-2 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex items-center w-full gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className='-ml-1 cursor-pointer' />
         <Separator

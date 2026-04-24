@@ -32,6 +32,7 @@ interface MonthViewProps {
   events: CalendarEvent[]
   onEventSelect: (event: CalendarEvent) => void
   onEventCreate: (startTime: Date) => void
+  canManageEvents: boolean
 }
 
 export function MonthView({
@@ -39,6 +40,7 @@ export function MonthView({
   events,
   onEventSelect,
   onEventCreate,
+  canManageEvents,
 }: MonthViewProps) {
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentDate)
@@ -135,6 +137,7 @@ export function MonthView({
                     id={cellId}
                     date={day}
                     onClick={() => {
+                      if (!canManageEvents) return
                       const startTime = new Date(day)
                       startTime.setHours(DefaultStartHour, 0, 0)
                       onEventCreate(startTime)
@@ -200,6 +203,7 @@ export function MonthView({
                               onClick={(e) => handleEventClick(event, e)}
                               isFirstDay={isFirstDay}
                               isLastDay={isLastDay}
+                              canDrag={canManageEvents}
                             />
                           </div>
                         )

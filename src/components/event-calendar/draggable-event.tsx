@@ -11,6 +11,7 @@ import { EventItem } from './event-item'
 interface DraggableEventProps {
   event: CalendarEvent
   view: "month" | "week" | "day"
+  canDrag?: boolean
   showTime?: boolean
   onClick?: (e: React.MouseEvent) => void
   height?: number
@@ -24,6 +25,7 @@ interface DraggableEventProps {
 export function DraggableEvent({
   event,
   view,
+  canDrag = true,
   showTime,
   onClick,
   height,
@@ -49,6 +51,7 @@ export function DraggableEvent({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `${event.id}-${view}`,
+      disabled: !canDrag,
       data: {
         event,
         view,
@@ -117,7 +120,7 @@ export function DraggableEvent({
         if (elementRef) elementRef.current = node
       }}
       style={style}
-      className="touch-none"
+      className={canDrag ? "touch-none" : undefined}
     >
       <EventItem
         event={event}
@@ -129,8 +132,8 @@ export function DraggableEvent({
         onClick={onClick}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        dndListeners={listeners}
-        dndAttributes={attributes}
+        dndListeners={canDrag ? listeners : undefined}
+        dndAttributes={canDrag ? attributes : undefined}
         aria-hidden={ariaHidden}
       />
     </div>

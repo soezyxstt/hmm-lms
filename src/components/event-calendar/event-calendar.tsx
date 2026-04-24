@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useEffect, useMemo, useState } from "react"
 import { RiCalendarCheckLine } from "@remixicon/react"
 import {
@@ -46,6 +45,7 @@ export interface EventCalendarProps {
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
   onEventDelete?: (eventId: string) => void
+  canManageEvents?: boolean
   className?: string
   initialView?: CalendarView
 }
@@ -55,10 +55,10 @@ export function EventCalendar({
   onEventAdd,
   onEventUpdate,
   onEventDelete,
+  canManageEvents = false,
   className,
   initialView = "month",
 }: EventCalendarProps) {
-  const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<CalendarView>(initialView)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
@@ -132,13 +132,12 @@ export function EventCalendar({
   }
 
   const handleEventSelect = (event: CalendarEvent) => {
-    console.log("Event selected:", event) // Debug log
     setSelectedEvent(event)
     setIsEventDialogOpen(true)
   }
 
   const handleEventCreate = (startTime: Date) => {
-    console.log("Creating new event at:", startTime) // Debug log
+    if (!canManageEvents) return
 
     // Snap to 15-minute intervals
     const minutes = startTime.getMinutes()
@@ -167,6 +166,8 @@ export function EventCalendar({
   }
 
   const handleEventSave = (event: CalendarEvent) => {
+    if (!canManageEvents) return
+
     if (event.id) {
       onEventUpdate?.(event)
       // Show toast notification when an event is updated
@@ -175,10 +176,7 @@ export function EventCalendar({
         position: "bottom-left",
       })
     } else {
-      onEventAdd?.({
-        ...event,
-        id: Math.random().toString(36).substring(2, 11),
-      })
+      onEventAdd?.(event)
       // Show toast notification when an event is added
       toast(`Event "${event.title}" added`, {
         description: format(new Date(event.start), "MMM d, yyyy"),
@@ -190,6 +188,8 @@ export function EventCalendar({
   }
 
   const handleEventDelete = (eventId: string) => {
+    if (!canManageEvents) return
+
     const deletedEvent = events.find((e) => e.id === eventId)
     onEventDelete?.(eventId)
     setIsEventDialogOpen(false)
@@ -205,6 +205,8 @@ export function EventCalendar({
   }
 
   const handleEventUpdate = (updatedEvent: CalendarEvent) => {
+    if (!canManageEvents) return
+
     onEventUpdate?.(updatedEvent)
 
     // Show toast notification when an event is updated via drag and drop
@@ -256,7 +258,7 @@ export function EventCalendar({
 
   return (
     <div
-      className="flex flex-col rounded-lg border has-data-[slot=month-view]:flex-1"
+      className="flex flex-col rounded-xl border bg-background/80 shadow-sm has-data-[slot=month-view]:flex-1"
       style={
         {
           "--event-height": `${EventHeight}px`,
@@ -268,7 +270,7 @@ export function EventCalendar({
       <CalendarDndProvider onEventUpdate={handleEventUpdate}>
         <div
           className={cn(
-            "flex items-center justify-between p-2 sm:p-4",
+            "flex items-center justify-between border-b bg-muted/20 px-2 sm:px-4",
             className
           )}
         >
@@ -303,7 +305,7 @@ export function EventCalendar({
                 <ChevronRightIcon size={16} aria-hidden="true" />
               </Button>
             </div>
-            <h2 className="text-sm font-semibold sm:text-base md:text-lg">
+            <h2 className="text-sm font-semibold tracking-tight sm:text-base md:text-lg">
               {viewTitle}
             </h2>
           </div>
@@ -341,7 +343,7 @@ export function EventCalendar({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {session?.user.role === "ADMIN" && (
+            {canManageEvents && (
               <Button
                 className="max-[479px]:aspect-square max-[479px]:p-0!"
                 size="sm"
@@ -368,6 +370,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              canManageEvents={canManageEvents}
             />
           )}
           {view === "week" && (
@@ -376,6 +379,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              canManageEvents={canManageEvents}
             />
           )}
           {view === "day" && (
@@ -384,6 +388,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              canManageEvents={canManageEvents}
             />
           )}
           {view === "agenda" && (
@@ -404,6 +409,7 @@ export function EventCalendar({
           }}
           onSave={handleEventSave}
           onDelete={handleEventDelete}
+          canManageEvents={canManageEvents}
         />
       </CalendarDndProvider>
     </div>

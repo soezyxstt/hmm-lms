@@ -43,8 +43,8 @@ const adminSidebarTabs: {
       group: 'General',
       items: [
         { label: 'Dashboard', href: '/admin', icon: Home, tooltip: 'Admin Dashboard' },
-        { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, tooltip: 'Analytics & Reports', dev: true },
-        { label: 'Forms', href: '/admin/forms', icon: FormInput, tooltip: 'Manage Forms', dev: true },
+        { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, tooltip: 'Analytics & Reports', dev: false },
+        { label: 'Forms', href: '/admin/forms', icon: FormInput, tooltip: 'Manage Forms', dev: false },
         { label: 'Short Links', href: '/admin/shortlinks', icon: Link2, tooltip: 'Shorten Links' }
       ],
     },
@@ -62,14 +62,14 @@ const adminSidebarTabs: {
     {
       group: 'User Management',
       items: [
-        { label: 'Users', href: '/admin/users', icon: Users, tooltip: 'Manage Users', dev: true },
+        { label: 'Users', href: '/admin/users', icon: Users, tooltip: 'Manage Users', dev: false },
       ],
     },
     {
       group: 'System',
       items: [
-        { label: 'Database', href: '/admin/database', icon: Database, tooltip: 'Database Management', dev: true },
-        { label: 'Logs', href: '/admin/logs', icon: FileText, tooltip: 'System Logs', dev: true },
+        { label: 'Database', href: '/admin/database', icon: Database, tooltip: 'Database Management', dev: false },
+        { label: 'Logs', href: '/admin/logs', icon: FileText, tooltip: 'System Logs', dev: false },
       ],
     },
     {

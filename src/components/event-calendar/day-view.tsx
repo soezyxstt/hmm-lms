@@ -31,6 +31,7 @@ interface DayViewProps {
   events: CalendarEvent[]
   onEventSelect: (event: CalendarEvent) => void
   onEventCreate: (startTime: Date) => void
+  canManageEvents: boolean
 }
 
 interface PositionedEvent {
@@ -47,6 +48,7 @@ export function DayView({
   events,
   onEventSelect,
   onEventCreate,
+  canManageEvents,
 }: DayViewProps) {
   const hours = useMemo(() => {
     const dayStart = startOfDay(currentDate)
@@ -259,6 +261,7 @@ export function DayView({
                   onClick={(e) => handleEventClick(positionedEvent.event, e)}
                   showTime
                   height={positionedEvent.height}
+                  canDrag={canManageEvents}
                 />
               </div>
             </div>
@@ -305,6 +308,7 @@ export function DayView({
                         "top-[calc(var(--week-cells-height)/4*3)]"
                       )}
                       onClick={() => {
+                        if (!canManageEvents) return
                         const startTime = new Date(currentDate)
                         startTime.setHours(hourValue)
                         startTime.setMinutes(quarter * 15)

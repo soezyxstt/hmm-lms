@@ -48,9 +48,9 @@ export default function ProfileMenu({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2 cursor-pointer hover:bg-transparent active:bg-transparent truncate"
+              className="data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2 truncate rounded-xl border border-transparent px-2 hover:bg-sidebar-accent/20 active:bg-sidebar-accent/20 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
             >
-              <Avatar className='h-8 w-8 rounded-lg'>
+              <Avatar className='h-8 w-8 rounded-lg group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7'>
                 <AvatarImage
                   src={user?.image ?? '/default-avatar.png'}
                   alt='avatar'
@@ -59,11 +59,11 @@ export default function ProfileMenu({
                   {user?.name?.split(' ').map((t: string) => t[0])}
                 </AvatarFallback>
               </Avatar>
-              <div className='*:text-[0.625rem]'>
+              <div className='*:text-[0.625rem] group-data-[collapsible=icon]:hidden'>
                 <p className='font-semibold'>{user?.name}</p>
                 <p className='text-abu-3'>{user?.role}</p>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
