@@ -1,0 +1,750 @@
+@font-face {
+  font-family: "HMM ITC New Baskerville";
+  src: url("../fonts/title-sub-itc/NewBaskervilleStd-Roman.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HMM ITC New Baskerville";
+  src: url("../fonts/title-sub-itc/NewBaskervilleStd-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HMM ITC New Baskerville";
+  src: url("../fonts/title-sub-itc/NewBaskervilleStd-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HMM ITC New Baskerville";
+  src: url("../fonts/title-sub-itc/NewBaskervilleStd-BoldIt.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme inline {
+  --color-hmm-navy: var(--hmm-navy);
+  --color-hmm-maroon: var(--hmm-maroon);
+  --color-hmm-cream: var(--hmm-cream);
+  --color-hmm-navy-deep: var(--hmm-navy-deep);
+  --color-hmm-navy-muted: var(--hmm-navy-muted);
+  --color-hmm-black: var(--hmm-black);
+  --color-hmm-white: var(--hmm-white);
+  --color-hmm-yellow: var(--hmm-yellow);
+  --color-hmm-yellow-acid: var(--hmm-yellow-acid);
+  --color-hmm-grey-light: var(--hmm-grey-light);
+}
+
+.hmm-external {
+  --hmm-navy: #253041;
+  --hmm-maroon: #590f11;
+  --hmm-cream: #f4ede1;
+  --hmm-navy-deep: #06162f;
+  --hmm-navy-muted: #445e86;
+  --hmm-black: #000000;
+  --hmm-white: #ffffff;
+  --hmm-yellow: #f0d637;
+  --hmm-yellow-acid: #d9d909;
+  --hmm-grey-light: #d9d9d9;
+  --color-hmm-navy: var(--hmm-navy);
+  --color-hmm-maroon: var(--hmm-maroon);
+  --color-hmm-cream: var(--hmm-cream);
+  --color-hmm-navy-deep: var(--hmm-navy-deep);
+  --color-hmm-navy-muted: var(--hmm-navy-muted);
+  --color-hmm-black: var(--hmm-black);
+  --color-hmm-white: var(--hmm-white);
+  --color-hmm-yellow: var(--hmm-yellow);
+  --color-hmm-yellow-acid: var(--hmm-yellow-acid);
+  --color-hmm-grey-light: var(--hmm-grey-light);
+
+  --hmm-font-title: "HMM ITC New Baskerville", "Times New Roman", serif;
+  --hmm-font-sans: var(--font-montserrat), var(--font-inter), "Helvetica Neue", Arial,
+    sans-serif;
+  --hmm-scale-ratio: 1.2;
+
+  /* Section vertical rhythm (roughly 80–120px desktop) */
+  --hmm-section-y-sm: clamp(2.75rem, 6vw, 4.5rem);
+  --hmm-section-y-md: clamp(3.5rem, 7vw, 5.5rem);
+  --hmm-section-y-lg: clamp(4.5rem, 9vw, 7.5rem);
+
+  background-color: var(--color-hmm-white);
+  color: var(--color-hmm-navy);
+}
+
+.hmm-external .hmm-section-y-md {
+  padding-top: var(--hmm-section-y-md);
+  padding-bottom: var(--hmm-section-y-md);
+}
+
+.hmm-external .hmm-section-y-lg {
+  padding-top: var(--hmm-section-y-lg);
+  padding-bottom: var(--hmm-section-y-lg);
+}
+
+/* Editorial: image + text legibility */
+.hmm-external .hmm-grad-hero {
+  /* Lighter scrim: photo reads as content, type stays legible at bottom */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 52%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 8%, transparent) 40%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 28%, transparent) 70%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 88%, transparent) 100%
+  );
+}
+
+.hmm-external .hmm-grad-section {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-hmm-navy) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 55%, transparent) 100%
+  );
+}
+
+.hmm-external .hmm-grad-vignette {
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 40%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 45%, transparent) 100%
+  );
+}
+
+.hmm-external .hmm-grad-cta {
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 88%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-maroon) 50%, transparent) 55%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 75%, transparent) 100%
+  );
+}
+
+/* Visi: extra read legibility on busy photos */
+.hmm-external .hmm-grad-visi-boost {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 55%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 78%, transparent) 45%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 88%, transparent) 100%
+  );
+}
+
+.hmm-external .hmm-grad-visi-bottom {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 92%, transparent) 0%,
+    transparent 55%
+  );
+}
+
+/* Light seams only — heritage section is dark in markup */
+.hmm-external .hmm-chapter-transition {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-hmm-white) 12%, transparent) 30%,
+    color-mix(in srgb, var(--color-hmm-white) 12%, transparent) 70%,
+    transparent 100%
+  );
+  border: none;
+}
+
+.hmm-external .hmm-chapter-transition-heritage-misi {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-hmm-white) 10%, transparent) 45%,
+    transparent 100%
+  );
+}
+
+.hmm-external .hmm-chapter-transition-editorial {
+  /* Visi → Spotlight: land on slightly lifted navy (editorial is not a flat void) */
+  height: 1.25rem;
+  background: linear-gradient(
+    180deg,
+    var(--color-hmm-navy-deep) 0%,
+    color-mix(in srgb, var(--color-hmm-navy) 32%, var(--color-hmm-navy-deep)) 100%
+  );
+  border: none;
+}
+
+/* Spotlight / editorial: depth + light — avoids a solid black slab */
+.hmm-external .hmm-chapter-dark.hmm-editorial-chapter {
+  background-color: var(--color-hmm-navy);
+  background-image:
+    radial-gradient(ellipse 110% 85% at 50% -30%, color-mix(in srgb, var(--color-hmm-navy-muted) 26%, transparent), transparent 58%),
+    radial-gradient(ellipse 60% 50% at 100% 15%, color-mix(in srgb, var(--color-hmm-cream) 6%, transparent), transparent 52%),
+    radial-gradient(ellipse 55% 50% at 0% 75%, color-mix(in srgb, var(--color-hmm-yellow) 5%, transparent), transparent 55%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-hmm-navy) 45%, var(--color-hmm-navy-deep)) 0%,
+      color-mix(in srgb, var(--color-hmm-navy-deep) 88%, var(--color-hmm-navy)) 48%,
+      color-mix(in srgb, var(--color-hmm-navy) 36%, var(--color-hmm-navy-deep)) 100%
+    );
+}
+
+.hmm-external .hmm-editorial-chapter__mesh {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-hmm-white) 7%, transparent) 1.25px,
+    transparent 1.25px
+  );
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, black, black 60%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, black, black 60%, transparent);
+}
+
+.hmm-external .hmm-divider {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-hmm-cream) 50%, var(--color-hmm-navy) 15%),
+    transparent
+  );
+}
+
+.hmm-external .hmm-timeline {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+  list-style: none;
+  border: none;
+}
+
+.hmm-external .hmm-timeline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-hmm-navy) 32%, transparent) 20%,
+    color-mix(in srgb, var(--color-hmm-navy) 32%, transparent) 80%,
+    transparent 100%
+  );
+}
+
+.hmm-external .hmm-timeline--on-dark::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-hmm-yellow) 35%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-white) 22%, transparent) 20%,
+    color-mix(in srgb, var(--color-hmm-maroon) 40%, transparent) 50%,
+    color-mix(in srgb, var(--color-hmm-white) 18%, transparent) 80%,
+    color-mix(in srgb, var(--color-hmm-yellow) 20%, transparent) 100%
+  );
+}
+
+/* Heritage: never set large type in maroon-on-navy — use light type + maroon accent rule */
+.hmm-external .hmm-heritage-stat-card {
+  border: 1px solid color-mix(in srgb, var(--color-hmm-white) 14%, transparent);
+  border-left: 3px solid var(--color-hmm-maroon);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-hmm-white) 7%, var(--color-hmm-navy-deep));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--color-hmm-yellow) 32%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-hmm-white) 8%, transparent),
+    0 14px 36px color-mix(in srgb, var(--color-hmm-black) 35%, transparent);
+}
+
+.hmm-external .hmm-heritage-stat-num {
+  color: color-mix(in srgb, var(--color-hmm-cream) 96%, var(--color-hmm-white));
+  text-shadow: 0 1px 14px color-mix(in srgb, var(--color-hmm-black) 42%, transparent);
+}
+
+.hmm-external .hmm-heritage-year {
+  color: color-mix(in srgb, var(--color-hmm-cream) 94%, var(--color-hmm-white));
+  text-shadow: 0 1px 12px color-mix(in srgb, var(--color-hmm-black) 45%, transparent);
+}
+
+.hmm-external .hmm-heritage-body {
+  color: color-mix(in srgb, var(--color-hmm-cream) 88%, var(--color-hmm-white));
+}
+
+/* Sticky glass navbar (isolated) */
+.hmm-external .hmm-scroll-progress-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  background: color-mix(in srgb, var(--color-hmm-white) 10%, transparent);
+  pointer-events: none;
+}
+
+.hmm-external .hmm-scroll-progress-fill {
+  height: 100%;
+  width: 0;
+  min-width: 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-hmm-yellow) 0%,
+    var(--color-hmm-maroon) 42%,
+    color-mix(in srgb, var(--color-hmm-navy-muted) 50%, var(--color-hmm-maroon)) 100%
+  );
+  transition: width 80ms linear;
+}
+
+/* Tiga pilar: three white vertical bars (HMM / adidas-style motif) */
+.hmm-external .hmm-tiga-pilar-stripes {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.32rem;
+}
+
+.hmm-external .hmm-tiga-pilar-stripes__bar {
+  width: 0.22rem;
+  min-height: 2.5rem;
+  align-self: stretch;
+  border-radius: 0.125rem;
+  background: color-mix(in srgb, var(--color-hmm-white) 90%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-hmm-white) 12%, transparent);
+}
+
+.hmm-external .hmm-tiga-pilar-stripes--sm .hmm-tiga-pilar-stripes__bar {
+  min-height: 2.25rem;
+  width: 0.2rem;
+}
+
+.hmm-external .hmm-tiga-pilar-stripes--lg .hmm-tiga-pilar-stripes__bar {
+  min-height: 3.25rem;
+  width: 0.26rem;
+}
+
+.hmm-external .hmm-nav-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-hmm-white) 14%, transparent);
+  background: color-mix(in srgb, var(--color-hmm-navy-deep) 42%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.hmm-external .hmm-nav-sticky[data-hmm-scrolled="true"] {
+  background: color-mix(in srgb, var(--color-hmm-navy-deep) 90%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--color-hmm-white) 22%, transparent);
+  box-shadow: 0 10px 40px color-mix(in srgb, var(--color-hmm-black) 35%, transparent);
+}
+
+.hmm-external .hmm-nav-inner {
+  display: flex;
+  max-width: 86rem;
+  margin-inline: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .hmm-external .hmm-nav-inner {
+    padding: 0.75rem 1.5rem 0.85rem;
+  }
+}
+
+.hmm-external .hmm-title {
+  font-family: var(--hmm-font-title);
+}
+
+.hmm-external .hmm-sans {
+  font-family: var(--hmm-font-sans);
+}
+
+.hmm-external .hmm-title-scale-lg {
+  font-size: clamp(2.75rem, 10vw, 6.25rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+}
+
+.hmm-external .hmm-subtitle-scale-lg {
+  font-size: clamp(2.1rem, 8.3vw, 5.21rem);
+  line-height: 1;
+}
+
+.hmm-external .hmm-title-scale-md {
+  font-size: clamp(2rem, 6vw, 3.75rem);
+  line-height: 1;
+}
+
+.hmm-external .hmm-subtitle-scale-md {
+  font-size: clamp(1.67rem, 5vw, 3.125rem);
+  line-height: 1.05;
+}
+
+.hmm-external .hmm-solid-border {
+  border: 1px solid var(--color-hmm-navy);
+}
+
+.hmm-external .hmm-solid-border-thick {
+  border: 2px solid var(--color-hmm-navy);
+}
+
+/* Type system (hmm-prefixed) */
+.hmm-external .hmm-type-display {
+  font-family: var(--hmm-font-title);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  line-height: 0.98;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hmm-external .hmm-type-display-reg {
+  font-family: var(--hmm-font-title);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.hmm-external .hmm-type-section {
+  font-family: var(--hmm-font-title);
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hmm-external .hmm-type-subsection {
+  font-family: var(--hmm-font-title);
+  font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.hmm-external .hmm-type-eyebrow {
+  font-family: var(--hmm-font-sans);
+  font-size: clamp(0.75rem, 1.1vw, 0.875rem);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.hmm-external .hmm-eyebrow-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hmm-external .hmm-eyebrow-rule::before {
+  content: "";
+  width: 2.5rem;
+  height: 2px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-hmm-yellow) 0%,
+    var(--color-hmm-maroon) 100%
+  );
+}
+
+/* Softer but still on-brand: yellow cap → maroon → muted */
+.hmm-external .hmm-eyebrow-rule--cool::before {
+  background: linear-gradient(
+    90deg,
+    var(--color-hmm-yellow) 0%,
+    var(--color-hmm-maroon) 45%,
+    color-mix(in srgb, var(--color-hmm-navy-muted) 40%, var(--color-hmm-maroon)) 100%
+  );
+}
+
+.hmm-external .hmm-type-punch {
+  font-family: var(--hmm-font-sans);
+  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-wrap: balance;
+}
+
+.hmm-external .hmm-type-lede {
+  font-family: var(--hmm-font-sans);
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  line-height: 1.55;
+  max-width: 45ch;
+  font-weight: 500;
+}
+
+.hmm-external .hmm-type-body {
+  font-family: var(--hmm-font-sans);
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 65ch;
+}
+
+.hmm-external .hmm-type-prose {
+  font-family: var(--hmm-font-sans);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  max-width: 72ch;
+}
+
+.hmm-external .hmm-pair-6-5 {
+  --hmm-pair-a: clamp(2.4rem, 6vw, 3.75rem);
+  --hmm-pair-b: calc(var(--hmm-pair-a) * 5 / 6);
+}
+
+.hmm-external .hmm-pair-6-5 .hmm-pair-title {
+  font-family: var(--hmm-font-title);
+  font-size: var(--hmm-pair-a);
+  line-height: 1.02;
+  font-weight: 700;
+}
+
+.hmm-external .hmm-pair-6-5 .hmm-pair-sub {
+  font-family: var(--hmm-font-sans);
+  font-size: var(--hmm-pair-b);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Chapter shells */
+.hmm-external .hmm-chapter-dark {
+  color: var(--color-hmm-cream);
+  background-color: var(--color-hmm-navy-deep);
+}
+
+.hmm-external .hmm-chapter-dark .hmm-type-eyebrow {
+  color: color-mix(in srgb, var(--color-hmm-cream) 70%, var(--color-hmm-white));
+}
+
+.hmm-external .hmm-chapter-light {
+  color: var(--color-hmm-navy);
+  /* Cool neutral, no warm beige */
+  background: linear-gradient(
+    180deg,
+    var(--color-hmm-white) 0%,
+    color-mix(in srgb, var(--color-hmm-navy) 3%, var(--color-hmm-white)) 50%,
+    var(--color-hmm-white) 100%
+  );
+}
+
+.hmm-external .hmm-chapter-light-frame {
+  position: relative;
+  border-top: 1px solid color-mix(in srgb, var(--color-hmm-navy) 18%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-hmm-navy) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-hmm-navy) 6%, transparent);
+}
+
+.hmm-external .hmm-grad-hero-burst {
+  background: linear-gradient(
+    130deg,
+    var(--color-hmm-navy-deep) 0%,
+    color-mix(in srgb, var(--color-hmm-navy) 55%, var(--color-hmm-navy-deep)) 40%,
+    var(--color-hmm-navy-deep) 100%
+  );
+}
+
+.hmm-external .hmm-grad-society {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 72%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 22%, transparent) 55%,
+    color-mix(in srgb, var(--color-hmm-navy) 12%, transparent) 100%
+  );
+}
+
+.hmm-external .hmm-grad-solidarity {
+  background: linear-gradient(
+    195deg,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 58%, transparent) 0%,
+    color-mix(in srgb, var(--color-hmm-maroon) 24%, transparent) 45%,
+    color-mix(in srgb, var(--color-hmm-navy-deep) 55%, transparent) 100%
+  );
+}
+
+/* TL;DR + cards */
+.hmm-external .hmm-tldr {
+  border-left: 3px solid var(--color-hmm-yellow);
+  background: color-mix(in srgb, var(--color-hmm-navy-deep) 55%, transparent);
+  padding: 1rem 1.25rem;
+  border-radius: 0 0.375rem 0.375rem 0;
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--color-hmm-black) 25%, transparent);
+}
+
+.hmm-external .hmm-ink-card {
+  border: 1px solid color-mix(in srgb, var(--color-hmm-white) 12%, transparent);
+  background: color-mix(in srgb, var(--color-hmm-navy-deep) 40%, transparent);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.35rem;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    transform 0.22s ease;
+}
+
+.hmm-external .hmm-ink-card:hover {
+  border-color: color-mix(in srgb, var(--color-hmm-yellow) 30%, var(--color-hmm-maroon) 55%);
+  background: color-mix(in srgb, var(--color-hmm-navy-deep) 50%, transparent);
+  transform: translateY(-1px);
+}
+
+.hmm-external .hmm-misi-card {
+  border: 1px solid color-mix(in srgb, var(--color-hmm-white) 16%, transparent);
+  border-left: 3px solid var(--color-hmm-maroon);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-hmm-white) 6%, var(--color-hmm-navy-deep));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--color-hmm-yellow) 32%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-hmm-white) 8%, transparent),
+    0 14px 36px color-mix(in srgb, var(--color-hmm-black) 38%, transparent);
+  padding: 1.1rem 1.25rem;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.hmm-external .hmm-misi-card:hover {
+  border-color: color-mix(in srgb, var(--color-hmm-yellow) 24%, var(--color-hmm-maroon));
+  background: color-mix(in srgb, var(--color-hmm-white) 9%, var(--color-hmm-navy-deep));
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--color-hmm-yellow) 45%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-hmm-white) 12%, transparent),
+    0 18px 44px color-mix(in srgb, var(--color-hmm-black) 42%, transparent);
+}
+
+/* Index + icon: must not use low-contrast maroon on dark; titles use .hmm-misi-card__index */
+.hmm-external .hmm-misi-card__index {
+  color: color-mix(in srgb, var(--color-hmm-cream) 92%, var(--color-hmm-white));
+  text-shadow:
+    0 0 20px color-mix(in srgb, var(--color-hmm-yellow) 16%, transparent),
+    0 1px 12px color-mix(in srgb, var(--color-hmm-black) 45%, transparent);
+}
+
+.hmm-external .hmm-misi-card__icon {
+  color: color-mix(in srgb, var(--color-hmm-cream) 88%, var(--color-hmm-white));
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-hmm-black) 55%, transparent));
+}
+
+.hmm-external .hmm-misi-card__details {
+  border-top: 1px solid color-mix(in srgb, var(--color-hmm-white) 16%, transparent);
+  margin-top: 0.75rem;
+  padding-top: 0.85rem;
+}
+
+.hmm-external .hmm-misi-card__summary {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-hmm-cream) 80%, var(--color-hmm-white));
+}
+
+.hmm-external .hmm-misi-card__details[open] .hmm-misi-card__summary {
+  color: var(--color-hmm-white);
+}
+
+.hmm-external .hmm-misi-card__summary:hover {
+  color: var(--color-hmm-white);
+}
+
+.hmm-external .hmm-misi-card__summary:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-hmm-yellow) 40%, var(--color-hmm-cream));
+  outline-offset: 2px;
+  border-radius: 0.125rem;
+}
+
+@media (min-width: 640px) {
+  .hmm-external .hmm-misi-card__summary {
+    font-size: 0.72rem;
+  }
+}
+
+/* CTA buttons */
+.hmm-external .hmm-btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  font-family: var(--hmm-font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.hmm-external .hmm-btn-cta--primary {
+  background: var(--color-hmm-yellow);
+  color: var(--color-hmm-navy-deep);
+  border: 1px solid color-mix(in srgb, var(--color-hmm-yellow-acid) 35%, var(--color-hmm-yellow));
+  box-shadow: 0 4px 22px color-mix(in srgb, var(--color-hmm-black) 38%, transparent);
+}
+
+.hmm-external .hmm-btn-cta--primary:hover {
+  background: color-mix(in srgb, var(--color-hmm-white) 14%, var(--color-hmm-yellow));
+  color: var(--color-hmm-navy-deep);
+}
+
+.hmm-external .hmm-btn-cta--secondary {
+  background: transparent;
+  color: var(--color-hmm-cream);
+  border: 1px solid color-mix(in srgb, var(--color-hmm-cream) 45%, transparent);
+}
+
+.hmm-external .hmm-btn-cta--secondary:hover {
+  background: color-mix(in srgb, var(--color-hmm-white) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-hmm-yellow) 40%, var(--color-hmm-cream) 50%);
+}
+
+.hmm-external .hmm-nav-link--active {
+  color: var(--color-hmm-white) !important;
+  background: color-mix(in srgb, var(--color-hmm-white) 12%, transparent) !important;
+}
+
+.hmm-external details summary {
+  list-style: none;
+}
+
+.hmm-external details summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hmm-external .hmm-ink-card,
+  .hmm-external .hmm-ink-card:hover,
+  .hmm-external .hmm-misi-card,
+  .hmm-external .hmm-misi-card:hover,
+  .hmm-external .hmm-scroll-progress-fill,
+  .hmm-external a.hmm-editorial-tile img,
+  .hmm-external a.hmm-editorial-tile {
+    transition: none;
+    transform: none;
+  }
+}
