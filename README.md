@@ -1,76 +1,43 @@
 # HMM ITB Learning & Community Platform
 
-A full-stack learning and community platform for **Himpunan Mahasiswa Mesin (HMM) Institut Teknologi Bandung**.
-
-The application combines learning management, assessments, events, announcements, forms, administrative workflows, analytics, and PWA features in one production-oriented system.
+Full-stack learning and community platform for Himpunan Mahasiswa Mesin ITB.
 
 **Live:** [hmmitb.com](https://hmmitb.com)
 
-## What the platform includes
+## Features
 
-- Course management, learning resources, enrollment, and progress tracking
-- Practice assessments with multiple question types, scoring, explanations, and history
-- Event management with RSVP and attendance workflows
+- Courses, resources, enrollment, and progress tracking
+- Assessments with multiple question types, scoring, and history
+- Events with RSVP and attendance flows
 - Announcements, discussions, and rich-text content
-- Dynamic forms for surveys, registration, and feedback
-- Role-based administration for students, admins, and superadmins
-- Resource library, job and scholarship information, and link-shortening tools
-- Progressive Web App support and web push notifications
+- Dynamic forms for registration, surveys, and feedback
+- Role-based admin tools
+- PWA support and push notifications
 
-## Tech stack
+## Stack
 
-- **Next.js 16 + React 19 + TypeScript**
-- **tRPC 11** for end-to-end typed APIs
-- **PostgreSQL + Prisma 6**
-- **Auth.js / NextAuth 5** for authentication
-- **Tailwind CSS 4**
-- **TipTap 3** for rich-text editing
-- **React Hook Form + Zod**
-- **S3-compatible object storage**
-- **Vitest** for automated testing
-- **npm** for package management
+`Next.js 16` `React 19` `TypeScript` `tRPC` `PostgreSQL` `Prisma` `Auth.js` `Tailwind CSS` `TipTap` `Zod` `Vitest`
 
-## Engineering highlights
-
-### Typed full-stack architecture
-The frontend and backend share typed contracts through tRPC, reducing duplicated API models and making feature changes easier to propagate safely across the application.
-
-### Multi-domain product design
-The system is not limited to courses. Academic content, assessments, events, announcements, forms, administration, and community information live in one application with shared authentication and role-based access control.
-
-### Assessment workflows
-The assessment system supports multiple-choice, short-answer, and essay-style questions, with scoring, explanations, media support, and student performance history.
-
-### Event and form infrastructure
-Events can operate as simple listings, RSVP flows, attendance-tracked activities, or a combination of both. Dynamic forms provide reusable registration, survey, and feedback workflows.
-
-### Mobile-first PWA experience
-The application is designed to behave as an installable mobile experience with service-worker support and push notifications for important updates.
-
-## High-level architecture
+## Architecture
 
 ```text
-                       ┌─────────────────┐
-                       │   Next.js App   │
-                       │  React / PWA    │
-                       └────────┬────────┘
-                                │
-                              tRPC
-                                │
-                 ┌──────────────┼──────────────┐
-                 ▼              ▼              ▼
-          Authentication    Application     File / Media
-             Auth.js          Services         Storage
-                 │              │                │
-                 └──────┬───────┘         S3-compatible
-                        ▼
-                 Prisma ORM
-                        │
-                        ▼
-                   PostgreSQL
+Next.js / React PWA
+        │
+       tRPC
+        │
+ ┌──────┼─────────┐
+ ▼      ▼         ▼
+Auth   Services   Media
+ │      │          │
+ └──────┼──────────┘
+        ▼
+      Prisma
+        │
+        ▼
+   PostgreSQL
 ```
 
-## Local development
+## Development
 
 ```bash
 git clone https://github.com/soezyxstt/hmm-lms.git
@@ -81,7 +48,7 @@ npm run db:push
 npm run dev
 ```
 
-Useful validation commands:
+Validation:
 
 ```bash
 npm run typecheck
@@ -89,26 +56,6 @@ npm test
 npm run build
 ```
 
-Use local or development credentials only. Never commit `.env` files, database credentials, storage secrets, or private keys.
+Use development credentials only. Never commit secrets or environment files.
 
-## Project structure
-
-```text
-src/
-├── app/          # Next.js routes and layouts
-├── components/   # Product and UI components
-├── server/       # tRPC, auth, and backend logic
-├── lib/          # Shared utilities
-├── hooks/        # Reusable client hooks
-└── styles/       # Application styling
-
-prisma/
-├── schema.prisma
-└── migrations/
-```
-
-## Project context
-
-Built for the HMM ITB community as a real operational platform rather than a tutorial or demo application.
-
-Primary development by [Adi Haditya Nursyam](https://github.com/soezyxstt), with contributions from the HMM ITB information-technology team.
+Built as an operational platform for the HMM ITB community. Primary development by [Adi Haditya Nursyam](https://github.com/soezyxstt), with contributions from the HMM ITB IT team.
