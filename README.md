@@ -19,15 +19,16 @@ The application combines learning management, assessments, events, announcements
 
 ## Tech stack
 
-- **Next.js 15** + React + TypeScript
-- **tRPC** for end-to-end typed APIs
-- **PostgreSQL** + **Prisma**
-- **NextAuth.js** for authentication
-- **Tailwind CSS** + shadcn/ui
-- **TipTap** for rich-text editing
-- **React Hook Form** + **Zod**
-- **AWS S3** for object storage
-- **Bun** for development tooling
+- **Next.js 16 + React 19 + TypeScript**
+- **tRPC 11** for end-to-end typed APIs
+- **PostgreSQL + Prisma 6**
+- **Auth.js / NextAuth 5** for authentication
+- **Tailwind CSS 4**
+- **TipTap 3** for rich-text editing
+- **React Hook Form + Zod**
+- **S3-compatible object storage**
+- **Vitest** for automated testing
+- **npm** for package management
 
 ## Engineering highlights
 
@@ -59,9 +60,9 @@ The application is designed to behave as an installable mobile experience with s
                  ┌──────────────┼──────────────┐
                  ▼              ▼              ▼
           Authentication    Application     File / Media
-            NextAuth          Services         Storage
+             Auth.js          Services         Storage
                  │              │                │
-                 └──────┬───────┘              S3
+                 └──────┬───────┘         S3-compatible
                         ▼
                  Prisma ORM
                         │
@@ -74,11 +75,18 @@ The application is designed to behave as an installable mobile experience with s
 ```bash
 git clone https://github.com/soezyxstt/hmm-lms.git
 cd hmm-lms
-bun install
+npm install
 cp .env.example .env
-bun run db:generate
-bun run db:push
-bun run dev
+npm run db:push
+npm run dev
+```
+
+Useful validation commands:
+
+```bash
+npm run typecheck
+npm test
+npm run build
 ```
 
 Use local or development credentials only. Never commit `.env` files, database credentials, storage secrets, or private keys.
